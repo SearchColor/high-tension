@@ -1,0 +1,18 @@
+server:
+  port: 8700
+
+spring:
+  application:
+    name: cart-service
+  data:
+    mongodb:
+      # Connection String 사용 (가장 일반적)
+      uri: mongodb://admin:admin1234@mongodb:27017/msa_mongo_db?authSource=admin
+
+management:
+  zipkin:
+    tracing:
+      endpoint: "http://localhost:9411/api/v2/spans"
+  tracing:
+    sampling:
+      probability: 1.0

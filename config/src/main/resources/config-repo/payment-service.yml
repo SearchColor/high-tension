@@ -1,0 +1,34 @@
+server:
+  port: 8300
+
+spring:
+  application:
+    name: payment-service
+  datasource:
+    url: jdbc:mysql://mysql:3306/payment_service?serverTimezone=UTC&characterEncoding=UTF-8
+    username: root
+    password: admin1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        default_schema: payment_service
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always
+
+management:
+  zipkin:
+    tracing:
+      endpoint: "http://localhost:9411/api/v2/spans"
+  tracing:
+    sampling:
+      probability: 1.0

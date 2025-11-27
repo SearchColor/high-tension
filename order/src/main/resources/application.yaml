@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: order-service
+  config:
+    import: "optional:configserver:"
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        service-id: config
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: refresh
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    instance-id: order-service
+    hostname: localhost

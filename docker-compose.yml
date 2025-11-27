@@ -1,0 +1,98 @@
+version: '3.8' # Docker Compose 파일 형식 버전 지정
+
+services:
+  # 1. MySQL (관계형 데이터베이스)
+  mysql:
+    image: mysql:8.0
+    container_name: msa-mysql
+    restart: always
+    environment:
+      # 비밀번호 설정 (필수)
+      MYSQL_ROOT_PASSWORD: admin1234
+    ports:
+      # 호스트:컨테이너 포트 매핑
+      - "3306:3306"
+    volumes:
+      # 데이터 영속성을 위한 볼륨 설정
+      - mysql-data:/var/lib/mysql
+      - ./create_schema.sql:/docker-entrypoint-initdb.d/create_schemas.sql
+    networks:
+      - msa-network
+
+  # 2. Redis (인메모리 캐시/데이터 저장소)
+  redis:
+    image: redis:6.2-alpine
+    container_name: msa-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      # 데이터 영속성을 위한 볼륨 설정
+      - redis-data:/data
+    networks:
+      - msa-network
+
+  # 3. Kafka (메시지 브로커) 및 Zookeeper
+  # Kafka는 메타데이터 관리를 위해 Zookeeper에 의존합니다.
+
+  # 3-1. Zookeeper
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: msa-zookeeper
+    restart: always
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - msa-network
+
+  # 3-2. Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: msa-kafka
+    restart: always
+    depends_on:
+      - zookeeper # Zookeeper가 먼저 시작되어야 함
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181 # 내부 네트워크 이름 사용
+      # 외부 접속을 위한 설정 (Host PC에서 접근 시 사용)
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - msa-network
+
+  # 4. MongoDB (NoSQL 데이터베이스)
+  mongodb:
+    image: mongo:6.0
+    container_name: msa-mongodb
+    restart: always
+    environment:
+      # 사용자 인증을 위한 초기 설정 (선택 사항)
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin1234
+      MONGO_INITDB_DATABASE: msa_mongo_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - msa-network
+
+# 볼륨 정의 (데이터 영속성 확보)
+volumes:
+  mysql-data:
+  redis-data:
+  mongo-data:
+
+# 네트워크 정의 (컨테이너 간 통신)
+networks:
+  msa-network:
+    driver: bridge
+
