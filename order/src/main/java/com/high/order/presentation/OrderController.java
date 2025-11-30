@@ -1,39 +1,44 @@
 package com.high.order.presentation;
 
+import com.high.order.application.dto.request.ProductOrderCreateRequest;
+import com.high.order.application.dto.response.OrderCreateResponse;
 import com.high.order.application.dto.response.OrderDetailResponse;
-import com.high.order.application.dto.response.OrderItemResponse;
-import com.high.order.domain.vo.DeliveryStatus;
-import com.high.order.domain.vo.OrderItemStatus;
-import com.high.order.domain.vo.OrderStatus;
-import java.time.LocalDateTime;
+import com.high.order.application.service.OrderService;
+import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/v1/orders")
 public class OrderController {
 
+    private final OrderService orderService;
+
     @PostMapping("/cart")
-    public ResponseEntity createOrderFromCart() {
+    public ResponseEntity createCartOrder() {
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/product")
-    public ResponseEntity createOrderFromProduct() {
-        return ResponseEntity.ok().build();
+    public ResponseEntity<OrderCreateResponse> createSingleProductOrder(@Valid @RequestBody ProductOrderCreateRequest productOrderCreateRequest) {
+        OrderCreateResponse response = orderService.createSingleProductOrder(productOrderCreateRequest);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/limited-product")
-    public ResponseEntity createOrderFromLimitedProduct() {
+    public ResponseEntity createLimitedProductOrder() {
         return ResponseEntity.ok().build();
     }
 
@@ -41,52 +46,8 @@ public class OrderController {
     @GetMapping("/{orderId}")
     public ResponseEntity<OrderDetailResponse> getOrderDetail(@PathVariable("orderId") UUID orderId) {
 
-        //임시 더미데이터
-        String uuidString = "f47ac10b-58cc-4372-a567-0e02b2c3d479";
-        OrderItemResponse orderItemResponse1 = new OrderItemResponse(
-            UUID.fromString(uuidString),
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            2000,
-            10,
-            20000,
-            OrderItemStatus.CREATED.toString(),
-            DeliveryStatus.READY.toString()
-        );
-
-        OrderItemResponse orderItemResponse2 = new OrderItemResponse(
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            1000,
-            10,
-            10000,
-            OrderItemStatus.CREATED.toString(),
-            DeliveryStatus.READY.toString()
-        );
-
-        List<OrderItemResponse> orderItemList = new ArrayList<>();
-        orderItemList.add(orderItemResponse1);
-        orderItemList.add(orderItemResponse2);
-
-        OrderDetailResponse orderDetailResponse = new OrderDetailResponse(
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            30000,
-            3000,
-            27000,
-            OrderStatus.CREATED.toString(),
-            "홍길동",
-            "010-1234-5678",
-            "서울특별시 강남구 역삼동 227-1",
-            "401호",
-            "문앞에 두고 가주세요",
-            LocalDateTime.now(),
-            orderItemList
-
-        );
-        return ResponseEntity.ok(orderDetailResponse);
+        OrderDetailResponse response = orderService.getOrderDetail(orderId);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping

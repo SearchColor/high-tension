@@ -1,5 +1,6 @@
 package com.high.order.application.dto.response;
 
+import com.high.order.domain.entity.OrderItem;
 import java.util.UUID;
 
 public record OrderItemResponse(
@@ -12,13 +13,16 @@ public record OrderItemResponse(
     String orderItemStatus,
     String deliveryStatus
 ) {
-//    public static OrderItemResponse from(OrderItemResult result) {
-//        return new OrderItemResponse(
-//            result.productId(),
-//            result.productName(),
-//            result.price(),
-//            result.quantity(),
-//            result.totalPrice()
-//        );
-//    }
+    public static OrderItemResponse from(OrderItem orderItem) {
+        return new OrderItemResponse(
+            orderItem.getOrderItemId(),
+            orderItem.getProductId(),
+            orderItem.getProducerId(),
+            orderItem.getUnitPrice(),
+            orderItem.getQuantity(),
+            orderItem.getItemTotalPrice(),
+            orderItem.getOrderItemStatus().toString(),
+            orderItem.getDeliveryStatus().toString()
+        );
+    }
 }
