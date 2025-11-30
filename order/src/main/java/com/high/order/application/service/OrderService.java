@@ -1,14 +1,19 @@
 package com.high.order.application.service;
 
-import com.high.order.application.dto.request.ProductOrderCreateRequest;
+import com.high.order.application.dto.internal.OrderItemCreateInfo;
+import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.application.dto.response.OrderCreateResponse;
 import com.high.order.application.dto.response.OrderDetailResponse;
 import com.high.order.domain.entity.Order;
 import com.high.order.domain.repository.OrderRepository;
+import com.high.order.infrastructure.client.ProductDto;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -17,12 +22,12 @@ public class OrderService {
 
     //FeignClient 통신 전 임시데이터
     UUID customerId =  UUID.randomUUID(); //유저
-    UUID producerId = UUID.randomUUID(); //product
-    Integer unitPrice = 1000; //product
+    //UUID producerId = UUID.randomUUID(); //product
+    //Integer unitPrice = 1000; //product
 
 
 
-    public OrderCreateResponse createSingleProductOrder(ProductOrderCreateRequest request) {
+    public OrderCreateResponse createOrder(OrderCreateRequest request) {
 
         /**
          * TODO:
@@ -30,11 +35,28 @@ public class OrderService {
          *  2. productID 존재여부 검증
          *  3. couponID 존재여부 검증
          */
-        Order order = Order.createFromSingleProduct(customerId, request, producerId, unitPrice);
+
+        List<OrderItemCreateInfo> orderItemCreateInfoList = request.orderItemDtoList()
+            .stream()
+            .map( itemDto -> {
+                ProductDto productDto = ProductDto.init();
+
+                return new OrderItemCreateInfo(
+                    itemDto.productId(),
+                    productDto.producerId(),
+                    productDto.price(),
+                    itemDto.quantity()
+                );
+            }).toList();
+
+
+        Order order = Order.createOrder(customerId, request, orderItemCreateInfoList);
         orderRepository.save(order);
 
         return OrderCreateResponse.from(order);
     }
+
+
 
     public OrderDetailResponse getOrderDetail(UUID orderId) {
         /**
@@ -48,4 +70,5 @@ public class OrderService {
         return OrderDetailResponse.from(order);
 
     }
+
 }

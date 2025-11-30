@@ -1,6 +1,7 @@
 package com.high.order.domain.entity;
 
-import com.high.order.application.dto.request.ProductOrderCreateRequest;
+import com.high.order.application.dto.internal.OrderItemCreateInfo;
+import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.domain.vo.OrderStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -74,7 +75,8 @@ public class Order {
     /**
      * 단일 상품 주문 생성
      */
-    public static Order createFromSingleProduct( UUID customerId, ProductOrderCreateRequest request, UUID producerId, Integer unitPrice) {
+    public static Order createOrder( UUID customerId, OrderCreateRequest request,
+                                     List<OrderItemCreateInfo> orderItemCreateInfoList) {
 
         Order order = new Order(
             customerId,
@@ -86,15 +88,19 @@ public class Order {
             request.requestMessage()
         );
 
-        OrderItem orderItem = OrderItem.create(
-            order,
-            request.productId(),
-            producerId,
-            request.quantity(),
-            unitPrice
-        );
 
-        order.addOrderItem(orderItem);
+        for(OrderItemCreateInfo orderItemCreateInfo : orderItemCreateInfoList) {
+            OrderItem orderItem = OrderItem.create(
+                order,
+                orderItemCreateInfo.productId(),
+                orderItemCreateInfo.producerId(),
+                orderItemCreateInfo.quantity(),
+                orderItemCreateInfo.unitPrice()
+            );
+
+            order.addOrderItem(orderItem);
+        }
+
         order.calculateAmounts();
         return order;
     }

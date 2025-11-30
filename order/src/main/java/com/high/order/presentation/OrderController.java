@@ -1,6 +1,6 @@
 package com.high.order.presentation;
 
-import com.high.order.application.dto.request.ProductOrderCreateRequest;
+import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.application.dto.response.OrderCreateResponse;
 import com.high.order.application.dto.response.OrderDetailResponse;
 import com.high.order.application.service.OrderService;
@@ -26,14 +26,9 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    @PostMapping("/cart")
-    public ResponseEntity createCartOrder() {
-        return ResponseEntity.ok().build();
-    }
-
     @PostMapping("/product")
-    public ResponseEntity<OrderCreateResponse> createSingleProductOrder(@Valid @RequestBody ProductOrderCreateRequest productOrderCreateRequest) {
-        OrderCreateResponse response = orderService.createSingleProductOrder(productOrderCreateRequest);
+    public ResponseEntity<OrderCreateResponse> createOrder(@Valid @RequestBody OrderCreateRequest productOrderCreateRequest) {
+        OrderCreateResponse response = orderService.createOrder(productOrderCreateRequest);
         return ResponseEntity.ok(response);
     }
 

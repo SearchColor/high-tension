@@ -1,22 +1,15 @@
 package com.high.order.application.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
+import java.util.List;
 import java.util.UUID;
 
-public record ProductOrderCreateRequest(
-
-    @NotNull(message = "상품 선택은 필수입니다.")
-    UUID productId,
+public record OrderCreateRequest(
 
     UUID couponId,
-
-    @NotNull(message = "수량 입력은 필수입니다.")
-    @Min(value = 1, message = "수량은 최소 1개 이상이어야 합니다.")
-    Integer quantity,
 
     @NotBlank(message = "수령자 정보는 필수입니다")
     String recipient,
@@ -37,7 +30,10 @@ public record ProductOrderCreateRequest(
     String detailAddress,
 
     @JsonProperty("request_message")
-    String requestMessage
+    String requestMessage,
+
+    @NotEmpty(message = "주문 상품은 최소 1개 이상이어야 합니다")
+    List<OrderItemDto> orderItemDtoList
 ) {
 
 
