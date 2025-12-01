@@ -1,7 +1,5 @@
 package com.high.order.domain.entity;
 
-import com.high.order.application.dto.internal.OrderItemCreateInfo;
-import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.domain.vo.OrderStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -75,29 +73,28 @@ public class Order {
     /**
      * 단일 상품 주문 생성
      */
-    public static Order createOrder( UUID customerId, OrderCreateRequest request,
-                                     List<OrderItemCreateInfo> orderItemCreateInfoList) {
+    public static Order createOrder(
+        UUID customerId,
+        UUID couponId,
+        String recipient,
+        String recipientContact,
+        String deliveryAddress,
+        String detailAddress,
+        String requestMessage,
+        List<OrderItem> orderItems
+) {
 
         Order order = new Order(
             customerId,
-            request.couponId(),
-            request.recipient(),
-            request.recipientContact(),
-            request.deliveryAddress(),
-            request.detailAddress(),
-            request.requestMessage()
+            couponId,
+            recipient,
+            recipientContact,
+            deliveryAddress,
+            detailAddress,
+            requestMessage
         );
 
-
-        for(OrderItemCreateInfo orderItemCreateInfo : orderItemCreateInfoList) {
-            OrderItem orderItem = OrderItem.create(
-                order,
-                orderItemCreateInfo.productId(),
-                orderItemCreateInfo.producerId(),
-                orderItemCreateInfo.quantity(),
-                orderItemCreateInfo.unitPrice()
-            );
-
+        for (OrderItem orderItem : orderItems) {
             order.addOrderItem(orderItem);
         }
 
@@ -108,7 +105,11 @@ public class Order {
 
 
     private void addOrderItem(OrderItem orderItem) {
+        if (orderItem == null) {
+            throw new IllegalArgumentException("주문 아이템은 null일 수 없습니다.");
+        }
         this.orderItems.add(orderItem);
+        orderItem.setOrder(this);
     }
 
     private void calculateAmounts() {

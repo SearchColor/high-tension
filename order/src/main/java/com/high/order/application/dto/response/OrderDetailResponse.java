@@ -33,7 +33,7 @@ public record OrderDetailResponse(
             order.getOrderStatus().toString(),
             order.getRecipient(),
             order.getRecipientContact(),
-            order.getDetailAddress(),
+            order.getDeliveryAddress(),
             order.getDetailAddress(),
             order.getRequestMessage(),
             LocalDateTime.now(), //BaseEntity적용 전 임시

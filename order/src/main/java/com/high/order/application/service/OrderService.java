@@ -5,6 +5,7 @@ import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.application.dto.response.OrderCreateResponse;
 import com.high.order.application.dto.response.OrderDetailResponse;
 import com.high.order.domain.entity.Order;
+import com.high.order.domain.entity.OrderItem;
 import com.high.order.domain.repository.OrderRepository;
 import com.high.order.infrastructure.client.ProductDto;
 import java.util.List;
@@ -36,11 +37,11 @@ public class OrderService {
          *  3. couponID 존재여부 검증
          */
 
-        List<OrderItemCreateInfo> orderItemCreateInfoList = request.orderItemDtoList()
+        List<OrderItemCreateInfo> orderItemCreateInfoList = request.itemList()
             .stream()
             .map( itemDto -> {
+                //feignClient 구현 후 mapper 사용예정
                 ProductDto productDto = ProductDto.init();
-
                 return new OrderItemCreateInfo(
                     itemDto.productId(),
                     productDto.producerId(),
@@ -49,11 +50,27 @@ public class OrderService {
                 );
             }).toList();
 
+        List<OrderItem> itemList = orderItemCreateInfoList.stream()
+            .map(item -> OrderItem.create(
+                item.productId(),
+                item.producerId(),
+                item.quantity(),
+                item.unitPrice()
+            )).toList();
 
-        Order order = Order.createOrder(customerId, request, orderItemCreateInfoList);
-        orderRepository.save(order);
+        Order order = Order.createOrder(
+            customerId,
+            request.couponId(),
+            request.recipient(),
+            request.recipientContact(),
+            request.deliveryAddress(),
+            request.detailAddress(),
+            request.requestMessage(),
+            itemList
+        );
+        Order savedOrder = orderRepository.save(order);
 
-        return OrderCreateResponse.from(order);
+        return OrderCreateResponse.from(savedOrder);
     }
 
 

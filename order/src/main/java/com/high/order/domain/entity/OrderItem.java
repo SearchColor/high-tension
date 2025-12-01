@@ -47,10 +47,9 @@ public class OrderItem {
     @JoinColumn(name = "order_id")
     private Order order;
 
-    private OrderItem(Order order, UUID productId, UUID producerId,
+    private OrderItem(UUID productId, UUID producerId,
         Integer quantity, Integer unitPrice) {
 
-        this.order = order;
         this.productId = productId;
         this.producerId = producerId;
         this.quantity = quantity;
@@ -62,12 +61,10 @@ public class OrderItem {
     }
 
 
-    public static OrderItem create(Order order, UUID productId, UUID producerId,
+    public static OrderItem create(UUID productId, UUID producerId,
         Integer quantity, Integer unitPrice) {
-
-        OrderItem orderItem = new OrderItem(order, productId, producerId, quantity, unitPrice);
-        orderItem.calculateAmounts();
-
+        OrderItem orderItem = new OrderItem(productId, producerId, quantity, unitPrice);
+            orderItem.calculateAmounts();
         return orderItem;
     }
 
@@ -75,5 +72,9 @@ public class OrderItem {
     private void calculateAmounts() {
         this.itemTotalPrice = this.quantity * this.unitPrice;
 
+    }
+
+    void setOrder(Order order) {
+        this.order = order;
     }
 }
