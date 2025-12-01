@@ -125,4 +125,10 @@ public class Order extends BaseEntity {
         // TODO: 쿠폰 할인율 어떻게?
         return couponId != null ? 0 : 0;
     }
+
+    @Override
+    public void softDelete(String deletedBy) {
+        super.softDelete(deletedBy);
+        this.orderItems.forEach(orderItem -> orderItem.softDelete(deletedBy));
+    }
 }

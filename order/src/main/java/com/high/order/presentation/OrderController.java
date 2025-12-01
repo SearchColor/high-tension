@@ -63,8 +63,9 @@ public class OrderController {
     }
 
     @DeleteMapping("/{orderId}")
-    public ResponseEntity deleteOrder(@PathVariable UUID orderId) {
-        return ResponseEntity.ok().build();
+    public ApiResponse<Void> deleteOrder(@PathVariable UUID orderId) {
+        orderService.deleteOrder(orderId);
+        return ApiResponse.success("삭제되었습니다.");
     }
 
 }
