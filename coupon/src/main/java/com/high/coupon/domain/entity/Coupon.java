@@ -1,5 +1,6 @@
 package com.high.coupon.domain.entity;
 
+import com.library.jpa.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -21,7 +22,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Table(name = "p_coupon")
-public class Coupon {
+public class Coupon extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -47,7 +48,6 @@ public class Coupon {
 
     @Column(nullable = false)
     private LocalDateTime validUntil;
-
 
     /**
      * 쿠폰 생성

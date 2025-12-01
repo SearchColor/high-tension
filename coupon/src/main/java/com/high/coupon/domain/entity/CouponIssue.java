@@ -1,5 +1,6 @@
 package com.high.coupon.domain.entity;
 
+import com.library.jpa.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -29,7 +30,7 @@ import lombok.NoArgsConstructor;
                 columnNames = {"coupon_id", "user_id"}
         )
 })
-public class CouponIssue {
+public class CouponIssue extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

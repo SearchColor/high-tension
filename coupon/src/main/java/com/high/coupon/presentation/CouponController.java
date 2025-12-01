@@ -3,6 +3,7 @@ package com.high.coupon.presentation;
 import com.high.coupon.application.CouponService;
 import com.high.coupon.application.dto.request.CouponCreateRequest;
 import com.high.coupon.application.dto.response.CouponCreateResponse;
+import com.library.module.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,13 +20,13 @@ public class CouponController {
 
     private final CouponService couponService;
 
-    // todo 공통 모듈 적용 전 임시
+    // todo 권한 필요
 
-    // 쿠폰 등록
+    // 쿠폰 생성
     @PostMapping
-    public ResponseEntity<CouponCreateResponse> createCoupon(
+    public ResponseEntity<ApiResponse<CouponCreateResponse>> createCoupon(
             @RequestBody @Valid CouponCreateRequest request){
         var response = couponService.createCoupon(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 }

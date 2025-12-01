@@ -12,7 +12,10 @@ public record CouponCreateResponse(
         BigDecimal discountRate,
         LocalDateTime issueStartAt,
         LocalDateTime issueEndAt,
-        LocalDateTime validUntil
+        LocalDateTime validUntil,
+        LocalDateTime createdAt,
+        // todo createdBy 타입 확인
+        String createdBy
 ) {
     public static CouponCreateResponse from(Coupon coupon){
         return new CouponCreateResponse(
@@ -22,7 +25,9 @@ public record CouponCreateResponse(
                 coupon.getDiscountRate(),
                 coupon.getIssueStartAt(),
                 coupon.getIssueEndAt(),
-                coupon.getValidUntil()
+                coupon.getValidUntil(),
+                coupon.getCreatedAt(),
+                coupon.getCreatedBy()
         );
     }
 }
