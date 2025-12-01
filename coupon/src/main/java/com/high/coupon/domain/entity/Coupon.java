@@ -42,8 +42,42 @@ public class Coupon {
     @Column(nullable = false)
     private LocalDateTime issueStartAt;
 
+    @Column(nullable = false)
     private LocalDateTime issueEndAt;
 
     @Column(nullable = false)
     private LocalDateTime validUntil;
+
+
+    /**
+     * 쿠폰 생성
+     */
+    public static Coupon createCoupon(String name, String description, BigDecimal discountRate,
+            Integer totalQuantity, LocalDateTime issueStartAt, LocalDateTime issueEndAt, LocalDateTime validUntil){
+
+        validateDates(issueStartAt, issueEndAt, validUntil);
+
+        return Coupon.builder()
+                .name(name)
+                .description(description)
+                .discountRate(discountRate)
+                .totalQuantity(totalQuantity)
+                .issueStartAt(issueStartAt)
+                .issueEndAt(issueEndAt)
+                .validUntil(validUntil)
+                .build();
+    }
+
+    /**
+     * 날짜 검증 메서드
+     * todo: 예외처리 임시 작성
+     */
+    private static void validateDates(LocalDateTime issueStartAt, LocalDateTime issueEndAt, LocalDateTime validUntil) {
+        if (issueStartAt == null)
+            throw new IllegalArgumentException("발행 시작일은 필수입니다.");
+        if (issueEndAt != null && issueEndAt.isBefore(issueStartAt))
+            throw new IllegalArgumentException("발행 종료일은 시작일 이후여야 합니다.");
+        if (validUntil.isBefore(issueStartAt))
+            throw new IllegalArgumentException("유효기간 종료일은 발행 시작일 이후여야 합니다.");
+    }
 }
