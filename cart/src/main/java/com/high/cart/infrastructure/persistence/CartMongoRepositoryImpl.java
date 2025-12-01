@@ -23,4 +23,9 @@ public class CartMongoRepositoryImpl implements CartRepository {
     public Optional<Cart> findByUserId(String userId) {
         return cartMongoRepository.findByUserId(userId);
     }
+
+    @Override
+    public boolean existsByUserId(String userId) {
+        return cartMongoRepository.existsByUserId(userId);
+    }
 }

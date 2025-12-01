@@ -1,0 +1,31 @@
+package com.high.cart.presentation.controller;
+
+import com.high.cart.application.dto.request.CreateCartRequestDto;
+import com.high.cart.application.dto.response.CartResponseDto;
+import com.high.cart.application.dto.response.CreateCartResponseDto;
+import com.high.cart.application.service.CartServiceV1;
+import com.library.module.response.ApiResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1/carts")
+@RequiredArgsConstructor
+public class CartControllerV1 {
+
+    private final CartServiceV1 serviceV1;
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<CreateCartResponseDto>> createCart(@RequestBody CreateCartRequestDto requestDto){
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(serviceV1.saveCart(requestDto),"장바구니 생성 성공"));
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<ApiResponse<CartResponseDto>> getCart(@PathVariable String userId){
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(serviceV1.getCartByUserId(userId),"장바구니 조회 성공"));
+    }
+}

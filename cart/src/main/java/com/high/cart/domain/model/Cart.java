@@ -3,6 +3,7 @@ package com.high.cart.domain.model;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
@@ -16,14 +17,23 @@ public class Cart {
 
     @Id
     private String id;
+    @Indexed(unique = true)
     private final String userId;
     @Builder.Default
     private List<CartItem> items = new ArrayList<>();
     @Builder.Default
     private long totalPrice = 0;
 
-    public void addItem(CartItem newItem) {
+    public static Cart create(String userId, List<CartItem> items){
+         Cart cart = Cart.builder()
+                .userId(userId)
+                .items(items)
+                .build();
+        cart.calculateTotalPrice();
+        return cart;
+    }
 
+    public void addItem(CartItem newItem) {
         // 기존 항목 목록에서 같은 상품이 있는지 찾습니다.
         Optional<CartItem> existingItemOptional = this.items.stream()
                 .filter(item -> item.getProductId().equals(newItem.getProductId()))
