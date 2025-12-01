@@ -1,5 +1,8 @@
 package com.high.cart.application.service;
 
+import com.high.cart.application.dto.request.CreateCartRequestDto;
+import com.high.cart.application.dto.response.CartResponseDto;
+import com.high.cart.application.dto.response.CreateCartResponseDto;
 import com.high.cart.domain.exception.CartNotFoundException;
 import com.high.cart.domain.model.Cart;
 import com.high.cart.domain.model.CartItem;
@@ -11,6 +14,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,24 +38,42 @@ class CartServiceV1Test {
                     .quantity(2)
                     .price(10000)
                     .build();
+    private final CartItem SAMPLE_ITEM2 =
+            CartItem.builder()
+                    .productId("P002")
+                    .quantity(1)
+                    .price(20000)
+                    .build();
 
 
     @Test
-    @DisplayName("장바구니 저장_성공")
+    @DisplayName("장바구니 저장 성공 테스트")
     void saveCart_Success() {
-        // Given
-        Cart mockCart = Cart.builder().userId(TEST_USER_ID).build();
-        // Repository의 save 메서드가 호출되면 입력된 Cart 객체를 그대로 반환하도록 설정
-        when(cartRepository.save(any(Cart.class))).thenReturn(mockCart);
+        // given
+        String userId = "1";
+        List<CartItem> items = Arrays.asList(SAMPLE_ITEM, SAMPLE_ITEM2);
 
-        // When
-        Cart savedCart = cartService.saveCart(mockCart);
+        CreateCartRequestDto requestDto = CreateCartRequestDto.builder()
+                .userId(userId)
+                .items(items)
+                .build();
 
-        // Then
-        // save 메서드가 1번 호출되었는지 검증
-        verify(cartRepository, times(1)).save(mockCart);
-        // 반환된 객체가 입력 객체와 동일한지 검증
-        assertThat(savedCart.getUserId()).isEqualTo(TEST_USER_ID);
+        Cart savedCart = Cart.builder()
+                .userId(userId)
+                .items(items)
+                .build();
+
+        when(cartRepository.save(any(Cart.class))).thenReturn(savedCart);
+
+        // when
+        CreateCartResponseDto response = cartService.saveCart(requestDto);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getUserId()).isEqualTo(userId);
+        assertThat(response.getItems()).hasSize(2);
+
+        verify(cartRepository, times(1)).save(any(Cart.class));
     }
 
     @Test
@@ -62,11 +85,11 @@ class CartServiceV1Test {
         when(cartRepository.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(mockCart));
 
         // When
-        Cart foundCart = cartService.getCartByUserId(TEST_USER_ID);
+        CartResponseDto responseDto = cartService.getCartByUserId(TEST_USER_ID);
 
         // Then
-        assertThat(foundCart).isNotNull();
-        assertThat(foundCart.getUserId()).isEqualTo(TEST_USER_ID);
+        assertThat(responseDto).isNotNull();
+        assertThat(responseDto.getUserId()).isEqualTo(TEST_USER_ID);
     }
 
     @Test
