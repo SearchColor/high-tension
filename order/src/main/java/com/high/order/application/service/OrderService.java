@@ -1,9 +1,12 @@
 package com.high.order.application.service;
 
+import static java.util.stream.Collectors.toList;
+
 import com.high.order.application.dto.internal.OrderItemCreateInfo;
 import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.application.dto.response.OrderCreateResponse;
 import com.high.order.application.dto.response.OrderDetailResponse;
+import com.high.order.application.dto.response.OrderListResponse;
 import com.high.order.application.exception.OrderNotFoundException;
 import com.high.order.domain.entity.Order;
 import com.high.order.domain.entity.OrderItem;
@@ -86,10 +89,19 @@ public class OrderService {
          *      ㄴ) seller - orderItem의 producerID가 본인인 데이터 조회 가능 (삭제된 데이터까지 조회가 가능하게)
          *      ㄷ) user - 자신의 주문만 조회 가능
          */
-        Order order = orderRepository.findById(orderId).orElseThrow(OrderNotFoundException::new);
+        Order order = orderRepository.findByOrderIdAndDeletedAtIsNull(orderId).orElseThrow(OrderNotFoundException::new);
         return OrderDetailResponse.from(order);
 
     }
+
+    public List<OrderListResponse> getOrders() {
+        /**
+         * TODO: 권한에 따른 조회 데이터 필터링
+         */
+        List<Order> orderList = orderRepository.findAllByDeletedAtIsNull();
+        return orderList.stream().map(OrderListResponse::from).collect(toList());
+    }
+
 
     @Transactional
     public void deleteOrder(UUID orderId) {

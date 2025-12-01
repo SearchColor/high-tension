@@ -3,10 +3,10 @@ package com.high.order.presentation;
 import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.application.dto.response.OrderCreateResponse;
 import com.high.order.application.dto.response.OrderDetailResponse;
+import com.high.order.application.dto.response.OrderListResponse;
 import com.high.order.application.service.OrderService;
 import com.library.module.response.ApiResponse;
 import jakarta.validation.Valid;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -47,9 +47,9 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<List<OrderDetailResponse>> getOrders() {
-        List<OrderDetailResponse> orderDetailResponseList = new ArrayList<>();
-        return ResponseEntity.ok(orderDetailResponseList);
+    public ApiResponse<List<OrderListResponse>> getOrders() {
+        List<OrderListResponse> responses = orderService.getOrders();
+        return ApiResponse.success(responses);
     }
 
     @PatchMapping("/{orderId}/cancel")
