@@ -4,6 +4,7 @@ import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.application.dto.response.OrderCreateResponse;
 import com.high.order.application.dto.response.OrderDetailResponse;
 import com.high.order.application.service.OrderService;
+import com.library.module.response.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,9 +28,9 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/product")
-    public ResponseEntity<OrderCreateResponse> createOrder(@Valid @RequestBody OrderCreateRequest productOrderCreateRequest) {
+    public ApiResponse<OrderCreateResponse> createOrder(@Valid @RequestBody OrderCreateRequest productOrderCreateRequest) {
         OrderCreateResponse response = orderService.createOrder(productOrderCreateRequest);
-        return ResponseEntity.ok(response);
+        return ApiResponse.success(response);
     }
 
     @PostMapping("/limited-product")
@@ -39,10 +40,10 @@ public class OrderController {
 
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<OrderDetailResponse> getOrderDetail(@PathVariable("orderId") UUID orderId) {
+    public ApiResponse<OrderDetailResponse> getOrderDetail(@PathVariable("orderId") UUID orderId) {
 
         OrderDetailResponse response = orderService.getOrderDetail(orderId);
-        return ResponseEntity.ok(response);
+        return ApiResponse.success(response);
     }
 
     @GetMapping

@@ -2,6 +2,7 @@ package com.high.order.domain.entity;
 
 import com.high.order.domain.vo.DeliveryStatus;
 import com.high.order.domain.vo.OrderItemStatus;
+import com.library.jpa.common.entity.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -18,10 +19,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "p_orderItem")
+@Table(name = "p_order_item")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class OrderItem {
+public class OrderItem extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

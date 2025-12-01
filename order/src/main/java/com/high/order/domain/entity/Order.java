@@ -1,6 +1,7 @@
 package com.high.order.domain.entity;
 
 import com.high.order.domain.vo.OrderStatus;
+import com.library.jpa.common.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -21,7 +22,7 @@ import lombok.NoArgsConstructor;
 @Table(name="p_order")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Order {
+public class Order extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID orderId;
@@ -50,7 +51,7 @@ public class Order {
     private String requestMessage;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> orderItems;
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     private Order(UUID customerId, UUID couponId,
         String recipient, String recipientContact,
@@ -67,13 +68,12 @@ public class Order {
         this.totalPrice = 0;
         this.discountAmount = 0;
         this.paidAmount = 0;
-        this.orderItems = new ArrayList<>();
     }
 
     /**
      * 단일 상품 주문 생성
      */
-    public static Order createOrder(
+    public static Order createOrder (
         UUID customerId,
         UUID couponId,
         String recipient,
