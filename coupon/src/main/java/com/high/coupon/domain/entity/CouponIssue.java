@@ -1,0 +1,57 @@
+package com.high.coupon.domain.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import java.time.LocalDateTime;
+import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Getter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Table(name = "p_coupon_issue",
+    uniqueConstraints = {
+        @UniqueConstraint(
+                columnNames = {"coupon_id", "user_id"}
+        )
+})
+public class CouponIssue {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coupon_id", nullable = false)
+    private Coupon coupon;
+
+    @Column(nullable = false)
+    private UUID userId;
+
+    @Column(nullable = false)
+    private LocalDateTime issuedAt;
+
+    private Boolean isUsed = false;
+
+    private LocalDateTime usedAt;
+
+    @Column(nullable = false)
+    private LocalDateTime validStartAt;
+
+    @Column(nullable = false)
+    private LocalDateTime validEndAt;
+}
