@@ -22,6 +22,7 @@ configurations {
 
 repositories {
 	mavenCentral()
+    maven { url 'https://jitpack.io'}
 }
 
 ext {
@@ -29,15 +30,16 @@ ext {
 }
 
 dependencies {
+    implementation 'com.github.sharedeffort:common-module:v1.1.7'
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo:4.11.0'
 }
 
 dependencyManagement {
