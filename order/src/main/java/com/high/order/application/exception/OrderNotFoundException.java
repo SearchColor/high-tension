@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 
 public class OrderNotFoundException extends CustomException {
 
-    private static final int ORDER_NOT_FOUND_CODE = 1000;
+    private static final int ORDER_NOT_FOUND_CODE = 4000;
 
     public OrderNotFoundException() {
         super(HttpStatus.NOT_FOUND,

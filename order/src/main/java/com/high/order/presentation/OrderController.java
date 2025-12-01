@@ -1,9 +1,11 @@
 package com.high.order.presentation;
 
 import com.high.order.application.dto.request.OrderCreateRequest;
-import com.high.order.application.dto.response.OrderCreateResponse;
+import com.high.order.application.dto.request.OrderStatusChangeRequest;
 import com.high.order.application.dto.response.OrderDetailResponse;
+import com.high.order.application.dto.response.OrderItemIdResponse;
 import com.high.order.application.dto.response.OrderListResponse;
+import com.high.order.application.dto.response.OrderResponse;
 import com.high.order.application.service.OrderService;
 import com.library.module.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -28,8 +30,8 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/product")
-    public ApiResponse<OrderCreateResponse> createOrder(@Valid @RequestBody OrderCreateRequest productOrderCreateRequest) {
-        OrderCreateResponse response = orderService.createOrder(productOrderCreateRequest);
+    public ApiResponse<OrderResponse> createOrder(@Valid @RequestBody OrderCreateRequest productOrderCreateRequest) {
+        OrderResponse response = orderService.createOrder(productOrderCreateRequest);
         return ApiResponse.success(response);
     }
 
@@ -41,7 +43,6 @@ public class OrderController {
 
     @GetMapping("/{orderId}")
     public ApiResponse<OrderDetailResponse> getOrderDetail(@PathVariable("orderId") UUID orderId) {
-
         OrderDetailResponse response = orderService.getOrderDetail(orderId);
         return ApiResponse.success(response);
     }
@@ -52,14 +53,27 @@ public class OrderController {
         return ApiResponse.success(responses);
     }
 
+
+    //전체 취소
     @PatchMapping("/{orderId}/cancel")
-    public ResponseEntity cancelOrder(@PathVariable UUID orderId) {
-        return ResponseEntity.ok().build();
+    public ApiResponse<OrderResponse> cancelOrder(@PathVariable UUID orderId) {
+        OrderResponse response = orderService.cancelOrder(orderId);
+        return ApiResponse.success(response);
     }
 
+    //부분 취소
+    @PatchMapping("/{orderId}/cancel/{orderItemId}")
+    public ApiResponse<OrderItemIdResponse> cancelOrderItem(@PathVariable UUID orderId, @PathVariable UUID orderItemId) {
+        OrderItemIdResponse response = orderService.cancelOrderItem(orderId, orderItemId);
+        return ApiResponse.success(response);
+    }
+
+    //주문 상태 변경
     @PatchMapping("/{orderId}")
-    public ResponseEntity changeOrderStatus(@PathVariable UUID orderId) {
-        return ResponseEntity.ok().build();
+    public ApiResponse<OrderResponse> changeOrderStatus(@PathVariable UUID orderId, @RequestBody
+    OrderStatusChangeRequest request) {
+        OrderResponse response = orderService.changeOrderStatus(orderId, request);
+        return ApiResponse.success(response);
     }
 
     @DeleteMapping("/{orderId}")

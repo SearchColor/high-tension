@@ -13,4 +13,12 @@ public enum OrderStatus {
     OrderStatus(String description) {
         this.description = description;
     }
+
+    public boolean canTransitionTo(OrderStatus nextStatus) {
+        return switch (this) {
+            case CREATED -> nextStatus == SUCCESS || nextStatus == CANCELED;
+            case SUCCESS -> nextStatus == CANCELED; // 완료/취소는 더 이상 변경 불가
+            case CANCELED -> false;
+        };
+    }
 }

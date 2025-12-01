@@ -1,5 +1,8 @@
 package com.high.order.domain.entity;
 
+import com.high.order.application.exception.OrderBadRequestException;
+import com.high.order.application.exception.OrderItemNotFoundExeption;
+import com.high.order.domain.vo.OrderItemStatus;
 import com.high.order.domain.vo.OrderStatus;
 import com.library.jpa.common.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
@@ -121,10 +124,60 @@ public class Order extends BaseEntity {
         this.paidAmount = this.totalPrice - this.discountAmount;
     }
 
+    public void updateTotalPrice(Integer recalculatingPrice) {
+        this.totalPrice = totalPrice - recalculatingPrice;
+    }
+
     private Integer calculateDiscount() {
         // TODO: 쿠폰 할인율 어떻게?
         return couponId != null ? 0 : 0;
     }
+
+    public void updateStatus(OrderStatus nextStatus) {
+        if(!this.orderStatus.canTransitionTo(nextStatus)) {
+            throw new OrderBadRequestException();
+        }
+        this.orderStatus = nextStatus;
+
+        OrderItemStatus nextItemStatus = switch (nextStatus) {
+            case CREATED -> OrderItemStatus.CREATED;
+            case SUCCESS -> OrderItemStatus.SUCCESS;
+            case CANCELED -> OrderItemStatus.CANCELED;
+        };
+
+        for(OrderItem orderItem : orderItems) {
+            orderItem.updateItemStatus(nextItemStatus);
+        }
+    }
+
+
+    // 전체 취소
+    public void cancelOrder() {
+        if (!(this.orderStatus == OrderStatus.CREATED || this.orderStatus == OrderStatus.SUCCESS)) {
+            throw new IllegalStateException("주문 상태 때문에 전체 취소 불가");
+        }
+
+        for (OrderItem item : this.orderItems) {
+            item.cancel();
+        }
+        this.orderStatus = OrderStatus.CANCELED;
+    }
+
+    // 단일 아이템 취소
+    public void cancelItem(UUID orderItemId) {
+        if (!(this.orderStatus == OrderStatus.CREATED || this.orderStatus == OrderStatus.SUCCESS)) {
+            throw new IllegalStateException("주문 상태 때문에 아이템 취소 불가");
+        }
+
+        OrderItem item = this.orderItems.stream()
+            .filter(oi -> oi.getOrderItemId().equals(orderItemId))
+            .findFirst()
+            .orElseThrow(OrderItemNotFoundExeption::new);
+
+        item.cancel();
+    }
+
+
 
     @Override
     public void softDelete(String deletedBy) {
