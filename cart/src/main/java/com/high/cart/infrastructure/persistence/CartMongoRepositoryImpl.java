@@ -1,4 +1,4 @@
-package com.high.cart.ifrastructure.persistence;
+package com.high.cart.infrastructure.persistence;
 
 import com.high.cart.domain.model.Cart;
 import com.high.cart.domain.repository.CartRepository;
@@ -12,7 +12,7 @@ import java.util.Optional;
 @Repository
 public class CartMongoRepositoryImpl implements CartRepository {
 
-    private final CartMongoRepository cartMongoRepository;
+    private final CartMongoDbRepository cartMongoRepository;
 
     @Override
     public Cart save(Cart cart) {
