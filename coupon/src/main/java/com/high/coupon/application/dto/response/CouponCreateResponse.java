@@ -14,8 +14,7 @@ public record CouponCreateResponse(
         LocalDateTime issueEndAt,
         LocalDateTime validUntil,
         LocalDateTime createdAt,
-        // todo createdBy 타입 확인
-        String createdBy
+        UUID createdBy
 ) {
     public static CouponCreateResponse from(Coupon coupon){
         return new CouponCreateResponse(
