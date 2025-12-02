@@ -7,10 +7,15 @@ import com.high.coupon.application.dto.response.CouponListResponse;
 import com.high.coupon.application.exception.CouponNotFoundException;
 import com.high.coupon.domain.entity.Coupon;
 import com.high.coupon.domain.repository.CouponRepository;
+import com.library.jpa.response.PageResponse;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,11 +54,11 @@ public class CouponService {
     }
 
     // 쿠폰 리스트 조회
-    public List<CouponListResponse> getAllCoupons() {
-        return couponRepository.findAll()
-                .stream()
-                .map(CouponListResponse::from)
-                .toList();
+    public PageResponse<CouponListResponse> getCouponPage(int page, int size, String sortBy, boolean isAsc) {
+        Pageable pageable = createPageable(page, size, sortBy, isAsc);
+        Page<Coupon> pageResult = couponRepository.findAll(pageable);
+        Page<CouponListResponse> couponList = pageResult.map(CouponListResponse::from);
+        return PageResponse.fromPage(couponList, sortBy, isAsc);
     }
 
     /**
@@ -62,5 +67,19 @@ public class CouponService {
     public Coupon getCouponById(UUID couponId){
         return couponRepository.findById(couponId)
                 .orElseThrow(CouponNotFoundException::new);
+    }
+
+    /**
+     * 쿠폰 페이징
+     */
+    private Pageable createPageable(int page, int size, String sortBy, boolean isAsc) {
+        int validatedSize = List.of(10, 20).contains(size) ? size : 10;
+        int validatedPage = Math.max(page, 0);
+        Sort.Direction direction = isAsc ? Sort.Direction.ASC : Sort.Direction.DESC;
+        // 유효한 정렬 필드
+        final List<String> ALLOWED_SORTS = List.of("issueStartAt", "issueEndAt", "validUntil", "createdAt", "discountRate");
+        String validatedSortBy = ALLOWED_SORTS.contains(sortBy) ? sortBy : "createdAt";
+
+        return PageRequest.of(validatedPage, validatedSize, Sort.by(direction, validatedSortBy));
     }
 }

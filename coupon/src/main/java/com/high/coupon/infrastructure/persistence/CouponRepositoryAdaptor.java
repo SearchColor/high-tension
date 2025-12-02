@@ -2,10 +2,11 @@ package com.high.coupon.infrastructure.persistence;
 
 import com.high.coupon.domain.entity.Coupon;
 import com.high.coupon.domain.repository.CouponRepository;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 @RequiredArgsConstructor
@@ -25,8 +26,7 @@ public class CouponRepositoryAdaptor implements CouponRepository {
     }
 
     @Override
-    public List<Coupon> findAll(){
-        return jpaCouponRepository.findAll();
+    public Page<Coupon> findAll(Pageable pageable) {
+        return jpaCouponRepository.findAll(pageable);
     }
-
 }
