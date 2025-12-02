@@ -2,6 +2,7 @@ package com.high.coupon.infrastructure.persistence;
 
 import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.repository.CouponIssueRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -31,5 +32,10 @@ public class CouponIssueRepositoryAdaptor implements CouponIssueRepository {
     @Override
     public Optional<CouponIssue> findById(UUID couponIssueId) {
         return jpaCouponIssueRepository.findById(couponIssueId);
+    }
+
+    @Override
+    public List<CouponIssue> findAllByUserId(UUID userId) {
+        return jpaCouponIssueRepository.findAllByUserIdWithCoupon(userId);
     }
 }
