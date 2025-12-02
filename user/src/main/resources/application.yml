@@ -1,0 +1,52 @@
+server:
+  port: 8100
+
+spring:
+  application:
+    name: user-service
+
+  # 로컬 개발용 DB 설정
+  datasource:
+    url: jdbc:mysql://localhost:3306/user_service?serverTimezone=UTC&characterEncoding=UTF-8
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:your-local-password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        default_schema: user_service
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always
+
+  # 로컬 개발용 JWT Secret
+  security:
+    jwt:
+      secret: ${JWT_SECRET:local-dev-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm}
+      access-token-validity: 3600000  # 1 hour
+      refresh-token-validity: 604800000  # 7 days
+
+  # Config Server 비활성화 (로컬 개발 시)
+  cloud:
+    config:
+      enabled: false
+
+# Eureka 비활성화 (로컬 단독 개발 시)
+eureka:
+  client:
+    enabled: false
+
+logging:
+  level:
+    com.high.user: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
