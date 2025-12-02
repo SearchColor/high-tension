@@ -1,6 +1,7 @@
 package com.high.order.presentation;
 
 import com.high.order.application.dto.request.OrderCreateRequest;
+import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
 import com.high.order.application.dto.request.OrderStatusChangeRequest;
 import com.high.order.application.dto.response.OrderDetailResponse;
 import com.high.order.application.dto.response.OrderItemIdResponse;
@@ -70,10 +71,17 @@ public class OrderController {
     }
 
     //주문 상태 변경
-    @PatchMapping("/{orderId}")
+    @PatchMapping("/{orderId}/status")
     public ResponseEntity<ApiResponse<OrderResponse>> changeOrderStatus(@PathVariable UUID orderId, @RequestBody
     OrderStatusChangeRequest request) {
         OrderResponse response = orderService.changeOrderStatus(orderId, request);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
+    }
+
+    @PatchMapping("/{orderId}/items/{orderItemId}/status")
+    public ResponseEntity<ApiResponse<OrderItemIdResponse>> changeOrderItemStatus(@PathVariable UUID orderId, @PathVariable UUID orderItemId,
+                                            @RequestBody @Valid OrderItemStatusChangeRequest request) {
+        OrderItemIdResponse response = orderService.changeOrderItemStatus(orderItemId, request);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 

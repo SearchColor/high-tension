@@ -1,5 +1,6 @@
 package com.high.order.domain.entity;
 
+import com.high.order.domain.exception.IllegalArgumentException;
 import com.high.order.domain.exception.InvalidOrderStateException;
 import com.high.order.domain.exception.OrderCancellationException;
 import com.high.order.domain.exception.OrderItemNotFoundExeption;
@@ -166,14 +167,14 @@ public class Order extends BaseEntity {
 
     // 단일 아이템 취소
     public void cancelItem(UUID orderItemId) {
-        if (!(this.orderStatus == OrderStatus.CREATED || this.orderStatus == OrderStatus.SUCCESS)) {
+        if (! (this.orderStatus.isCreated() || this.orderStatus.isSuccess()) ) {
             throw new OrderCancellationException();
         }
 
         OrderItem item = this.orderItems.stream()
             .filter(oi -> oi.getOrderItemId().equals(orderItemId))
             .findFirst()
-            .orElseThrow(OrderItemNotFoundExeption::new);
+            .orElseThrow(IllegalArgumentException::new);
 
         item.cancel();
     }

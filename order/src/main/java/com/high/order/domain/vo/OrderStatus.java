@@ -14,6 +14,11 @@ public enum OrderStatus {
         this.description = description;
     }
 
+    public boolean isCreated() {return this == CREATED;}
+    public boolean isCanceled() {return this == CANCELED;}
+    public boolean isSuccess() {return this == SUCCESS;}
+
+
     public boolean canTransitionTo(OrderStatus nextStatus) {
         return switch (this) {
             case CREATED -> nextStatus == SUCCESS || nextStatus == CANCELED;
