@@ -1,4 +1,4 @@
-package com.high.order.application.exception;
+package com.high.order.domain.exception;
 
 import com.library.module.exception.CustomException;
 import org.springframework.http.HttpStatus;

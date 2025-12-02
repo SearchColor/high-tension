@@ -1,6 +1,7 @@
 package com.high.order.domain.entity;
 
-import com.high.order.application.exception.OrderBadRequestException;
+import com.high.order.domain.exception.InvalidOrderStateException;
+import com.high.order.domain.exception.OrderCancellationException;
 import com.high.order.domain.vo.DeliveryStatus;
 import com.high.order.domain.vo.OrderItemStatus;
 import com.library.jpa.common.entity.BaseEntity;
@@ -84,7 +85,7 @@ public class OrderItem extends BaseEntity {
     public void updateItemStatus(OrderItemStatus nextStatus) {
         if (!this.orderItemStatus.canTransitionTo(nextStatus)) {
             System.out.println("[orderItem] 상태를 업데이트할 수 없음");
-            throw new OrderBadRequestException();
+            throw new InvalidOrderStateException();
         }
         System.out.println("[orderItem] 상태 업데이트 : " + nextStatus);
         this.orderItemStatus = nextStatus;
@@ -93,7 +94,7 @@ public class OrderItem extends BaseEntity {
     public void cancel() {
         if (!isCancellable()) {
             System.out.println("[orderItem] 취소할 수 없는 주문 상품");
-            throw new OrderBadRequestException();
+            throw new OrderCancellationException();
         }
         this.orderItemStatus = OrderItemStatus.CANCELED;
     }

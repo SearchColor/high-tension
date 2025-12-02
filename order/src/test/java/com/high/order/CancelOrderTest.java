@@ -7,8 +7,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.high.order.application.dto.response.OrderItemIdResponse;
 import com.high.order.application.dto.response.OrderResponse;
 import com.high.order.application.exception.OrderBadRequestException;
-import com.high.order.application.exception.OrderItemNotFoundExeption;
-import com.high.order.application.exception.OrderNotFoundException;
+import com.high.order.domain.exception.OrderItemNotFoundExeption;
+import com.high.order.domain.exception.OrderNotFoundException;
 import com.high.order.application.service.OrderService;
 import com.high.order.domain.entity.Order;
 import com.high.order.domain.entity.OrderItem;
@@ -360,7 +360,7 @@ public class CancelOrderTest {
             "CREATED, SUCCESS, READY, false",
             "CREATED, CANCELED, READY, false",
             "SUCCESS, SUCCESS, READY, true",
-            "SUCCESS, SUCCESS, IN_DELIVERY, false",
+            "SUCCESS, SUCCESS, DELIVERED, false",
             "CANCELED, CANCELED, READY, false"
         })
         void testCancelOrderWithVariousStates(

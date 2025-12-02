@@ -1,7 +1,8 @@
 package com.high.order.domain.entity;
 
-import com.high.order.application.exception.OrderBadRequestException;
-import com.high.order.application.exception.OrderItemNotFoundExeption;
+import com.high.order.domain.exception.InvalidOrderStateException;
+import com.high.order.domain.exception.OrderCancellationException;
+import com.high.order.domain.exception.OrderItemNotFoundExeption;
 import com.high.order.domain.vo.OrderItemStatus;
 import com.high.order.domain.vo.OrderStatus;
 import com.library.jpa.common.entity.BaseEntity;
@@ -109,7 +110,7 @@ public class Order extends BaseEntity {
 
     private void addOrderItem(OrderItem orderItem) {
         if (orderItem == null) {
-            throw new IllegalArgumentException("주문 아이템은 null일 수 없습니다.");
+            throw new OrderItemNotFoundExeption();
         }
         this.orderItems.add(orderItem);
         orderItem.setOrder(this);
@@ -135,7 +136,7 @@ public class Order extends BaseEntity {
 
     public void updateStatus(OrderStatus nextStatus) {
         if(!this.orderStatus.canTransitionTo(nextStatus)) {
-            throw new OrderBadRequestException();
+            throw new InvalidOrderStateException();
         }
         this.orderStatus = nextStatus;
 
@@ -154,7 +155,7 @@ public class Order extends BaseEntity {
     // 전체 취소
     public void cancelOrder() {
         if (!(this.orderStatus == OrderStatus.CREATED || this.orderStatus == OrderStatus.SUCCESS)) {
-            throw new IllegalStateException("주문 상태 때문에 전체 취소 불가");
+            throw new OrderCancellationException();
         }
 
         for (OrderItem item : this.orderItems) {
@@ -166,7 +167,7 @@ public class Order extends BaseEntity {
     // 단일 아이템 취소
     public void cancelItem(UUID orderItemId) {
         if (!(this.orderStatus == OrderStatus.CREATED || this.orderStatus == OrderStatus.SUCCESS)) {
-            throw new IllegalStateException("주문 상태 때문에 아이템 취소 불가");
+            throw new OrderCancellationException();
         }
 
         OrderItem item = this.orderItems.stream()
