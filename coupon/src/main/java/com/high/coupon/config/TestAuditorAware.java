@@ -16,6 +16,6 @@ public class TestAuditorAware implements AuditorAware<UUID> {
 
     @Override
     public Optional<UUID> getCurrentAuditor() {
-        return Optional.of(TEST_USER_ID); // 테스트 유저 임시값 -> UUID 변경 필요
+        return Optional.of(TEST_USER_ID);
     }
 }

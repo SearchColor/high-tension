@@ -6,5 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface JpaCouponIssueRepository extends JpaRepository<CouponIssue, UUID> {
 
-    // todo: 쿠폰 생성 - 조회 기본 구현 완료 후 발급 이력 개발
+    boolean existsByCouponIdAndUserId(UUID couponId, UUID userId);
+    long countByCouponId(UUID couponId);
 }
