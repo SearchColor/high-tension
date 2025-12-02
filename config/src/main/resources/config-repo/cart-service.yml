@@ -7,7 +7,7 @@ spring:
   data:
     mongodb:
       # Connection String 사용 (가장 일반적)
-      uri: mongodb://admin:admin1234@mongodb:27017/msa_mongo_db?authSource=admin
+      uri: mongodb://admin:admin1234@localhost:27017/msa_mongo_db?authSource=admin
 
 management:
   zipkin:
