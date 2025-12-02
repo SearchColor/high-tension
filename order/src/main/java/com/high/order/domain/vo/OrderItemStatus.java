@@ -27,6 +27,10 @@ public enum OrderItemStatus {
         return this == SUCCESS || this == RETURN_REQUEST;
     }
 
+    public boolean cannotChangeDeliveryStatus() {
+        return this == CREATED || this == CANCELED;
+    }
+
 
     public boolean canTransitionTo(OrderItemStatus nextStatus) {
         return switch (this) {

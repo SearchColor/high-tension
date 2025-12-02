@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.toList;
 
 import com.high.order.application.dto.internal.OrderItemCreateInfo;
 import com.high.order.application.dto.request.OrderCreateRequest;
+import com.high.order.application.dto.request.OrderItemDeliveryStatusChangeRequest;
 import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
 import com.high.order.application.dto.request.OrderStatusChangeRequest;
 import com.high.order.application.dto.response.OrderDetailResponse;
@@ -199,7 +200,7 @@ public class OrderService {
         return OrderResponse.from(order);
     }
 
-    public OrderItemIdResponse changeOrderItemStatus(UUID orderItemId, OrderItemStatusChangeRequest request) {
+    public OrderItemIdResponse changeOrderItemStatus(UUID orderId, UUID orderItemId, OrderItemStatusChangeRequest request) {
 
         OrderItem orderItem = getOrderItemForUser(orderItemId);
         OrderItemStatus currentStatus = getOrderItemForUser(orderItemId).getOrderItemStatus();
@@ -241,6 +242,21 @@ public class OrderService {
     }
 
 
+    public OrderItemIdResponse changeOrderItemDeliveryStatus(UUID orderId, UUID orderItemId, OrderItemDeliveryStatusChangeRequest request) {
+        OrderItem orderItem = getOrderItemForUser(orderItemId);
+
+        if(orderItem.getOrderItemStatus().cannotChangeDeliveryStatus()) {
+            log.info("주문이 CREATED 상태이거나 CANCELED면 배송상태 변경 불가");
+            throw new OrderBadRequestException();
+        }
+        orderItem.updateDeliveryStatus(request.deliveryStatus());
+        orderItemRepository.save(orderItem);
+
+        return OrderItemIdResponse.from(orderItem);
+    }
+
+
+
     public Order getOrderForUser(UUID orderId) {
         log.info("주문 조회 실패");
         return orderRepository.findByOrderIdAndDeletedAtIsNull(orderId).orElseThrow(OrderNotFoundException::new);
@@ -255,5 +271,4 @@ public class OrderService {
         log.info("주문 아이템 조회 실패");
         return orderItemRepository.findByOrderItemIdAndDeletedAtIsNull(orderItemId).orElseThrow(OrderItemNotFoundExeption::new);
     }
-
 }

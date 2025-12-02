@@ -1,6 +1,7 @@
 package com.high.order.presentation;
 
 import com.high.order.application.dto.request.OrderCreateRequest;
+import com.high.order.application.dto.request.OrderItemDeliveryStatusChangeRequest;
 import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
 import com.high.order.application.dto.request.OrderStatusChangeRequest;
 import com.high.order.application.dto.response.OrderDetailResponse;
@@ -13,6 +14,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/orders")
@@ -78,10 +81,19 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
+    //주문 아이템 환불 상태 변경
     @PatchMapping("/{orderId}/items/{orderItemId}/status")
     public ResponseEntity<ApiResponse<OrderItemIdResponse>> changeOrderItemStatus(@PathVariable UUID orderId, @PathVariable UUID orderItemId,
                                             @RequestBody @Valid OrderItemStatusChangeRequest request) {
-        OrderItemIdResponse response = orderService.changeOrderItemStatus(orderItemId, request);
+        OrderItemIdResponse response = orderService.changeOrderItemStatus(orderId, orderItemId, request);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
+    }
+
+    @PatchMapping("/{orderId}/items/{orderItemId}/delivery-status")
+    public ResponseEntity<ApiResponse<OrderItemIdResponse>> changeOrderItemDeliveryStatus(
+                        @PathVariable UUID orderId, @PathVariable UUID orderItemId, @RequestBody @Valid OrderItemDeliveryStatusChangeRequest request) {
+        log.info("진입");
+        OrderItemIdResponse response = orderService.changeOrderItemDeliveryStatus(orderId, orderItemId, request);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
