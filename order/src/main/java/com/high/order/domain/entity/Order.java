@@ -152,6 +152,23 @@ public class Order extends BaseEntity {
         }
     }
 
+    public boolean validateUpdatableDeliveryInfo() {
+        return orderItems.stream().allMatch(item -> item.getDeliveryStatus().isUpdatableDeliveryInfo());
+    }
+
+    public void updateDeliveryInfo( String recipient,
+                                    String recipientContact,
+                                    String deliveryAddress,
+                                    String detailAddress,
+                                    String requestMessage) {
+        if(recipient != null) this.recipient = recipient;
+        if(recipientContact != null) this.recipientContact = recipientContact;
+        if(deliveryAddress != null) this.deliveryAddress = deliveryAddress;
+        if(detailAddress != null) this.detailAddress = detailAddress;
+        if(requestMessage != null) this.requestMessage = requestMessage;
+    }
+
+
 
     // 전체 취소
     public void cancelOrder() {

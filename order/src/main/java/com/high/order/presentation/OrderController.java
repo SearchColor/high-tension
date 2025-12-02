@@ -4,6 +4,7 @@ import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.application.dto.request.OrderItemDeliveryStatusChangeRequest;
 import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
 import com.high.order.application.dto.request.OrderStatusChangeRequest;
+import com.high.order.application.dto.request.OrderUpdateRequest;
 import com.high.order.application.dto.response.OrderDetailResponse;
 import com.high.order.application.dto.response.OrderItemIdResponse;
 import com.high.order.application.dto.response.OrderListResponse;
@@ -73,6 +74,13 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
+    //주문 정보 변경
+    @PatchMapping("/{orderId}")
+    public ResponseEntity<ApiResponse<OrderResponse>> updateOrder(@PathVariable UUID orderId, @Valid @RequestBody OrderUpdateRequest request) {
+        OrderResponse response = orderService.updateOrder(orderId,request);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
+    }
+
     //주문 상태 변경
     @PatchMapping("/{orderId}/status")
     public ResponseEntity<ApiResponse<OrderResponse>> changeOrderStatus(@PathVariable UUID orderId, @RequestBody
@@ -89,6 +97,7 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
+    //주문 아이템 배송 상태 변경
     @PatchMapping("/{orderId}/items/{orderItemId}/delivery-status")
     public ResponseEntity<ApiResponse<OrderItemIdResponse>> changeOrderItemDeliveryStatus(
                         @PathVariable UUID orderId, @PathVariable UUID orderItemId, @RequestBody @Valid OrderItemDeliveryStatusChangeRequest request) {

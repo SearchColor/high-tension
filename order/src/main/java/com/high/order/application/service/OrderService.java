@@ -7,6 +7,7 @@ import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.application.dto.request.OrderItemDeliveryStatusChangeRequest;
 import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
 import com.high.order.application.dto.request.OrderStatusChangeRequest;
+import com.high.order.application.dto.request.OrderUpdateRequest;
 import com.high.order.application.dto.response.OrderDetailResponse;
 import com.high.order.application.dto.response.OrderItemIdResponse;
 import com.high.order.application.dto.response.OrderListResponse;
@@ -21,6 +22,7 @@ import com.high.order.domain.repository.OrderRepository;
 import com.high.order.domain.vo.OrderItemStatus;
 import com.high.order.domain.vo.OrderStatus;
 import com.high.order.infrastructure.client.ProductDto;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +52,7 @@ public class OrderService {
          * TODO:
          *  1. 로그인한 사용자 권한 검증
          *  2. productID 존재여부 검증
-         *  3. couponID 존재여부 검증
+         *  3. couponID 존재여부 검증 (사용가능한지)
          */
 
         List<OrderItemCreateInfo> orderItemCreateInfoList = request.itemList()
@@ -270,5 +272,35 @@ public class OrderService {
     public OrderItem getOrderItemForUser(UUID orderItemId) {
         log.info("주문 아이템 조회 실패");
         return orderItemRepository.findByOrderItemIdAndDeletedAtIsNull(orderItemId).orElseThrow(OrderItemNotFoundExeption::new);
+    }
+
+    public OrderResponse updateOrder(UUID orderId, @Valid OrderUpdateRequest request) {
+
+        Order order = getOrderForUser(orderId);
+
+        if(!order.getOrderStatus().isUpdatableDeliveryInfo()) {
+            log.info("주문이 취소되어 배송정보 변경이 불가능합니다.");
+            throw new OrderBadRequestException();
+        }
+
+        if(!order.validateUpdatableDeliveryInfo()) {
+            log.info("배송이 시작되어 배송정보 변경이 불가능합니다.");
+            throw new OrderBadRequestException();
+        }
+
+        String recipient = request.recipient().orElse(null);
+        String recipientContact =  request.recipientContact().orElse(null);
+        String deliveryAddress = request.deliveryAddress().orElse(null);
+        String detailAddress = request.detailAddress().orElse(null);
+        String requestMessage = request.requestMessage().orElse(null);
+
+        if(recipientContact != null && !recipientContact.matches("^(010)(-?\\d{4})(-?\\d{4})$")) {
+            throw new OrderBadRequestException();
+        }
+
+        order.updateDeliveryInfo(recipient, recipientContact, deliveryAddress, detailAddress, requestMessage);
+        orderRepository.save(order);
+
+        return OrderResponse.from(order);
     }
 }
