@@ -1,7 +1,10 @@
 package com.high.order.domain.entity;
 
+import com.high.order.domain.exception.InvalidOrderStateException;
+import com.high.order.domain.exception.OrderCancellationException;
 import com.high.order.domain.vo.DeliveryStatus;
 import com.high.order.domain.vo.OrderItemStatus;
+import com.library.jpa.common.entity.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -18,10 +21,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "p_orderItem")
+@Table(name = "p_order_item")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class OrderItem {
+public class OrderItem extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -71,7 +74,29 @@ public class OrderItem {
 
     private void calculateAmounts() {
         this.itemTotalPrice = this.quantity * this.unitPrice;
+        System.out.println("[Order] 총 금액 계산 완료 : " + this.itemTotalPrice);
+    }
 
+    public boolean isCancellable() {
+        return (this.orderItemStatus == OrderItemStatus.CREATED || this.orderItemStatus == OrderItemStatus.SUCCESS)
+            && this.deliveryStatus == DeliveryStatus.READY;
+    }
+
+    public void updateItemStatus(OrderItemStatus nextStatus) {
+        if (!this.orderItemStatus.canTransitionTo(nextStatus)) {
+            System.out.println("[orderItem] 상태를 업데이트할 수 없음");
+            throw new InvalidOrderStateException();
+        }
+        System.out.println("[orderItem] 상태 업데이트 : " + nextStatus);
+        this.orderItemStatus = nextStatus;
+    }
+
+    public void cancel() {
+        if (!isCancellable()) {
+            System.out.println("[orderItem] 취소할 수 없는 주문 상품");
+            throw new OrderCancellationException();
+        }
+        this.orderItemStatus = OrderItemStatus.CANCELED;
     }
 
     void setOrder(Order order) {

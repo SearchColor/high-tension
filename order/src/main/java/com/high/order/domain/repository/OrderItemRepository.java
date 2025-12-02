@@ -1,5 +1,9 @@
 package com.high.order.domain.repository;
 
-public interface OrderItemRepository {
+import com.high.order.domain.entity.OrderItem;
+import java.util.Optional;
+import java.util.UUID;
 
+public interface OrderItemRepository {
+    Optional<OrderItem> findByOrderItemIdAndDeletedAtIsNull(UUID orderItemId);
 }

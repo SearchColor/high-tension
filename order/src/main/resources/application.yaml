@@ -24,3 +24,9 @@ eureka:
   instance:
     instance-id: order-service
     hostname: localhost
+
+logging:
+  level:
+    org.springframework.transaction: TRACE
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE

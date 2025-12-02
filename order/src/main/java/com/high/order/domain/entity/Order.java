@@ -1,6 +1,11 @@
 package com.high.order.domain.entity;
 
+import com.high.order.domain.exception.InvalidOrderStateException;
+import com.high.order.domain.exception.OrderCancellationException;
+import com.high.order.domain.exception.OrderItemNotFoundExeption;
+import com.high.order.domain.vo.OrderItemStatus;
 import com.high.order.domain.vo.OrderStatus;
+import com.library.jpa.common.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -21,7 +26,7 @@ import lombok.NoArgsConstructor;
 @Table(name="p_order")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Order {
+public class Order extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID orderId;
@@ -50,7 +55,7 @@ public class Order {
     private String requestMessage;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> orderItems;
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     private Order(UUID customerId, UUID couponId,
         String recipient, String recipientContact,
@@ -67,13 +72,12 @@ public class Order {
         this.totalPrice = 0;
         this.discountAmount = 0;
         this.paidAmount = 0;
-        this.orderItems = new ArrayList<>();
     }
 
     /**
      * 단일 상품 주문 생성
      */
-    public static Order createOrder(
+    public static Order createOrder (
         UUID customerId,
         UUID couponId,
         String recipient,
@@ -106,7 +110,7 @@ public class Order {
 
     private void addOrderItem(OrderItem orderItem) {
         if (orderItem == null) {
-            throw new IllegalArgumentException("주문 아이템은 null일 수 없습니다.");
+            throw new OrderItemNotFoundExeption();
         }
         this.orderItems.add(orderItem);
         orderItem.setOrder(this);
@@ -121,8 +125,64 @@ public class Order {
         this.paidAmount = this.totalPrice - this.discountAmount;
     }
 
+    public void updateTotalPrice(Integer recalculatingPrice) {
+        this.totalPrice = totalPrice - recalculatingPrice;
+    }
+
     private Integer calculateDiscount() {
         // TODO: 쿠폰 할인율 어떻게?
         return couponId != null ? 0 : 0;
+    }
+
+    public void updateStatus(OrderStatus nextStatus) {
+        if(!this.orderStatus.canTransitionTo(nextStatus)) {
+            throw new InvalidOrderStateException();
+        }
+        this.orderStatus = nextStatus;
+
+        OrderItemStatus nextItemStatus = switch (nextStatus) {
+            case CREATED -> OrderItemStatus.CREATED;
+            case SUCCESS -> OrderItemStatus.SUCCESS;
+            case CANCELED -> OrderItemStatus.CANCELED;
+        };
+
+        for(OrderItem orderItem : orderItems) {
+            orderItem.updateItemStatus(nextItemStatus);
+        }
+    }
+
+
+    // 전체 취소
+    public void cancelOrder() {
+        if (!(this.orderStatus == OrderStatus.CREATED || this.orderStatus == OrderStatus.SUCCESS)) {
+            throw new OrderCancellationException();
+        }
+
+        for (OrderItem item : this.orderItems) {
+            item.cancel();
+        }
+        this.orderStatus = OrderStatus.CANCELED;
+    }
+
+    // 단일 아이템 취소
+    public void cancelItem(UUID orderItemId) {
+        if (!(this.orderStatus == OrderStatus.CREATED || this.orderStatus == OrderStatus.SUCCESS)) {
+            throw new OrderCancellationException();
+        }
+
+        OrderItem item = this.orderItems.stream()
+            .filter(oi -> oi.getOrderItemId().equals(orderItemId))
+            .findFirst()
+            .orElseThrow(OrderItemNotFoundExeption::new);
+
+        item.cancel();
+    }
+
+
+
+    @Override
+    public void softDelete(String deletedBy) {
+        super.softDelete(deletedBy);
+        this.orderItems.forEach(orderItem -> orderItem.softDelete(deletedBy));
     }
 }
