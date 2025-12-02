@@ -25,6 +25,13 @@ spring:
     init:
       mode: always
 
+  # Security JWT Secret (256-bit)
+  security:
+    jwt:
+      secret: ${JWT_SECRET:change-this-secret-key-in-production-must-be-at-least-256-bits-long}
+      access-token-validity: 3600000  # 1 hour
+      refresh-token-validity: 604800000  # 7 days
+
 management:
   zipkin:
     tracing:
@@ -32,3 +39,10 @@ management:
   tracing:
     sampling:
       probability: 1.0
+
+logging:
+  level:
+    com.high.user: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
