@@ -8,7 +8,7 @@ import com.high.order.application.dto.response.OrderItemIdResponse;
 import com.high.order.application.dto.response.OrderResponse;
 import com.high.order.application.exception.OrderBadRequestException;
 import com.high.order.domain.exception.OrderItemNotFoundExeption;
-import com.high.order.domain.exception.OrderNotFoundException;
+import com.high.order.application.exception.OrderNotFoundException;
 import com.high.order.application.service.OrderService;
 import com.high.order.domain.entity.Order;
 import com.high.order.domain.entity.OrderItem;
@@ -232,7 +232,7 @@ public class CancelOrderTest {
                 OrderItemStatus.CREATED,
                 DeliveryStatus.READY
             );
-            order.softDelete("admin");
+            order.softDelete(UUID.randomUUID());
             orderRepository.save(order);
             entityManager.flush();
             entityManager.clear();

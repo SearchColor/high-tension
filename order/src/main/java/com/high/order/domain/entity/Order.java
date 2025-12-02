@@ -181,7 +181,7 @@ public class Order extends BaseEntity {
 
 
     @Override
-    public void softDelete(String deletedBy) {
+    public void softDelete(UUID deletedBy) {
         super.softDelete(deletedBy);
         this.orderItems.forEach(orderItem -> orderItem.softDelete(deletedBy));
     }
