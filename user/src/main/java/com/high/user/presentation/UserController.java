@@ -25,41 +25,40 @@ public class UserController {
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<UserResponse>> signup(
-        @Valid @RequestBody SignupRequest request
-    ) {
+            @Valid @RequestBody SignupRequest request) {
         log.info("Signup request received: email={}", request.email());
 
         UserResponse response = userAuthService.signup(request);
 
         return ResponseEntity
-            .status(HttpStatus.CREATED)
-            .body(ApiResponse.success(response));
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response));
     }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<TokenResponse>> login(
-        @Valid @RequestBody LoginRequest request
-    ) {
+            @Valid @RequestBody LoginRequest request) {
         log.info("Login request received: email={}", request.email());
 
         TokenResponse response = userAuthService.login(request);
 
         return ResponseEntity
-            .ok(ApiResponse.success(response));
+                .ok(ApiResponse.success(response));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout() {
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @RequestHeader("Authorization") String bearerToken) {
         // SecurityContext에서 userId 추출
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userId = authentication.getName();
 
+        String accessToken = bearerToken.substring(7);
+
         log.info("Logout request received: userId={}", userId);
 
-        userAuthService.logout(userId);
+        userAuthService.logout(accessToken, userId);
 
-        return ResponseEntity
-            .status(HttpStatus.NO_CONTENT)
-            .build();
+        return ResponseEntity.ok(ApiResponse.success("로그아웃 되었습니다."));
     }
 }
