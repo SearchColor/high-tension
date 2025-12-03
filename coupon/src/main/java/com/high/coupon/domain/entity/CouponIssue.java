@@ -1,5 +1,9 @@
 package com.high.coupon.domain.entity;
 
+import com.high.coupon.domain.exception.CouponAlreadyUsedException;
+import com.high.coupon.domain.exception.CouponIssuePeriodInvalidException;
+import com.high.coupon.domain.exception.CouponNotOwnedException;
+import com.high.coupon.domain.exception.CouponNotValidPeriodException;
 import com.library.jpa.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -55,4 +59,50 @@ public class CouponIssue extends BaseEntity {
 
     @Column(nullable = false)
     private LocalDateTime validEndAt;
+
+
+    /**
+     * 쿠폰 발급
+     */
+    public static CouponIssue issueCoupon(Coupon coupon, UUID userId, LocalDateTime now){
+
+        validateIssuePeriod(coupon, now);
+
+        return CouponIssue.builder()
+                .coupon(coupon)
+                .userId(userId)
+                .issuedAt(now)
+                .validStartAt(now)
+                .validEndAt(coupon.getValidUntil()) // 쿠폰 유효 기간
+                .isUsed(false)
+                .build();
+    }
+
+    // 발급 기간 체크 메서드
+    private static void validateIssuePeriod(Coupon coupon, LocalDateTime now) {
+        if (now.isBefore(coupon.getIssueStartAt()) || now.isAfter(coupon.getIssueEndAt())) {
+            throw new CouponIssuePeriodInvalidException();
+        }
+    }
+
+    /**
+     * 쿠폰 사용 처리
+     * todo 사용자 인증 처리 정리 필요 (service)
+     */
+    public void useCoupon(UUID userId, LocalDateTime now){
+        if (Boolean.TRUE.equals(this.isUsed)){
+            throw new CouponAlreadyUsedException();
+        }
+
+        if (!this.userId.equals(userId)){
+            throw new CouponNotOwnedException();
+        }
+
+        if (now.isBefore(validStartAt) || now.isAfter(validEndAt)){
+            throw new CouponNotValidPeriodException();
+        }
+
+        this.isUsed = true;
+        this.usedAt = now;
+    }
 }
