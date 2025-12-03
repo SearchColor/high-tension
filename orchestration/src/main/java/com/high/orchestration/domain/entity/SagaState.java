@@ -4,7 +4,10 @@ import com.high.orchestration.domain.vo.CurrentStep;
 import com.high.orchestration.domain.vo.SagaStatus;
 import com.high.orchestration.domain.vo.SagaType;
 import com.library.jpa.common.entity.BaseUpdateEntity;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
@@ -23,12 +26,16 @@ public class SagaState extends BaseUpdateEntity {
 
     private UUID orderId;
 
+    @Enumerated(EnumType.STRING)
     private SagaType sagaType;
 
+    @Enumerated(EnumType.STRING)
     private SagaStatus sagaStatus;
 
+    @Enumerated(EnumType.STRING)
     private CurrentStep currentStep;
 
+    @Column(columnDefinition = "TEXT")
     private String payload;
 
     private String errorMessage;
