@@ -1,5 +1,8 @@
 package com.high.user.infrastructure.config;
 
+import com.high.user.infrastructure.security.CustomAccessDeniedHandler;
+import com.high.user.infrastructure.security.JwtAuthenticationEntryPoint;
+import com.high.user.infrastructure.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +13,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -21,6 +25,10 @@ import java.util.List;
 @EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -35,15 +43,26 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-            // 권한 설정 (기본 구조, Issue #14에서 상세 구현)
+            // 권한 설정
             .authorizeHttpRequests(auth -> auth
-                // Health Check는 인증 불필요 (초기 세팅 확인용)
+                // Health Check는 인증 불필요
                 .requestMatchers("/api/v1/health/**").permitAll()
-                // 회원가입, 로그인은 인증 불필요
-                .requestMatchers("/api/v1/users/signup", "/api/v1/users/login").permitAll()
-                // 나머지는 모두 허용 (임시, Issue #14에서 수정)
-                .anyRequest().permitAll()
-            );
+                // 회원가입, 로그인, 토큰 재발급은 인증 불필요
+                .requestMatchers("/api/v1/users/signup", "/api/v1/users/login", "/api/v1/users/reissue").permitAll()
+                // MASTER 전용 API
+                .requestMatchers("/api/v1/users/admin/**").hasRole("MASTER")
+                // 나머지는 모두 인증 필요
+                .anyRequest().authenticated()
+            )
+
+            // 예외 처리 핸들러 설정
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)  // 401 Unauthorized
+                .accessDeniedHandler(customAccessDeniedHandler)         // 403 Forbidden
+            )
+
+            // JWT 필터 추가 (UsernamePasswordAuthenticationFilter 이전에 실행)
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
