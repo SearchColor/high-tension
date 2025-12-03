@@ -1,5 +1,6 @@
 package com.high.user.infrastructure.security;
 
+import com.high.user.domain.service.TokenProvider;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -15,17 +16,16 @@ import java.util.UUID;
 
 @Slf4j
 @Component
-public class JwtTokenProvider {
+public class JwtTokenProvider implements TokenProvider {
 
     private final SecretKey secretKey;
     private final long accessTokenValidity;
     private final long refreshTokenValidity;
 
     public JwtTokenProvider(
-        @Value("${spring.security.jwt.secret}") String secret,
-        @Value("${spring.security.jwt.access-token-validity}") long accessTokenValidity,
-        @Value("${spring.security.jwt.refresh-token-validity}") long refreshTokenValidity
-    ) {
+            @Value("${spring.security.jwt.secret}") String secret,
+            @Value("${spring.security.jwt.access-token-validity}") long accessTokenValidity,
+            @Value("${spring.security.jwt.refresh-token-validity}") long refreshTokenValidity) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessTokenValidity = accessTokenValidity;
         this.refreshTokenValidity = refreshTokenValidity;
@@ -36,12 +36,12 @@ public class JwtTokenProvider {
         Date expiration = new Date(now.getTime() + accessTokenValidity);
 
         return Jwts.builder()
-            .setSubject(userId.toString())
-            .claim("role", role)
-            .setIssuedAt(now)
-            .setExpiration(expiration)
-            .signWith(secretKey, SignatureAlgorithm.HS256)
-            .compact();
+                .setSubject(userId.toString())
+                .claim("role", role)
+                .setIssuedAt(now)
+                .setExpiration(expiration)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
     }
 
     public String createRefreshToken(UUID userId) {
@@ -49,19 +49,19 @@ public class JwtTokenProvider {
         Date expiration = new Date(now.getTime() + refreshTokenValidity);
 
         return Jwts.builder()
-            .setSubject(userId.toString())
-            .setIssuedAt(now)
-            .setExpiration(expiration)
-            .signWith(secretKey, SignatureAlgorithm.HS256)
-            .compact();
+                .setSubject(userId.toString())
+                .setIssuedAt(now)
+                .setExpiration(expiration)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
     }
 
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
-                .setSigningKey(secretKey)
-                .build()
-                .parseClaimsJws(token);
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token);
             return true;
         } catch (Exception e) {
             log.debug("Invalid JWT token: {}", e.getMessage());
@@ -71,25 +71,39 @@ public class JwtTokenProvider {
 
     public UUID getUserId(String token) {
         Claims claims = Jwts.parserBuilder()
-            .setSigningKey(secretKey)
-            .build()
-            .parseClaimsJws(token)
-            .getBody();
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
 
         return UUID.fromString(claims.getSubject());
     }
 
     public String getRole(String token) {
         Claims claims = Jwts.parserBuilder()
-            .setSigningKey(secretKey)
-            .build()
-            .parseClaimsJws(token)
-            .getBody();
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
 
         return claims.get("role", String.class);
     }
 
-    public long getAccessTokenValidity() {
+    @Override
+    public Long getAccessTokenValidity() {
         return accessTokenValidity;
+    }
+
+    public long getRemainingTime(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        Date expiration = claims.getExpiration();
+        Date now = new Date();
+
+        return Math.max(0, expiration.getTime() - now.getTime());
     }
 }
