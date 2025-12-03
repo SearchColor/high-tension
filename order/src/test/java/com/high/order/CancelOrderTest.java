@@ -18,6 +18,7 @@ import com.high.order.domain.vo.DeliveryStatus;
 import com.high.order.domain.vo.OrderItemStatus;
 import com.high.order.domain.vo.OrderStatus;
 import jakarta.persistence.EntityManager;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.*;
@@ -73,7 +74,8 @@ public class CancelOrderTest {
             "서울시 강남구",
             "101동 101호",
             "테스트 주문",
-            List.of(orderItem)
+            List.of(orderItem),
+            BigDecimal.valueOf(20)
         );
 
         Order savedOrder = orderRepository.save(order);
@@ -405,7 +407,7 @@ public class CancelOrderTest {
 
             Order order = Order.createOrder(
                 testCustomerId, null, "테스트", "010-1234-5678",
-                "서울", "101호", "메시지", List.of(item1, item2)
+                "서울", "101호", "메시지", List.of(item1, item2), BigDecimal.valueOf(20)
             );
 
             orderRepository.save(order);
@@ -437,7 +439,7 @@ public class CancelOrderTest {
 
             Order order = Order.createOrder(
                 testCustomerId, null, "테스트", "010-1234-5678",
-                "서울", "101호", "메시지", List.of(item1, item2)
+                "서울", "101호", "메시지", List.of(item1, item2), BigDecimal.valueOf(20)
             );
 
             orderRepository.save(order);
