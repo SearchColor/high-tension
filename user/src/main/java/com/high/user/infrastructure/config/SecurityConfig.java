@@ -35,13 +35,11 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-            // 권한 설정 (기본 구조, Issue #14에서 상세 구현)
+            // 권한 설정
             .authorizeHttpRequests(auth -> auth
-                // Health Check는 인증 불필요 (초기 세팅 확인용)
-                .requestMatchers("/api/v1/health/**").permitAll()
                 // 회원가입, 로그인은 인증 불필요
                 .requestMatchers("/api/v1/users/signup", "/api/v1/users/login").permitAll()
-                // 나머지는 모두 허용 (임시, Issue #14에서 수정)
+                // 나머지는 모두 허용 (임시, 추후 권한별 설정 필요)
                 .anyRequest().permitAll()
             );
 
