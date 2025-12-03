@@ -20,6 +20,10 @@ public enum UserErrorCode implements BaseErrorCode {
 
     // 22xx: Authentication Errors
     INVALID_CREDENTIALS(2200, HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 일치하지 않습니다"),
+    INVALID_TOKEN(2201, HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다"),
+    EXPIRED_TOKEN(2202, HttpStatus.UNAUTHORIZED, "만료된 토큰입니다"),
+    INVALID_REFRESH_TOKEN(2203, HttpStatus.UNAUTHORIZED, "유효하지 않은 Refresh Token입니다"),
+    DUPLICATE_SESSION(2402, HttpStatus.CONFLICT, "이미 로그인된 세션이 있습니다"),
 
     // 24xx: Account Status Errors
     INACTIVE_ACCOUNT(2400, HttpStatus.FORBIDDEN, "비활성화된 계정입니다"),
