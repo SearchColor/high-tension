@@ -37,7 +37,7 @@ public class Coupon extends BaseEntity {
     private String description;
 
     @Column(nullable = false, precision = 5, scale = 2)
-    private BigDecimal discountRate; // 0~1 범위 저장
+    private BigDecimal discountRate;
 
     @Column(nullable = false)
     private Integer totalQuantity;
@@ -58,12 +58,12 @@ public class Coupon extends BaseEntity {
             Integer totalQuantity, LocalDateTime issueStartAt, LocalDateTime issueEndAt, LocalDateTime validUntil){
 
         validateDates(issueStartAt, issueEndAt, validUntil);
-        BigDecimal convertDiscountRate = convertAndValidateDiscountRate(discountRate);
+        validateDiscountRate(discountRate);
 
         return Coupon.builder()
                 .name(name)
                 .description(description)
-                .discountRate(convertDiscountRate) // 10(입력) -> 0.1 저장 (0~1) 할인률 범위
+                .discountRate(discountRate)
                 .totalQuantity(totalQuantity)
                 .issueStartAt(issueStartAt)
                 .issueEndAt(issueEndAt)
@@ -84,14 +84,15 @@ public class Coupon extends BaseEntity {
         }
     }
 
-    private static BigDecimal convertAndValidateDiscountRate(BigDecimal rate) {
-        if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0 || rate.compareTo(BigDecimal.valueOf(100)) > 0) {
+    /**
+     * 할인율 범위 체크
+     */
+    private static void validateDiscountRate(BigDecimal discountRate) {
+        if (discountRate == null
+                || discountRate.compareTo(BigDecimal.ZERO) <= 0
+                || discountRate.compareTo(BigDecimal.valueOf(100)) > 0
+                || discountRate.scale() > 0) {
             throw new CouponInvalidDiscountRateException();
         }
-        if (rate.scale() > 0){
-            throw new CouponInvalidDiscountRateException();
-        }
-
-        return rate.divide(BigDecimal.valueOf(100));
     }
 }
