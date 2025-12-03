@@ -93,6 +93,19 @@ public class CouponIssueService {
         return CouponUseResponse.from(couponIssue);
     }
 
+    // 쿠폰 복원 처리 (주문/결제 취소)
+    @Transactional
+    public CouponUseResponse restoreCoupon(UUID couponIssueId) {
+        CouponIssue couponIssue = getCouponIssue(couponIssueId);
+
+        LocalDateTime now = LocalDateTime.now();
+        couponIssue.restoreCoupon(now);
+
+        log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 복원 : couponIssueId={}", couponIssueId);
+
+        return CouponUseResponse.from(couponIssue);
+    }
+
 
     /** -----------------------
      * 쿠폰 발급 이력 ID 조회 메서드
