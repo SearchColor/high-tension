@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.high.payment.application.dto.CreatePaymentRequest;
+import com.high.payment.application.dto.CreatePaymentResponse;
 import com.high.payment.application.dto.IamportWebhookDto;
 import com.high.payment.application.service.PaymentService;
 
@@ -44,5 +46,17 @@ public class PaymentController {
 
 		// Iamport에게 200 OK 응답을 보내야 재시도를 하지 않습니다.
 		return ResponseEntity.status(HttpStatus.OK).build();
+	}
+
+	// 결제 생성 API (POST /api/v1/payments)
+	@PostMapping
+	public ResponseEntity<CreatePaymentResponse> createPayment(@RequestBody CreatePaymentRequest request) {
+		log.info("결제 생성 요청 수신: OrderId={}, Amount={}", request.orderId(), request.amount());
+
+		// 1. 서비스 인터페이스를 통해 비즈니스 로직 호출
+		CreatePaymentResponse response = paymentService.createPayment(request);
+
+		// 2. 성공 시 201 Created 응답 반환
+		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 }

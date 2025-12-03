@@ -6,12 +6,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.payment.application.dto.CreatePaymentRequest;
+import com.high.payment.application.dto.CreatePaymentResponse;
 import com.high.payment.application.dto.PaymentCompletedEvent;
 import com.high.payment.application.port.out.IamportClientPort;
 import com.high.payment.domain.model.Payment;
 import com.high.payment.domain.model.PaymentOutbox;
 import com.high.payment.domain.model.PaymentStatus;
 import com.high.payment.domain.port.out.PaymentOutboxRepositoryPort;
+import com.high.payment.domain.port.out.PaymentRepositoryPort;
 import com.high.payment.domain.repository.PaymentRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ public class PaymentServiceImpl implements PaymentService {
 	private final PaymentOutboxRepositoryPort outboxRepository;
 	private final IamportClientPort iamportClient;
 	private final ObjectMapper objectMapper;
+	private final PaymentRepositoryPort paymentRepositoryPort; // DB Repository
 
 	@Override
 	@Transactional // DB 저장과 Outbox 저장을 하나의 트랜잭션으로 묶음
@@ -82,5 +85,26 @@ public class PaymentServiceImpl implements PaymentService {
 			throw new RuntimeException("Outbox JSON 변환 에러", e);
 		}
 
+	}
+
+	@Override
+	public CreatePaymentResponse createPayment(CreatePaymentRequest request) {
+		// 1. DTO를 Entity로 변환 및 초기 상태 설정
+		Payment payment = Payment.builder()
+								 .orderId(request.orderId())
+								 .userId(request.userId())
+								 .amount(request.amount())
+								 .status(PaymentStatus.REQUESTED) // PaymentStatus enum을 가정
+								 .paymentMethod(request.paymentMethod())
+								 .build();
+
+		// 2. DB에 초기 결제 정보 저장
+		Payment savedPayment = paymentRepositoryPort.save(payment);
+
+		// 3. Outbox에 이벤트 저장 (나중에 Kafka로 발행됨)
+		// paymentOutboxRepositoryPort.save(createPaymentRequestedEvent(savedPayment));
+
+		// 4. 응답 DTO 반환
+		return CreatePaymentResponse.from(savedPayment);
 	}
 }
