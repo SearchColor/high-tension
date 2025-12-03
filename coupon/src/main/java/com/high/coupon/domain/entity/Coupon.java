@@ -2,6 +2,8 @@ package com.high.coupon.domain.entity;
 
 import com.high.coupon.domain.exception.CouponInvalidDateException;
 import com.high.coupon.domain.exception.CouponInvalidDiscountRateException;
+import com.high.coupon.domain.exception.CouponInvalidIssuePeriodException;
+import com.high.coupon.domain.exception.CouponInvalidValidUntilException;
 import com.library.jpa.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -73,14 +75,21 @@ public class Coupon extends BaseEntity {
 
     /**
      * 날짜 검증 메서드
-     * todo: 예외처리 추가 검토 필요
      */
     private static void validateDates(LocalDateTime issueStartAt, LocalDateTime issueEndAt, LocalDateTime validUntil) {
+        // null 체크
         if (issueStartAt == null || issueEndAt == null || validUntil == null) {
             throw new CouponInvalidDateException();
         }
-        if (issueEndAt.isBefore(issueStartAt) || validUntil.isBefore(issueStartAt)) {
-            throw new CouponInvalidDateException();
+
+        // 발행 기간 검증 (발행 종료일이 발행 시작일 보다 이전이면 안 됨)
+        if (issueEndAt.isBefore(issueStartAt)) {
+            throw new CouponInvalidIssuePeriodException();
+        }
+
+        // 유효기간 검증 (유효기간은 발행 종료 이후여야 함)
+        if (validUntil.isBefore(issueEndAt)) {
+            throw new CouponInvalidValidUntilException();
         }
     }
 
