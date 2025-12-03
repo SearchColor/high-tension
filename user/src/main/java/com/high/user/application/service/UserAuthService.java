@@ -9,14 +9,15 @@ import com.high.user.domain.exception.DeletedAccountException;
 import com.high.user.domain.exception.DuplicateEmailException;
 import com.high.user.domain.exception.InactiveAccountException;
 import com.high.user.domain.exception.InvalidCredentialsException;
-import com.high.user.domain.exception.UserNotFoundException;
 import com.high.user.domain.repository.UserRepository;
-import com.high.user.infrastructure.security.JwtTokenProvider;
+import com.high.user.domain.service.TokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -25,7 +26,8 @@ public class UserAuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final TokenProvider tokenProvider;
+    private final RefreshTokenService refreshTokenService;
 
     @Transactional
     public UserResponse signup(SignupRequest request) {
@@ -39,18 +41,16 @@ public class UserAuthService {
 
         // User Entity 생성
         User user = User.createLocalUser(
-            request.email(),
-            encodedPassword,
-            request.name()
-        );
+                request.email(),
+                encodedPassword,
+                request.name());
 
         // role이 MASTER인 경우 별도 처리 (보안상 일반 가입에서는 제한해야 하지만 일단 허용)
         if (request.role() != null && request.role().name().equals("MASTER")) {
             user = User.createMasterUser(
-                request.email(),
-                encodedPassword,
-                request.name()
-            );
+                    request.email(),
+                    encodedPassword,
+                    request.name());
         }
 
         // 저장
@@ -65,7 +65,7 @@ public class UserAuthService {
     public TokenResponse login(LoginRequest request) {
         // 사용자 조회
         User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
-            .orElseThrow(InvalidCredentialsException::new);
+                .orElseThrow(InvalidCredentialsException::new);
 
         // 비밀번호 검증
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
@@ -87,28 +87,35 @@ public class UserAuthService {
         userRepository.save(user);
 
         // Access Token, Refresh Token 생성
-        String accessToken = jwtTokenProvider.createAccessToken(
-            user.getUserId(),
-            user.getRole().name()
-        );
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getUserId());
+        String accessToken = tokenProvider.createAccessToken(
+                user.getUserId(),
+                user.getRole().name());
+        String refreshToken = tokenProvider.createRefreshToken(user.getUserId());
 
-        // TODO: Redis에 Refresh Token 저장 (세션 관리)
-        // TODO: 기존 세션 확인 및 만료 처리 (중복 로그인 방지)
+        // Redis에 Refresh Token 저장
+        refreshTokenService.saveRefreshToken(user.getUserId(), refreshToken);
 
         log.info("User logged in successfully: userId={}, email={}", user.getUserId(), user.getEmail());
 
         return TokenResponse.of(
-            accessToken,
-            refreshToken,
-            jwtTokenProvider.getAccessTokenValidity()
-        );
+                accessToken,
+                refreshToken,
+                tokenProvider.getAccessTokenValidity());
     }
 
     @Transactional
-    public void logout(String userId) {
-        // TODO: Redis에서 Refresh Token 삭제
-        // TODO: 세션 정보 삭제
+    public void logout(String accessToken, String userId) {
+        // Access Token 검증 및 userId 추출은 Controller/Filter 레벨에서 선행되었다고 가정
+        // 하지만 안전을 위해 여기서도 검증 가능. 일단은 인자로 받은 userId 사용.
+
+        UUID userUuid = UUID.fromString(userId);
+
+        // Redis에서 Refresh Token 삭제
+        refreshTokenService.deleteRefreshToken(userUuid);
+
+        // Access Token을 블랙리스트에 추가 (남은 유효시간만큼 TTL 설정)
+        long remainingTime = tokenProvider.getRemainingTime(accessToken);
+        refreshTokenService.addToBlacklist(accessToken, remainingTime);
 
         log.info("User logged out successfully: userId={}", userId);
     }
