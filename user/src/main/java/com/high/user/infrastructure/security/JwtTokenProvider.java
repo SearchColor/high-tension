@@ -1,5 +1,6 @@
 package com.high.user.infrastructure.security;
 
+import com.high.user.domain.service.TokenProvider;
 import com.high.user.domain.vo.UserRole;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -17,11 +18,12 @@ import java.util.UUID;
 /**
  * JWT 토큰 생성 및 검증을 담당하는 Provider
  * JJWT 0.12.x 사용
+ * TokenProvider 인터페이스 구현 (DIP 적용)
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class JwtTokenProvider {
+public class JwtTokenProvider implements TokenProvider {
 
     @Value("${spring.security.jwt.secret}")
     private String secretKeyString;
@@ -48,17 +50,18 @@ public class JwtTokenProvider {
      * @param role 사용자 권한
      * @return JWT Access Token
      */
-    public String createAccessToken(UUID userId, UserRole role) {
+    @Override
+    public String createAccessToken(UUID userId, String role) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenValidity);
 
         return Jwts.builder()
-                .subject(userId.toString())
-                .claim("role", role.name())
+                .setSubject(userId.toString())
+                .claim("role", role)
                 .claim("type", "access")
-                .issuedAt(now)
-                .expiration(expiryDate)
-                .signWith(secretKey, Jwts.SIG.HS256)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(secretKey)
                 .compact();
     }
 
@@ -67,16 +70,17 @@ public class JwtTokenProvider {
      * @param userId 사용자 ID
      * @return JWT Refresh Token
      */
+    @Override
     public String createRefreshToken(UUID userId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshTokenValidity);
 
         return Jwts.builder()
-                .subject(userId.toString())
+                .setSubject(userId.toString())
                 .claim("type", "refresh")
-                .issuedAt(now)
-                .expiration(expiryDate)
-                .signWith(secretKey, Jwts.SIG.HS256)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(secretKey)
                 .compact();
     }
 
@@ -85,7 +89,8 @@ public class JwtTokenProvider {
      * @param token JWT 토큰
      * @return 사용자 ID (UUID)
      */
-    public UUID getUserIdFromToken(String token) {
+    @Override
+    public UUID getUserId(String token) {
         Claims claims = parseClaims(token);
         String userIdString = claims.getSubject();
         return UUID.fromString(userIdString);
@@ -96,10 +101,10 @@ public class JwtTokenProvider {
      * @param token JWT 토큰
      * @return 사용자 권한
      */
-    public UserRole getRoleFromToken(String token) {
+    @Override
+    public String getRole(String token) {
         Claims claims = parseClaims(token);
-        String roleString = claims.get("role", String.class);
-        return UserRole.valueOf(roleString);
+        return claims.get("role", String.class);
     }
 
     /**
@@ -107,12 +112,13 @@ public class JwtTokenProvider {
      * @param token JWT 토큰
      * @return 유효성 여부
      */
+    @Override
     public boolean validateToken(String token) {
         try {
-            Jwts.parser()
-                    .verifyWith(secretKey)
+            Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
                     .build()
-                    .parseSignedClaims(token);
+                    .parseClaimsJws(token);
             return true;
         } catch (SecurityException | MalformedJwtException e) {
             log.error("Invalid JWT signature: {}", e.getMessage());
@@ -141,11 +147,33 @@ public class JwtTokenProvider {
     }
 
     /**
+     * Access Token 유효기간 반환 (밀리초)
+     * @return 유효기간 (밀리초)
+     */
+    @Override
+    public Long getAccessTokenValidity() {
+        return accessTokenValidity;
+    }
+
+    /**
      * Access Token 유효기간 반환 (초 단위)
      * @return 유효기간 (초)
      */
     public Long getAccessTokenValidityInSeconds() {
         return accessTokenValidity / 1000;
+    }
+
+    /**
+     * 토큰의 남은 유효 시간 조회
+     * @param token 토큰
+     * @return 남은 유효 시간(밀리초)
+     */
+    @Override
+    public long getRemainingTime(String token) {
+        Claims claims = parseClaims(token);
+        Date expiration = claims.getExpiration();
+        Date now = new Date();
+        return Math.max(0, expiration.getTime() - now.getTime());
     }
 
     /**
@@ -155,11 +183,11 @@ public class JwtTokenProvider {
      */
     private Claims parseClaims(String token) {
         try {
-            return Jwts.parser()
-                    .verifyWith(secretKey)
+            return Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
                     .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
+                    .parseClaimsJws(token)
+                    .getBody();
         } catch (ExpiredJwtException e) {
             // 만료된 토큰도 Claims는 반환
             return e.getClaims();

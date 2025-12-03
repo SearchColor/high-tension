@@ -1,6 +1,7 @@
 package com.high.user.infrastructure.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.high.user.domain.exception.UserErrorCode;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,10 +16,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 인증 실패 시 처리하는 EntryPoint (401 Unauthorized)
- * 유효하지 않은 JWT 토큰으로 접근 시 동작
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -27,24 +24,19 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     private final ObjectMapper objectMapper;
 
     @Override
-    public void commence(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            AuthenticationException authException
-    ) throws IOException, ServletException {
-
+    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
         log.error("Unauthorized error: {}", authException.getMessage());
 
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding("UTF-8");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setCharacterEncoding("UTF-8");
 
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("success", false);
-        errorResponse.put("code", 1003);
-        errorResponse.put("message", "인증이 필요합니다. 유효한 토큰을 제공해주세요.");
-        errorResponse.put("path", request.getRequestURI());
+        // 표준 에러 응답 포맷 생성
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", false);
+        body.put("code", UserErrorCode.INVALID_TOKEN.getCode());
+        body.put("message", UserErrorCode.INVALID_TOKEN.getMessage());
 
-        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+        objectMapper.writeValue(response.getOutputStream(), body);
     }
 }

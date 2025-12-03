@@ -1,6 +1,5 @@
 package com.high.user.infrastructure.config;
 
-import com.high.user.infrastructure.security.CustomAccessDeniedHandler;
 import com.high.user.infrastructure.security.JwtAuthenticationEntryPoint;
 import com.high.user.infrastructure.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
@@ -28,41 +27,32 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
-    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // CSRF 비활성화 (REST API)
-            .csrf(csrf -> csrf.disable())
+                // CSRF 비활성화 (REST API)
+                .csrf(csrf -> csrf.disable())
 
-            // CORS 설정
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // CORS 설정
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-            // 세션 관리: STATELESS (JWT 사용)
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 세션 관리: STATELESS (JWT 사용)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-            // 권한 설정
-            .authorizeHttpRequests(auth -> auth
-                // Health Check는 인증 불필요
-                .requestMatchers("/api/v1/health/**").permitAll()
-                // 회원가입, 로그인, 토큰 재발급은 인증 불필요
-                .requestMatchers("/api/v1/users/signup", "/api/v1/users/login", "/api/v1/users/reissue").permitAll()
-                // MASTER 전용 API
-                .requestMatchers("/api/v1/users/admin/**").hasRole("MASTER")
-                // 나머지는 모두 인증 필요
-                .anyRequest().authenticated()
-            )
+                // 권한 설정
+                .authorizeHttpRequests(auth -> auth
+                        // 회원가입, 로그인은 인증 불필요
+                        .requestMatchers("/api/v1/users/signup", "/api/v1/users/login").permitAll()
+                        // 나머지는 모두 허용 (임시, 추후 권한별 설정 필요)
+                        .anyRequest().permitAll())
 
-            // 예외 처리 핸들러 설정
-            .exceptionHandling(exception -> exception
-                .authenticationEntryPoint(jwtAuthenticationEntryPoint)  // 401 Unauthorized
-                .accessDeniedHandler(customAccessDeniedHandler)         // 403 Forbidden
-            )
+                // 예외 처리
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint))
 
-            // JWT 필터 추가 (UsernamePasswordAuthenticationFilter 이전에 실행)
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                // JWT Filter 등록
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -79,14 +69,12 @@ public class SecurityConfig {
 
         // 허용할 Origin (개발 환경)
         configuration.setAllowedOrigins(List.of(
-            "http://localhost:3000",
-            "http://localhost:8000"
-        ));
+                "http://localhost:3000",
+                "http://localhost:8000"));
 
         // 허용할 HTTP 메서드
         configuration.setAllowedMethods(List.of(
-            "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
-        ));
+                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
 
         // 허용할 헤더
         configuration.setAllowedHeaders(List.of("*"));
