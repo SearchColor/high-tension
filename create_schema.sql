@@ -4,3 +4,4 @@ CREATE DATABASE IF NOT EXISTS product_service;
 CREATE DATABASE IF NOT EXISTS coupon_service;
 CREATE DATABASE IF NOT EXISTS external_service;
 CREATE DATABASE IF NOT EXISTS payment_service;
+CREATE DATABASE IF NOT EXISTS orchestration_service;
