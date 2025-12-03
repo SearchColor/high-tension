@@ -16,6 +16,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -86,7 +88,8 @@ public class Order extends BaseEntity {
         String deliveryAddress,
         String detailAddress,
         String requestMessage,
-        List<OrderItem> orderItems
+        List<OrderItem> orderItems,
+        BigDecimal discountPercent
 ) {
 
         Order order = new Order(
@@ -103,7 +106,7 @@ public class Order extends BaseEntity {
             order.addOrderItem(orderItem);
         }
 
-        order.calculateAmounts();
+        order.calculateAmounts(discountPercent);
         return order;
     }
 
@@ -117,12 +120,12 @@ public class Order extends BaseEntity {
         orderItem.setOrder(this);
     }
 
-    private void calculateAmounts() {
+    private void calculateAmounts(BigDecimal discountAmount) {
         this.totalPrice = orderItems.stream()
             .mapToInt(OrderItem::getItemTotalPrice)
             .sum();
 
-        this.discountAmount = calculateDiscount();
+        this.discountAmount = calculateDiscount(discountAmount);
         this.paidAmount = this.totalPrice - this.discountAmount;
     }
 
@@ -130,9 +133,17 @@ public class Order extends BaseEntity {
         this.totalPrice = totalPrice - recalculatingPrice;
     }
 
-    private Integer calculateDiscount() {
-        // TODO: 쿠폰 할인율 어떻게?
-        return couponId != null ? 0 : 0;
+    private Integer calculateDiscount(BigDecimal discountPercent) {
+        if ( couponId != null ) {
+            BigDecimal price = BigDecimal.valueOf(totalPrice);
+            BigDecimal discountRate = discountPercent.divide(new BigDecimal("100"), 4,
+                RoundingMode.HALF_UP);
+            BigDecimal discountAmountBd = price.multiply(discountRate);
+
+            return discountAmountBd.setScale(0, RoundingMode.HALF_UP).intValue();
+
+        }
+        return 0;
     }
 
     public void updateStatus(OrderStatus nextStatus) {

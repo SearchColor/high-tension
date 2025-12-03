@@ -23,6 +23,7 @@ import com.high.order.domain.vo.OrderItemStatus;
 import com.high.order.domain.vo.OrderStatus;
 import com.high.order.infrastructure.client.ProductDto;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ public class OrderService {
     UUID customerId =  UUID.randomUUID(); //유저
     //UUID producerId = UUID.randomUUID(); //product
     //Integer unitPrice = 1000; //product
+    BigDecimal discountRate = null; //new BigDecimal("10");
 
 
 
@@ -84,7 +86,8 @@ public class OrderService {
             request.deliveryAddress(),
             request.detailAddress(),
             request.requestMessage(),
-            itemList
+            itemList,
+            discountRate
         );
         Order savedOrder = orderRepository.save(order);
 
