@@ -1,5 +1,6 @@
 package com.high.order.domain.entity;
 
+import com.high.order.domain.exception.IllegalArgumentException;
 import com.high.order.domain.exception.InvalidOrderStateException;
 import com.high.order.domain.exception.OrderCancellationException;
 import com.high.order.domain.exception.OrderItemNotFoundExeption;
@@ -15,6 +16,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -85,7 +88,8 @@ public class Order extends BaseEntity {
         String deliveryAddress,
         String detailAddress,
         String requestMessage,
-        List<OrderItem> orderItems
+        List<OrderItem> orderItems,
+        BigDecimal discountPercent
 ) {
 
         Order order = new Order(
@@ -102,7 +106,7 @@ public class Order extends BaseEntity {
             order.addOrderItem(orderItem);
         }
 
-        order.calculateAmounts();
+        order.calculateAmounts(discountPercent);
         return order;
     }
 
@@ -116,12 +120,12 @@ public class Order extends BaseEntity {
         orderItem.setOrder(this);
     }
 
-    private void calculateAmounts() {
+    private void calculateAmounts(BigDecimal discountAmount) {
         this.totalPrice = orderItems.stream()
             .mapToInt(OrderItem::getItemTotalPrice)
             .sum();
 
-        this.discountAmount = calculateDiscount();
+        this.discountAmount = calculateDiscount(discountAmount);
         this.paidAmount = this.totalPrice - this.discountAmount;
     }
 
@@ -129,9 +133,17 @@ public class Order extends BaseEntity {
         this.totalPrice = totalPrice - recalculatingPrice;
     }
 
-    private Integer calculateDiscount() {
-        // TODO: 쿠폰 할인율 어떻게?
-        return couponId != null ? 0 : 0;
+    private Integer calculateDiscount(BigDecimal discountPercent) {
+        if ( couponId != null ) {
+            BigDecimal price = BigDecimal.valueOf(totalPrice);
+            BigDecimal discountRate = discountPercent.divide(new BigDecimal("100"), 4,
+                RoundingMode.HALF_UP);
+            BigDecimal discountAmountBd = price.multiply(discountRate);
+
+            return discountAmountBd.setScale(0, RoundingMode.HALF_UP).intValue();
+
+        }
+        return 0;
     }
 
     public void updateStatus(OrderStatus nextStatus) {
@@ -151,6 +163,23 @@ public class Order extends BaseEntity {
         }
     }
 
+    public boolean validateUpdatableDeliveryInfo() {
+        return orderItems.stream().allMatch(item -> item.getDeliveryStatus().isUpdatableDeliveryInfo());
+    }
+
+    public void updateDeliveryInfo( String recipient,
+                                    String recipientContact,
+                                    String deliveryAddress,
+                                    String detailAddress,
+                                    String requestMessage) {
+        if(recipient != null) this.recipient = recipient;
+        if(recipientContact != null) this.recipientContact = recipientContact;
+        if(deliveryAddress != null) this.deliveryAddress = deliveryAddress;
+        if(detailAddress != null) this.detailAddress = detailAddress;
+        if(requestMessage != null) this.requestMessage = requestMessage;
+    }
+
+
 
     // 전체 취소
     public void cancelOrder() {
@@ -166,14 +195,14 @@ public class Order extends BaseEntity {
 
     // 단일 아이템 취소
     public void cancelItem(UUID orderItemId) {
-        if (!(this.orderStatus == OrderStatus.CREATED || this.orderStatus == OrderStatus.SUCCESS)) {
+        if (! (this.orderStatus.isCreated() || this.orderStatus.isSuccess()) ) {
             throw new OrderCancellationException();
         }
 
         OrderItem item = this.orderItems.stream()
             .filter(oi -> oi.getOrderItemId().equals(orderItemId))
             .findFirst()
-            .orElseThrow(OrderItemNotFoundExeption::new);
+            .orElseThrow(IllegalArgumentException::new);
 
         item.cancel();
     }
@@ -181,7 +210,7 @@ public class Order extends BaseEntity {
 
 
     @Override
-    public void softDelete(String deletedBy) {
+    public void softDelete(UUID deletedBy) {
         super.softDelete(deletedBy);
         this.orderItems.forEach(orderItem -> orderItem.softDelete(deletedBy));
     }

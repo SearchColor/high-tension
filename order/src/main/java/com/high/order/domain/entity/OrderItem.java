@@ -91,6 +91,11 @@ public class OrderItem extends BaseEntity {
         this.orderItemStatus = nextStatus;
     }
 
+    public void updateDeliveryStatus(DeliveryStatus deliveryStatus) {
+        this.deliveryStatus = deliveryStatus;
+    }
+
+
     public void cancel() {
         if (!isCancellable()) {
             System.out.println("[orderItem] 취소할 수 없는 주문 상품");

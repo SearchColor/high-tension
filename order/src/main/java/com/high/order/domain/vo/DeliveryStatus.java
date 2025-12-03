@@ -14,4 +14,8 @@ public enum DeliveryStatus {
     DeliveryStatus(String description) {
         this.description = description;
     }
+
+    public boolean isUpdatableDeliveryInfo() {
+        return this == READY;
+    }
 }
