@@ -38,7 +38,10 @@ public class User extends BaseEntity {
     private String phoneNumber;
 
     @Column(length = 255)
-    private String address;
+    private String deliveryAddress;
+
+    @Column(length = 255)
+    private String detailAddress;
 
     @Column(nullable = false)
     private Boolean isActive;
@@ -105,8 +108,9 @@ public class User extends BaseEntity {
     }
 
     // Business logic: 주소 수정
-    public void updateAddress(String address) {
-        this.address = address;
+    public void updateAddress(String deliveryAddress, String detailAddress) {
+        this.deliveryAddress = deliveryAddress;
+        this.detailAddress = detailAddress;
     }
 
     // Business logic: 권한 변경 (MASTER만 변경 불가)
