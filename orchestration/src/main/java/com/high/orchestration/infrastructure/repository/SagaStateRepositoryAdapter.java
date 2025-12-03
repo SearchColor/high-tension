@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class SagaStateRepositoryAdaptor implements SagaStateRepository {
+public class SagaStateRepositoryAdapter implements SagaStateRepository {
 
     private final JpaSagaStateRepository jpaSagaStateRepository;
 
