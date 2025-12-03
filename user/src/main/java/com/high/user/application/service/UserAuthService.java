@@ -39,19 +39,11 @@ public class UserAuthService {
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(request.password());
 
-        // User Entity 생성
+        // User Entity 생성 (항상 일반 사용자로 가입, role은 Entity에서 USER로 설정됨)
         User user = User.createLocalUser(
                 request.email(),
                 encodedPassword,
                 request.name());
-
-        // role이 MASTER인 경우 별도 처리 (보안상 일반 가입에서는 제한해야 하지만 일단 허용)
-        if (request.role() != null && request.role().name().equals("MASTER")) {
-            user = User.createMasterUser(
-                    request.email(),
-                    encodedPassword,
-                    request.name());
-        }
 
         // 저장
         User savedUser = userRepository.save(user);

@@ -1,6 +1,5 @@
 package com.high.user.application.dto.request;
 
-import com.high.user.domain.vo.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -19,14 +18,6 @@ public record SignupRequest(
     String password,
 
     @NotBlank(message = "이름은 필수입니다")
-    String name,
-
-    UserRole role
+    String name
 ) {
-    // role이 null이면 USER로 기본값 설정
-    public SignupRequest {
-        if (role == null) {
-            role = UserRole.USER;
-        }
-    }
 }

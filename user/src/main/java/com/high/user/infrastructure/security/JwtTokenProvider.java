@@ -56,12 +56,12 @@ public class JwtTokenProvider implements TokenProvider {
         Date expiryDate = new Date(now.getTime() + accessTokenValidity);
 
         return Jwts.builder()
-                .subject(userId.toString())
+                .setSubject(userId.toString())
                 .claim("role", role)
                 .claim("type", "access")
-                .issuedAt(now)
-                .expiration(expiryDate)
-                .signWith(secretKey, Jwts.SIG.HS256)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(secretKey)
                 .compact();
     }
 
@@ -76,11 +76,11 @@ public class JwtTokenProvider implements TokenProvider {
         Date expiryDate = new Date(now.getTime() + refreshTokenValidity);
 
         return Jwts.builder()
-                .subject(userId.toString())
+                .setSubject(userId.toString())
                 .claim("type", "refresh")
-                .issuedAt(now)
-                .expiration(expiryDate)
-                .signWith(secretKey, Jwts.SIG.HS256)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(secretKey)
                 .compact();
     }
 
@@ -115,10 +115,10 @@ public class JwtTokenProvider implements TokenProvider {
     @Override
     public boolean validateToken(String token) {
         try {
-            Jwts.parser()
-                    .verifyWith(secretKey)
+            Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
                     .build()
-                    .parseSignedClaims(token);
+                    .parseClaimsJws(token);
             return true;
         } catch (SecurityException | MalformedJwtException e) {
             log.error("Invalid JWT signature: {}", e.getMessage());
@@ -183,11 +183,11 @@ public class JwtTokenProvider implements TokenProvider {
      */
     private Claims parseClaims(String token) {
         try {
-            return Jwts.parser()
-                    .verifyWith(secretKey)
+            return Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
                     .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
+                    .parseClaimsJws(token)
+                    .getBody();
         } catch (ExpiredJwtException e) {
             // 만료된 토큰도 Claims는 반환
             return e.getClaims();
