@@ -55,6 +55,11 @@ target/
 *~
 *.bak
 *.tmp
+# Gradle Wrapper 실행 파일 제외
+gradlew
+gradlew.bat
+
+
 
 # Environment Variables / Sensitive Files (필요시 추가)
 # application-local.yml
