@@ -1,6 +1,6 @@
 package com.high.orchestration.presentation;
 
-import com.high.orchestration.application.SagaService;
+import com.high.orchestration.application.OrderCreateSagaService;
 import com.high.orchestration.application.dto.request.OrderCreateRequest;
 import com.library.module.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -19,13 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/orchestration")
 public class SagaController {
 
-    private final SagaService sagaService;
+    private final OrderCreateSagaService orderCreateSagaService;
 
 
 
     @PostMapping("/order")
     public ResponseEntity<ApiResponse<Void>> orderCreate(@Valid @RequestBody OrderCreateRequest orderCreateRequest) {
-        sagaService.startOrderCreateStage(orderCreateRequest);
+        orderCreateSagaService.startOrderCreateStage(orderCreateRequest);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("주문이 접수되었습니다."));
     }
 

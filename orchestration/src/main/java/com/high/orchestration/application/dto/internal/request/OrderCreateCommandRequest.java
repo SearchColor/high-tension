@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Pattern;
 import java.util.List;
 import java.util.UUID;
 
-public record InternalOrderCreateRequest(
+public record OrderCreateCommandRequest(
     UUID couponId,
     UUID sagaId,
     UUID orderId,
@@ -33,8 +33,8 @@ public record InternalOrderCreateRequest(
     @NotEmpty(message = "주문 상품은 최소 1개 이상이어야 합니다")
     List<OrderItemRequest> itemList
 ) {
-    public static InternalOrderCreateRequest from(UUID orderId, UUID sagaId, OrderCreateRequest orderCreateRequest) {
-        return new InternalOrderCreateRequest(
+    public static OrderCreateCommandRequest from(UUID orderId, UUID sagaId, OrderCreateRequest orderCreateRequest) {
+        return new OrderCreateCommandRequest(
             orderCreateRequest.couponId(),
             sagaId,
             orderId,
