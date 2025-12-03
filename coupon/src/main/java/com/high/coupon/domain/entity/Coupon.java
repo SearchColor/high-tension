@@ -1,5 +1,7 @@
 package com.high.coupon.domain.entity;
 
+import com.high.coupon.domain.exception.CouponInvalidDateException;
+import com.high.coupon.domain.exception.CouponInvalidDiscountRateException;
 import com.library.jpa.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,7 +10,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -72,23 +73,23 @@ public class Coupon extends BaseEntity {
 
     /**
      * 날짜 검증 메서드
-     * todo: 예외처리 임시 작성
+     * todo: 예외처리 추가 검토 필요
      */
     private static void validateDates(LocalDateTime issueStartAt, LocalDateTime issueEndAt, LocalDateTime validUntil) {
-        if (issueStartAt == null)
-            throw new IllegalArgumentException("발행 시작일은 필수입니다.");
-        if (issueEndAt != null && issueEndAt.isBefore(issueStartAt))
-            throw new IllegalArgumentException("발행 종료일은 시작일 이후여야 합니다.");
-        if (validUntil.isBefore(issueStartAt))
-            throw new IllegalArgumentException("유효기간 종료일은 발행 시작일 이후여야 합니다.");
+        if (issueStartAt == null || issueEndAt == null || validUntil == null) {
+            throw new CouponInvalidDateException();
+        }
+        if (issueEndAt.isBefore(issueStartAt) || validUntil.isBefore(issueStartAt)) {
+            throw new CouponInvalidDateException();
+        }
     }
 
     private static BigDecimal convertAndValidateDiscountRate(BigDecimal rate) {
         if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0 || rate.compareTo(BigDecimal.valueOf(100)) > 0) {
-            throw new IllegalArgumentException("할인율은 0~100 사이여야 합니다.");
+            throw new CouponInvalidDiscountRateException();
         }
         if (rate.scale() > 0){
-            throw new IllegalArgumentException("할인율은 소수점 없이 1% 단위만 가능합니다.");
+            throw new CouponInvalidDiscountRateException();
         }
 
         return rate.divide(BigDecimal.valueOf(100));
