@@ -2,12 +2,32 @@ spring:
   application:
     name: orchestration-service
   config:
-    import: "optional:configserver:http://localhost:8888"
+    import: "optional:configserver:"
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        service-id: config
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: refresh
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    instance-id: orchestration-service
+    hostname: localhost
 
-server:
-  port: 8900
+logging:
+  level:
+    org.springframework.transaction: TRACE
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
