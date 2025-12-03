@@ -54,13 +54,13 @@ public class CartServiceV1 {
 
     private void validateCartNotExists(String userId) {
         if (cartRepository.existsByUserId(userId)) {
-            throw new CartAlreadyExistsException(userId);
+            throw new CartAlreadyExistsException();
         }
     }
 
     private Cart getCartOrThrow(String userId) {
         return cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new CartNotFoundException(userId));
+                .orElseThrow(CartNotFoundException::new);
     }
 
     private CartResponseDto saveAndConvertToDto(Cart cart) {
