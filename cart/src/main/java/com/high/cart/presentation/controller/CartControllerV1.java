@@ -5,7 +5,6 @@ import com.high.cart.application.dto.request.CreateCartRequestDto;
 import com.high.cart.application.dto.response.CartResponseDto;
 import com.high.cart.application.dto.response.CreateCartResponseDto;
 import com.high.cart.application.service.CartServiceV1;
-import com.high.cart.domain.model.CartItem;
 import com.library.module.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -35,13 +34,8 @@ public class CartControllerV1 {
     public ResponseEntity<ApiResponse<CartResponseDto>> addProductToCart(
             @PathVariable String userId,
             @RequestBody CartItemRequestDto requestDto){
-        CartItem cartItem = CartItemRequestDto.createCartItem(
-                requestDto.getProductId(),
-                requestDto.getQuantity(),
-                requestDto.getPrice()
-        );
         return ResponseEntity.status(HttpStatus.OK)
-                .body(ApiResponse.success(serviceV1.addItemToCart(userId, cartItem),"장바구니 상품 추가"));
+                .body(ApiResponse.success(serviceV1.addItemToCart(userId, requestDto),"장바구니 상품 추가"));
     }
 
     @PutMapping("/user/{userId}/deleteProduct")

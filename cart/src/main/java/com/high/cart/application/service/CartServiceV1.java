@@ -1,5 +1,6 @@
 package com.high.cart.application.service;
 
+import com.high.cart.application.dto.request.CartItemRequestDto;
 import com.high.cart.application.dto.request.CreateCartRequestDto;
 import com.high.cart.application.dto.response.CartResponseDto;
 import com.high.cart.application.dto.response.CreateCartResponseDto;
@@ -30,9 +31,13 @@ public class CartServiceV1 {
     }
 
     @Transactional
-    public CartResponseDto addItemToCart(String userId, CartItem item) {
+    public CartResponseDto addItemToCart(String userId, CartItemRequestDto requestDto) {
         Cart cart = cartRepository.findByUserId(userId).orElseGet(() -> Cart.builder().userId(userId).build());
-        cart.addItem(item);
+        CartItem cartItem = CartItemRequestDto.createCartItem(
+                requestDto.getProductId(),
+                requestDto.getQuantity(),
+                requestDto.getPrice());
+        cart.addItem(cartItem);
         return saveAndConvertToDto(cart);
     }
 
