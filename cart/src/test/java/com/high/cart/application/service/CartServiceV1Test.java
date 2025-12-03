@@ -1,5 +1,6 @@
 package com.high.cart.application.service;
 
+import com.high.cart.application.dto.request.CartItemRequestDto;
 import com.high.cart.application.dto.request.CreateCartRequestDto;
 import com.high.cart.application.dto.response.CartResponseDto;
 import com.high.cart.application.dto.response.CreateCartResponseDto;
@@ -42,6 +43,20 @@ class CartServiceV1Test {
                     .productId("P002")
                     .quantity(1)
                     .price(20000)
+                    .build();
+
+    private final  CartItemRequestDto SAMPLE_REQUEST_DTO3 =
+            CartItemRequestDto.builder()
+                    .productId("P003")
+                    .quantity(1)
+                    .price(10000)
+                    .build();
+
+    private final  CartItemRequestDto SAMPLE_REQUEST_DTO1 =
+            CartItemRequestDto.builder()
+                    .productId("P001")
+                    .quantity(2)
+                    .price(10000)
                     .build();
 
 
@@ -177,13 +192,14 @@ class CartServiceV1Test {
         void addItemToCart_ExistingCart() {
             // Given
             Cart existingCart = Cart.builder().userId(TEST_USER_ID).build();
+
             // Mocking: 기존 장바구니가 조회되도록 설정
             when(cartRepository.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(existingCart));
             // Mocking: 저장 시 기존 장바구니를 반환하도록 설정
             when(cartRepository.save(any(Cart.class))).thenReturn(existingCart);
 
             // When
-            CartResponseDto updatedCart = cartService.addItemToCart(TEST_USER_ID, SAMPLE_ITEM);
+            CartResponseDto updatedCart = cartService.addItemToCart(TEST_USER_ID, SAMPLE_REQUEST_DTO1);
 
             // Then
             // save 메서드가 1번 호출되었는지 검증
@@ -209,17 +225,12 @@ class CartServiceV1Test {
                     .items(existingItems)
                     .build();
 
-            CartItem additionalItem = CartItem.builder()
-                    .productId("P001")
-                    .quantity(2)
-                    .price(10000)
-                    .build();
 
             when(cartRepository.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(existingCart));
             when(cartRepository.save(any(Cart.class))).thenReturn(existingCart);
 
             // when
-            CartResponseDto response = cartService.addItemToCart(TEST_USER_ID, additionalItem);
+            CartResponseDto response = cartService.addItemToCart(TEST_USER_ID, SAMPLE_REQUEST_DTO1);
 
             // then
             assertThat(response.getItems()).hasSize(1);
@@ -385,7 +396,7 @@ class CartServiceV1Test {
 
         // when
         CreateCartResponseDto createResponse = cartService.saveCart(requestDto);
-        CartResponseDto addResponse = cartService.addItemToCart(userId, SAMPLE_ITEM2);
+        CartResponseDto addResponse = cartService.addItemToCart(userId, SAMPLE_REQUEST_DTO3);
         CartResponseDto getResponse = cartService.getCartByUserId(userId);
 
         // then
