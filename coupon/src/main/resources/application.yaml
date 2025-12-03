@@ -24,3 +24,9 @@ eureka:
   instance:
     instance-id: coupon-service
     hostname: localhost
+
+logging:
+  level:
+    org.springframework.transaction: TRACE
+    org.hibernate.SQL: INFO
+    org.hibernate.type.descriptor.sql: INFO
