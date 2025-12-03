@@ -1,6 +1,7 @@
 package com.high.coupon.application;
 
 import com.high.coupon.application.dto.response.CouponIssueResponse;
+import com.high.coupon.application.dto.response.CouponUseResponse;
 import com.high.coupon.application.dto.response.UserCouponResponse;
 import com.high.coupon.application.exception.CouponIssueNotFoundException;
 import com.high.coupon.application.exception.CouponOutOfStockException;
@@ -83,12 +84,13 @@ public class CouponIssueService {
 
     // 쿠폰 사용 처리
     @Transactional
-    public void useCoupon(UUID couponIssueId, UUID userId){
+    public CouponUseResponse useCoupon(UUID couponIssueId, UUID userId){
 
         CouponIssue couponIssue = getCouponIssue(couponIssueId);
 
         couponIssue.useCoupon(userId, LocalDateTime.now());
         log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 사용처리 : couponIssueId={}, userId={}", couponIssueId, userId);
+        return CouponUseResponse.from(couponIssue);
     }
 
 

@@ -1,6 +1,7 @@
 package com.high.coupon.presentation.internal;
 
 import com.high.coupon.application.CouponIssueService;
+import com.high.coupon.application.dto.response.CouponUseResponse;
 import com.high.coupon.application.dto.response.UserCouponResponse;
 import com.library.module.response.ApiResponse;
 import java.util.List;
@@ -37,11 +38,11 @@ public class CouponInternalController {
      * PUT /api/v1/internal/coupons/{couponIssueId}/use?userId={userId}
      */
     @PutMapping("/{couponIssueId}/use")
-    public ApiResponse<Void> useCouponInternal(
+    public ApiResponse<CouponUseResponse> useCouponInternal(
             @PathVariable UUID couponIssueId,
             @RequestParam UUID userId
     ) {
-        couponIssueService.useCoupon(couponIssueId, userId);
-        return ApiResponse.success(null);
+        CouponUseResponse response = couponIssueService.useCoupon(couponIssueId, userId);
+        return ApiResponse.success(response);
     }
 }
