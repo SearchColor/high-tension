@@ -44,9 +44,4 @@ public class CouponInternalController {
         couponIssueService.useCoupon(couponIssueId, userId);
         return ApiResponse.success(null);
     }
-
-
-
-    // todo ---- 할인 금액 계산 쿠폰쪽에서 필요할지 피드백 필요
-    // 필요시에도 계산 로직 수정이 필요할 거 같아서 따로 백업
 }
