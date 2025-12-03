@@ -1,5 +1,5 @@
 server:
-  port: 8100
+  port: ${SERVER_PORT:0}  # 0 = random port for dev/test
 
 spring:
   application:
@@ -48,5 +48,8 @@ logging:
   level:
     com.high.user: DEBUG
     org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
