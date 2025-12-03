@@ -51,6 +51,19 @@ public class Cart {
         this.calculateTotalPrice();
     }
 
+    public void deleteItem(String productId){
+        Optional<CartItem> existingItemOptional = this.items.stream()
+                .filter(item -> item.getProductId().equals(productId))
+                .findFirst();
+        existingItemOptional.ifPresent(item -> this.items.remove(item));
+        this.calculateTotalPrice();
+    }
+
+    public void deleteAll(){
+        this.items.clear();
+        this.calculateTotalPrice();
+    }
+
     private void calculateTotalPrice() {
         this.totalPrice = this.items.stream()
                 .mapToLong(item -> item.getPrice() * item.getQuantity())

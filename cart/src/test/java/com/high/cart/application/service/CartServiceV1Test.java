@@ -117,7 +117,7 @@ class CartServiceV1Test {
         when(cartRepository.save(any(Cart.class))).thenReturn(existingCart);
 
         // When
-        Cart updatedCart = cartService.addItemToCart(TEST_USER_ID, SAMPLE_ITEM);
+        CartResponseDto updatedCart = cartService.addItemToCart(TEST_USER_ID, SAMPLE_ITEM);
 
         // Then
         // save 메서드가 1번 호출되었는지 검증
@@ -138,7 +138,7 @@ class CartServiceV1Test {
         when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        Cart newCart = cartService.addItemToCart(TEST_USER_ID, SAMPLE_ITEM);
+        CartResponseDto newCart = cartService.addItemToCart(TEST_USER_ID, SAMPLE_ITEM);
 
         // Then
         // save 메서드가 1번 호출되었는지 검증
