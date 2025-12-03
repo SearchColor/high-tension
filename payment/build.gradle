@@ -21,6 +21,7 @@ configurations {
 }
 
 repositories {
+	mavenLocal() // 해당 구문 추가
 	mavenCentral()
 }
 
@@ -29,15 +30,28 @@ ext {
 }
 
 dependencies {
-    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+	// Spring Cloud & Boot Starters
+	implementation 'org.springframework.cloud:spring-cloud-starter-config'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+	// DB & Messaging
+	implementation 'com.mysql:mysql-connector-j' // MySQL JDBC Driver
+	implementation 'org.springframework.kafka:spring-kafka' // Kafka 의존성
+
+	// Common Modules (Library)
+	implementation 'com.library:common-module:1.1.0'
+	implementation 'com.library:common-jpa:1.0.1'
+
+	// Tools
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
-    runtimeOnly 'com.mysql:mysql-connector-j'
+
+	// Testing
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testImplementation 'com.h2database:h2' // H2 In-memory DB for testing
 }
 
 dependencyManagement {
