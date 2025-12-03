@@ -17,6 +17,21 @@ public enum OrderItemStatus {
         this.description = description;
     }
 
+    public boolean isCreated() {return this == CREATED;}
+    public boolean isCanceled() {return this == CANCELED;}
+    public boolean isSuccess() {return this == SUCCESS;}
+    public boolean isReturnRequest() {return this == RETURN_REQUEST;}
+    public boolean isReturned() {return this == RETURNED;}
+
+    public boolean canChangeStatus() {
+        return this == SUCCESS || this == RETURN_REQUEST;
+    }
+
+    public boolean cannotChangeDeliveryStatus() {
+        return this == CREATED || this == CANCELED;
+    }
+
+
     public boolean canTransitionTo(OrderItemStatus nextStatus) {
         return switch (this) {
             case CREATED -> nextStatus == SUCCESS || nextStatus == CANCELED;

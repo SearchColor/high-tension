@@ -6,4 +6,5 @@ import java.util.UUID;
 
 public interface OrderItemRepository {
     Optional<OrderItem> findByOrderItemIdAndDeletedAtIsNull(UUID orderItemId);
+    OrderItem save(OrderItem orderItem);
 }

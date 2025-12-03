@@ -1,5 +1,6 @@
 package com.high.cart.application.service;
 
+import com.high.cart.application.dto.request.CartItemRequestDto;
 import com.high.cart.application.dto.request.CreateCartRequestDto;
 import com.high.cart.application.dto.response.CartResponseDto;
 import com.high.cart.application.dto.response.CreateCartResponseDto;
@@ -10,6 +11,7 @@ import com.high.cart.domain.model.CartItem;
 import com.high.cart.domain.repository.CartRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Service
@@ -25,21 +27,50 @@ public class CartServiceV1 {
     }
 
     public CartResponseDto getCartByUserId(String userId){
-        Cart cart = cartRepository.findByUserId(userId).orElseThrow(()-> new CartNotFoundException(userId));
-        return CartResponseDto.from(cart);
+        return CartResponseDto.from(getCartOrThrow(userId));
     }
 
-    public Cart addItemToCart(String userId, CartItem item) {
+    @Transactional
+    public CartResponseDto addItemToCart(String userId, CartItemRequestDto requestDto) {
         Cart cart = cartRepository.findByUserId(userId).orElseGet(() -> Cart.builder().userId(userId).build());
-        cart.addItem(item);
-        cartRepository.save(cart);
-        return cart;
+        CartItem cartItem = CartItemRequestDto.createCartItem(
+                requestDto.getProductId(),
+                requestDto.getQuantity(),
+                requestDto.getPrice());
+        cart.addItem(cartItem);
+        return saveAndConvertToDto(cart);
     }
+
+    @Transactional
+    public CartResponseDto deleteItemToCart(String userId, String productId){
+        Cart cart = getCartOrThrow(userId);
+        cart.deleteItem(productId);
+        return saveAndConvertToDto(cart);
+    }
+
+    @Transactional
+    public CartResponseDto deleteAllToCart(String userId){
+        Cart cart = getCartOrThrow(userId);
+        cart.deleteAll();
+        return saveAndConvertToDto(cart);
+    }
+
 
 
     private void validateCartNotExists(String userId) {
         if (cartRepository.existsByUserId(userId)) {
-            throw new CartAlreadyExistsException(userId);
+            throw new CartAlreadyExistsException();
         }
     }
+
+    private Cart getCartOrThrow(String userId) {
+        return cartRepository.findByUserId(userId)
+                .orElseThrow(CartNotFoundException::new);
+    }
+
+    private CartResponseDto saveAndConvertToDto(Cart cart) {
+        Cart savedCart = cartRepository.save(cart);
+        return CartResponseDto.from(savedCart);
+    }
+
 }
