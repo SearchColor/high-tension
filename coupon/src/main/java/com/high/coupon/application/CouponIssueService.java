@@ -2,6 +2,7 @@ package com.high.coupon.application;
 
 import com.high.coupon.application.dto.response.CouponIssueResponse;
 import com.high.coupon.application.dto.response.UserCouponResponse;
+import com.high.coupon.application.exception.CouponIssueNotFoundException;
 import com.high.coupon.application.exception.CouponOutOfStockException;
 import com.high.coupon.domain.entity.Coupon;
 import com.high.coupon.domain.entity.CouponIssue;
@@ -64,17 +65,42 @@ public class CouponIssueService {
 
 
 
+
     /**
-     * internal 메서드
+     * ----- internal 메서드 -----
      */
 
+
     // 사용자 별 쿠폰 조회
-    @Transactional(readOnly = true)
     public List<UserCouponResponse> getUserCoupons(UUID userId) {
         List<CouponIssue> issues = couponIssueRepository.findAllByUserId(userId);
 
         return issues.stream()
                 .map(UserCouponResponse::from)
                 .toList();
+    }
+
+
+    // 쿠폰 사용 처리
+    @Transactional
+    public void useCoupon(UUID couponIssueId, UUID userId){
+
+        CouponIssue couponIssue = getCouponIssue(couponIssueId);
+
+        couponIssue.useCoupon(userId, LocalDateTime.now());
+        log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 사용처리 : couponIssueId={}, userId={}", couponIssueId, userId);
+    }
+
+
+
+    // todo ---- 할인 금액 계산 쿠폰쪽에서 필요할지? 피드백 필요 (따로 백업)
+
+
+    /** -----------------------
+     * 쿠폰 발급 이력 ID 조회 메서드
+     */
+    private CouponIssue getCouponIssue(UUID couponIssueId) {
+        return couponIssueRepository.findById(couponIssueId)
+                .orElseThrow(CouponIssueNotFoundException::new);
     }
 }
