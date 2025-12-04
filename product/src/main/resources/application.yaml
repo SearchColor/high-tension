@@ -9,11 +9,17 @@ spring:
         enabled: true
         service-id: config
 
+# refresh는 운영 수준에서는 보통 비활성화, 내부/보안망이라면 허용 가능
 management:
   endpoints:
     web:
       exposure:
-        include: refresh
+        include: health, info, metrics, prometheus, loggers, refresh
+  endpoint:
+    health:
+      show-details: never
+    prometheus:
+      access: read_only
 
 eureka:
   client:
