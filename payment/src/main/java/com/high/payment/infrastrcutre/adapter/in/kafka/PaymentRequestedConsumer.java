@@ -1,4 +1,4 @@
-package com.high.payment.infrastrucutre.adapter.in.kafka;
+package com.high.payment.infrastrcutre.adapter.in.kafka;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;

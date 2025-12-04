@@ -88,6 +88,7 @@ public class PaymentServiceImpl implements PaymentService {
 	}
 
 	@Override
+	@Transactional
 	public CreatePaymentResponse createPayment(CreatePaymentRequest request) {
 		// 1. DTO를 Entity로 변환 및 초기 상태 설정
 		Payment payment = Payment.builder()

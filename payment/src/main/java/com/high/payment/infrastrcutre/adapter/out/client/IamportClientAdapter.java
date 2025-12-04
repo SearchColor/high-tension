@@ -1,4 +1,4 @@
-package com.high.payment.infrastrucutre.adapter.out.client;
+package com.high.payment.infrastrcutre.adapter.out.client;
 
 import java.math.BigDecimal;
 import java.util.UUID;

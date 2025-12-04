@@ -1,4 +1,4 @@
-package com.high.payment.infrastrucutre.adapter.out.persistence;
+package com.high.payment.infrastrcutre.adapter.out.persistence;
 
 import org.springframework.stereotype.Component;
 
