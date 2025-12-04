@@ -1,7 +1,9 @@
 package com.high.orchestration.infrastructure.kafka.producer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.high.orchestration.application.dto.internal.request.ClearCartCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderCreateCommandRequest;
+import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
 import com.high.orchestration.application.port.EventPublisher;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +29,18 @@ public class KafkaEventPublisher implements EventPublisher {
     public void publishStockDeductionCommand(String topic, StockDeductionCommandRequest stockDeductionCommandRequest) {
         send(topic, stockDeductionCommandRequest);
         log.info("[KafkaEventPublisher] publicStockDeductionCommand 이벤트 발행 성공");
-        System.out.println("===========================일단 다됨 =====================");
 
+    }
+
+    @Override
+    public void publishPaymentCreateCommand(String topic, PaymentCreateCommandRequest paymentCreateCommandRequest) {
+        send(topic, paymentCreateCommandRequest);
+        log.info("[KafkaEventPublisher] publicPaymentCreateCommand 이벤트 발행 성공");
+    }
+
+    @Override
+    public void publishClearCartCommand(String topic, ClearCartCommandRequest clearCartCommandRequest) {
+        send(topic, clearCartCommandRequest);
     }
 
 
