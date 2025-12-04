@@ -76,8 +76,7 @@ public class OrderCreateSagaService {
 
         } catch (Exception e) {
             log.info("Saga 시작 실패, 주문 생성 요청 전송 실패");
-            sagaState.recordError(e.getMessage());
-            sagaStateRepository.save(sagaState);
+            recordSagaError(sagaState, e);
             throw new FailedToStartSagaException();
         }
         log.info("주문 생성 saga 시작 성공");
@@ -90,29 +89,18 @@ public class OrderCreateSagaService {
         SagaState sagaState = getSagaState(sagaId);
         try {
 
-            if(sagaState.getCurrentStep().isAfter(CurrentStep.ORDER_CREATE_VALIDATE)) {
-                log.warn("[Idempotency] 이미 처리된 이벤트: sagaId={}, currentStep={}",
-                    sagaId, sagaState.getCurrentStep());
+            if(checkIdempotency(sagaState, CurrentStep.ORDER_CREATE_VALIDATE)) {
                 return;
             }
 
-            sagaState.updateSagaState(
-                null,
-                CurrentStep.ORDER_CREATE_STOCK,
-                request.toString()
-            );
-
-            SagaState updatedState = sagaStateRepository.save(sagaState);
-
-            log.info("[OrderCreateSagaService] handlerOrderCreateSuccess : saga 상태 업데이트 - sagaId={}, orderId={}", updatedState.getSagaId(), updatedState.getOrderId());
+            updateAndSaveSagaState(sagaState, CurrentStep.ORDER_CREATE_STOCK, request.toString());
 
             publisher.publishStockDeductionCommand("stock-deduction-request", request);
             log.info("[OrderCreateSagaService] handlerOrderCreateSuccess : 재고차감 명령 발행 성공 ");
 
         } catch (Exception e) {
             log.error("[OrderCreateSagaService] handlerOrderCreateSuccess : 주문 생성 handler처리 실패");
-            sagaState.recordError(e.getMessage());
-            sagaStateRepository.save(sagaState);
+            recordSagaError(sagaState, e);
 
         }
     }
@@ -124,28 +112,18 @@ public class OrderCreateSagaService {
         SagaState sagaState = getSagaState(sagaId);
 
         try {
-            if (sagaState.getCurrentStep().isAfter(CurrentStep.ORDER_CREATE_STOCK)) {
-                log.warn("[Idempotency] 이미 처리된 이벤트: sagaId={}, currentStep={}",
-                    sagaId, sagaState.getCurrentStep());
+            if (checkIdempotency(sagaState, CurrentStep.ORDER_CREATE_STOCK)) {
                 return;
             }
-            sagaState.updateSagaState(
-                null,
-                CurrentStep.ORDER_CREATE_PAYMENT,
-                request.toString()
-            );
-            SagaState updatedState = sagaStateRepository.save(sagaState);
 
-            log.info("[OrderCreateSagaService] handlerStockDeductionSuccess : saga 상태 업데이트 - sagaId={}, orderId={}", updatedState.getSagaId(), updatedState.getOrderId());
+            updateAndSaveSagaState(sagaState, CurrentStep.ORDER_CREATE_PAYMENT, request.toString());
+
             publisher.publishPaymentCreateCommand("payment-create-request", request);
             log.info("[OrderCreateSagaService] handlerStockDeductionSuccess : 결제 생성 명령 성공");
 
         } catch (Exception e) {
             log.error("[OrderCreateSagaService] handlerStockDeductionSuccess : 재고 차감 handler처리 실패");
-            sagaState.recordError(e.getMessage());
-            sagaStateRepository.save(sagaState);
-
-
+            recordSagaError(sagaState, e);
         }
     }
 
@@ -156,17 +134,11 @@ public class OrderCreateSagaService {
         SagaState sagaState = getSagaState(sagaId);
 
         try {
-            if (sagaState.getCurrentStep().isAfter(CurrentStep.ORDER_CREATE_PAYMENT)) {
-                log.warn("[Idempotency] 이미 처리된 이벤트: sagaId={}, currentStep={}",
-                    sagaId, sagaState.getCurrentStep());
+            if (checkIdempotency(sagaState, CurrentStep.ORDER_CREATE_PAYMENT)) {
                 return;
             }
-            sagaState.updateSagaState(
-                null,
-                null,
-                request.toString()
-            );
-            sagaStateRepository.save(sagaState);
+
+            updateAndSaveSagaState(sagaState, null, request.toString());
 
             publisher.publishClearCartCommand("cart-clear-request", request);
             sagaState.updateCurrentStep(CurrentStep.ORDER_CREATE_COMPLETE);
@@ -176,9 +148,7 @@ public class OrderCreateSagaService {
 
         } catch (Exception e) {
             log.error("[OrderCreateSagaService] handlerPaymentCreateSuccess : 결제 요청 handler처리 실패");
-            sagaState.recordError(e.getMessage());
-            sagaStateRepository.save(sagaState);
-
+            recordSagaError(sagaState, e);
 
         }
     }
@@ -187,4 +157,26 @@ public class OrderCreateSagaService {
         return sagaStateRepository.findById(sagaId).orElseThrow(SagaStateNotFoundException::new);
     }
 
+    private boolean checkIdempotency(SagaState sagaState, CurrentStep expectedStep) {
+        if (sagaState.getCurrentStep().isAfter(expectedStep)) {
+            log.warn("[Idempotency] 이미 처리된 이벤트: sagaId={}, currentStep={}",
+                sagaState.getSagaId(), sagaState.getCurrentStep());
+            return true;
+        }
+        return false;
+    }
+
+    private void updateAndSaveSagaState(SagaState sagaState, CurrentStep nextStep, String payload) {
+        sagaState.updateSagaState(null, nextStep, payload);
+        SagaState updatedState = sagaStateRepository.save(sagaState);
+
+        log.info("[OrderCreateSagaService] saga 상태 업데이트 - sagaId={}, orderId={}, step={}",
+            updatedState.getSagaId(), updatedState.getOrderId(), nextStep);
+
+    }
+
+    private void recordSagaError(SagaState sagaState, Exception e) {
+        sagaState.recordError(e.getMessage());
+        sagaStateRepository.save(sagaState);
+    }
 }
