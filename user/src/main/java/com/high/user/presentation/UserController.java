@@ -5,6 +5,7 @@ import com.high.user.application.dto.request.SignupRequest;
 import com.high.user.application.dto.response.TokenResponse;
 import com.high.user.application.dto.response.UserResponse;
 import com.high.user.application.service.UserAuthService;
+import com.high.user.application.service.UserQueryService;
 import com.library.module.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserAuthService userAuthService;
+    private final UserQueryService userQueryService;
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<UserResponse>> signup(
@@ -49,10 +51,12 @@ public class UserController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
             @RequestHeader("Authorization") String bearerToken) {
-        // SecurityContext에서 userId 추출
+        // JWT 인증 정보에서 userId 추출
+        // SecurityContext → Authentication → Principal(userId)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userId = authentication.getName();
 
+        // Bearer 토큰에서 실제 JWT 추출 ("Bearer " prefix 제거)
         String accessToken = bearerToken.substring(7);
 
         log.info("Logout request received: userId={}", userId);
@@ -60,5 +64,20 @@ public class UserController {
         userAuthService.logout(accessToken, userId);
 
         return ResponseEntity.ok(ApiResponse.success("로그아웃 되었습니다."));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> getMyInfo() {
+        // JWT 인증 정보에서 userId 추출
+        // Gateway의 JwtAuthenticationGlobalFilter에서 검증된 정보
+        // SecurityContext → Authentication → Principal(userId)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = authentication.getName();
+
+        log.info("Get my info request received: userId={}", userId);
+
+        UserResponse response = userQueryService.getUserById(userId);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
