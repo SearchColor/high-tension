@@ -23,16 +23,7 @@ spring:
             locator:
               enabled: true
           routes:
-            - id: order-service
-              uri: lb://order-service
-              predicates:
-                - Path=/api/v1/orders/**
-
-            - id: order-docs
-              uri: lb://order-service
-              predicates:
-                - Path=/orders/v3/api-docs
-
+            # 1. User Service (8100) - Authentication base
             - id: user-service
               uri: lb://user-service
               predicates:
@@ -43,16 +34,7 @@ spring:
               predicates:
                 - Path=/users/v3/api-docs
 
-            - id: coupon-service
-              uri: lb://user-service
-              predicates:
-                - Path=/api/v1/users/**
-
-            - id: coupon-docs
-              uri: lb://coupon-service
-              predicates:
-                - Path=/coupons/v3/api-docs
-
+            # 2. Product Service (8200)
             - id: product-service
               uri: lb://product-service
               predicates:
@@ -63,16 +45,7 @@ spring:
               predicates:
                 - Path=/products/v3/api-docs
 
-            - id: payment-service
-              uri: lb://payment-service
-              predicates:
-                - Path=/api/v1/payments/**
-
-            - id: payment-docs
-              uri: lb://payment-service
-              predicates:
-                - Path=/payments/v3/api-docs
-
+            # 3. Cart Service (8700)
             - id: cart-service
               uri: lb://cart-service
               predicates:
@@ -83,6 +56,51 @@ spring:
               predicates:
                 - Path=/carts/v3/api-docs
 
+            # 4. Coupon Service (8600)
+            - id: coupon-service
+              uri: lb://coupon-service
+              predicates:
+                - Path=/api/v1/coupons/**
+
+            - id: coupon-docs
+              uri: lb://coupon-service
+              predicates:
+                - Path=/coupons/v3/api-docs
+
+            # 5. Order Service (8400)
+            - id: order-service
+              uri: lb://order-service
+              predicates:
+                - Path=/api/v1/orders/**
+
+            - id: order-docs
+              uri: lb://order-service
+              predicates:
+                - Path=/orders/v3/api-docs
+
+            # 6. Payment Service (8300)
+            - id: payment-service
+              uri: lb://payment-service
+              predicates:
+                - Path=/api/v1/payments/**
+
+            - id: payment-docs
+              uri: lb://payment-service
+              predicates:
+                - Path=/payments/v3/api-docs
+
+            # 7. Orchestration Service (8900)
+            - id: orchestration-service
+              uri: lb://orchestration-service
+              predicates:
+                - Path=/api/v1/orchestrations/**
+
+            - id: orchestration-docs
+              uri: lb://orchestration-service
+              predicates:
+                - Path=/orchestrations/v3/api-docs
+
+            # 8. External Service (8500)
             - id: external-service
               uri: lb://external-service
               predicates:
@@ -97,18 +115,20 @@ springdoc:
   swagger-ui:
     path: /docs
     urls:
-      - name: order-service
-        url: /orders/v3/api-docs
-      - name: product-service
-        url: /products/v3/api-docs
       - name: user-service
         url: /users/v3/api-docs
-      - name: delivery-service
-        url: /deliveries/v3/api-docs
-      - name: company-service
-        url: /companies/v3/api-docs
-      - name: hub-service
-        url: /hubs/v3/api-docs
+      - name: product-service
+        url: /products/v3/api-docs
+      - name: cart-service
+        url: /carts/v3/api-docs
+      - name: coupon-service
+        url: /coupons/v3/api-docs
+      - name: order-service
+        url: /orders/v3/api-docs
+      - name: payment-service
+        url: /payments/v3/api-docs
+      - name: orchestration-service
+        url: /orchestrations/v3/api-docs
       - name: external-service
         url: /externals/v3/api-docs
 

@@ -46,9 +46,10 @@ spring:
       enabled: false
 
 # Eureka 비활성화 (로컬 단독 개발 시)
-eureka:
-  client:
-    enabled: false
+# NOTE: Docker/Config Server 환경에서는 application.yaml의 Eureka 설정이 사용됨
+#eureka:
+#  client:
+#    enabled: false
 
 logging:
   level:
