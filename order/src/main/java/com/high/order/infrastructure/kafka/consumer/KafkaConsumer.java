@@ -6,7 +6,7 @@ import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
 import com.high.order.application.dto.internal.kafka.response.OrderSuccessResponse;
 import com.high.order.application.port.EventPublisher;
 import com.high.order.application.service.OrderServiceV2;
-import com.high.order.infrastructure.adaptor.OrderCreateAdapter;
+import com.high.order.infrastructure.adapter.OrderCreateAdapter;
 import com.high.order.infrastructure.exception.EmptyKafkaMessageException;
 import com.high.order.infrastructure.kafka.dto.response.OrderCreateRequestMessage;
 import lombok.RequiredArgsConstructor;

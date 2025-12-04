@@ -1,4 +1,4 @@
-package com.high.order.infrastructure.adaptor;
+package com.high.order.infrastructure.adapter;
 
 import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
 import com.high.order.application.dto.internal.kafka.request.CreateOrderItemCommand;
