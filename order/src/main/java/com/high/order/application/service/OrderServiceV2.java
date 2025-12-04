@@ -3,7 +3,8 @@ package com.high.order.application.service;
 import static java.util.stream.Collectors.toList;
 
 import com.high.order.application.dto.internal.OrderItemCreateInfo;
-import com.high.order.application.dto.internal.kafka.response.CreateOrderCommand;
+import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
+import com.high.order.application.dto.internal.kafka.response.OrderSuccessResponse;
 import com.high.order.application.dto.request.OrderItemDeliveryStatusChangeRequest;
 import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
 import com.high.order.application.dto.request.OrderStatusChangeRequest;
@@ -48,7 +49,7 @@ public class OrderServiceV2 {
 
 
     @Transactional
-    public OrderResponse createOrder(CreateOrderCommand request) {
+    public OrderSuccessResponse createOrder(CreateOrderCommand request) {
 
         /**
          * TODO:
@@ -91,7 +92,7 @@ public class OrderServiceV2 {
         );
         Order savedOrder = orderRepository.save(order);
 
-        return OrderResponse.from(savedOrder);
+        return OrderSuccessResponse.of(order, request.sagaId(), request.ordererId());
     }
 
 

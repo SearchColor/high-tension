@@ -1,7 +1,7 @@
 package com.high.order.infrastructure.adaptor;
 
-import com.high.order.application.dto.internal.kafka.response.CreateOrderCommand;
-import com.high.order.application.dto.internal.kafka.response.CreateOrderItemCommand;
+import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
+import com.high.order.application.dto.internal.kafka.request.CreateOrderItemCommand;
 import com.high.order.infrastructure.kafka.dto.response.OrderCreateRequestMessage;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +13,7 @@ public class OrderCreateAdapter {
             message.couponId(),
             message.sagaId(),
             message.orderId(),
+            message.ordererId(),
             message.recipient(),
             message.recipientContact(),
             message.deliveryAddress(),

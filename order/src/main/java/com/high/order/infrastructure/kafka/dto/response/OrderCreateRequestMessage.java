@@ -8,6 +8,7 @@ public record OrderCreateRequestMessage(
     UUID couponId,
     UUID sagaId,
     UUID orderId,
+    UUID ordererId,
     String recipient,
     String recipientContact,
     String deliveryAddress,
