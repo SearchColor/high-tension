@@ -3,11 +3,11 @@ package com.high.orchestration.application;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.orchestration.application.dto.internal.request.OrderCreateCommandRequest;
 import com.high.orchestration.application.dto.request.OrderCreateRequest;
+import com.high.orchestration.application.port.EventPublisher;
 import com.high.orchestration.domain.entity.SagaState;
 import com.high.orchestration.domain.repository.SagaStateRepository;
 import com.high.orchestration.domain.vo.CurrentStep;
 import com.high.orchestration.domain.vo.SagaType;
-import com.high.orchestration.infrastructure.kafka.producer.KafkaEventPublisher;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ public class OrderCreateSagaService {
 
     private final SagaStateRepository sagaStateRepository;
     private final ObjectMapper objectMapper;
-    private final KafkaEventPublisher publisher;
+    private final EventPublisher publisher;
 
     @Transactional
     public void startOrderCreateStage(OrderCreateRequest orderCreateRequest, UUID ordererId) {

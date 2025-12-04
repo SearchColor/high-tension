@@ -2,6 +2,7 @@ package com.high.orchestration.infrastructure.kafka.producer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.orchestration.application.dto.internal.request.OrderCreateCommandRequest;
+import com.high.orchestration.application.port.EventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -10,10 +11,22 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class KafkaEventPublisher {
+public class KafkaEventPublisher implements EventPublisher {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
+
+
+    private void send(String topic, Object messageObj) {
+        String json = toJson(messageObj);
+        kafkaTemplate.send(topic, json);
+        log.info("[KafkaEventPublisher] topic={}, message={}", topic, json);
+    }
+
+    public void publishOrderCreateCommand(String topic, OrderCreateCommandRequest orderCreateCommandRequest) {
+        send(topic, orderCreateCommandRequest);
+        log.info("[KafkaEventPublisher] publicOrderCreateCommand 이벤트 발행 성공");
+    }
 
     private String toJson(Object obj) {
         try {
@@ -26,16 +39,5 @@ public class KafkaEventPublisher {
             log.error("[KafkaEventPublisher] Kafka 메시지 JSON 변환 실패: {}", obj, e);
             throw new RuntimeException("Kafka 메시지 직렬화 오류", e);
         }
-    }
-
-    private void send(String topic, Object messageObj) {
-        String json = toJson(messageObj);
-        kafkaTemplate.send(topic, json);
-        log.info("[KafkaEventPublisher] topic={}, message={}", topic, json);
-    }
-
-    public void publishOrderCreateCommand(String topic, OrderCreateCommandRequest orderCreateCommandRequest) {
-        send(topic, orderCreateCommandRequest);
-        log.info("[KafkaEventPublisher] publicOrderCreateCommand 이벤트 발행 성공");
     }
 }

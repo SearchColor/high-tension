@@ -4,11 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
 import com.high.order.application.dto.internal.kafka.response.OrderSuccessResponse;
+import com.high.order.application.port.EventPublisher;
 import com.high.order.application.service.OrderServiceV2;
 import com.high.order.infrastructure.adaptor.OrderCreateAdapter;
 import com.high.order.infrastructure.exception.EmptyKafkaMessageException;
 import com.high.order.infrastructure.kafka.dto.response.OrderCreateRequestMessage;
-import com.high.order.infrastructure.kafka.producer.KafkaProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -22,7 +22,7 @@ public class KafkaConsumer {
     private final OrderServiceV2 orderService;
     private ObjectMapper objectMapper;
     private final OrderCreateAdapter adapter;
-    private final KafkaProducer kafkaProducer;
+    private final EventPublisher publisher;
 
     @KafkaListener(topics = "order-create-request")
     public void handleOrderCreateRequest(String message) {
@@ -48,7 +48,7 @@ public class KafkaConsumer {
             log.info("[KafkaConsumer] handleOrderCreateRequest : 주문 생성 로직 실행");
             OrderSuccessResponse response = orderService.createOrder(command);
 
-            kafkaProducer.sendOrderCreateSuccess("order-success-create", response);
+            publisher.sendOrderCreateSuccess("order-success-create", response);
             log.info("[KafkaConsumer] handlerOrderCreatRequest : 주문 생성 성공 메시지 생성");
         } catch (Exception e) {
 
