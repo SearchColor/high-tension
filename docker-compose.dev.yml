@@ -117,12 +117,17 @@ services:
     ports:
       - "8000:8000"
     depends_on:
+      redis:
+        condition: service_started
       eureka-server:
         condition: service_healthy
     networks:
       - msa-network
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
 
   # 7. User Service (사용자 관리)
   user-service:
