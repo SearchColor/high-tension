@@ -56,13 +56,13 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
         String token = extractToken(exchange.getRequest());
         if (token == null) {
             log.warn("Token not found in request: {}", path);
-            throw new UnauthorizedException(GatewayErrorCode.TOKEN_NOT_FOUND);
+            return Mono.error(new UnauthorizedException(GatewayErrorCode.TOKEN_NOT_FOUND));
         }
 
         // JWT 검증
         if (!jwtTokenValidator.validateToken(token)) {
             log.warn("Invalid token for path: {}", path);
-            throw new UnauthorizedException(GatewayErrorCode.INVALID_TOKEN);
+            return Mono.error(new UnauthorizedException(GatewayErrorCode.INVALID_TOKEN));
         }
 
         // 블랙리스트 확인 (비동기)
