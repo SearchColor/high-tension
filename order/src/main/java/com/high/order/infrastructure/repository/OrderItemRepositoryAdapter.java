@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class OrderItemRepositoryAdaptor implements OrderItemRepository {
+public class OrderItemRepositoryAdapter implements OrderItemRepository {
 
     private final JpaOrderItemRepository jpaOrderItemRepository;
 

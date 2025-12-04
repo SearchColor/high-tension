@@ -1,4 +1,4 @@
-package com.high.order.infrastructure.kafka;
+package com.high.orchestration.infrastructure.kafka.config;
 
 
 import java.util.HashMap;
@@ -20,31 +20,29 @@ import org.springframework.kafka.core.ProducerFactory;
 @EnableKafka
 @Configuration
 public class KafkaConfig {
+
     @Bean
-    //싱글턴 빈 객체 등록
     public ProducerFactory<String, String> producerFactory() {
 
         Map<String, Object> properties = new HashMap<>();
-
         properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
 
         return new DefaultKafkaProducerFactory<>(properties);
-
     }
 
     @Bean
     public KafkaTemplate<String, String> kafkaTemplate() {
-
         return new KafkaTemplate<>(producerFactory());
     }
 
 
-
     @Bean
     public ConsumerFactory<String, String> consumerFactory() {
+
         Map<String, Object> properties = new HashMap<>();
+
         properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         properties.put(ConsumerConfig.GROUP_ID_CONFIG, "consumerGroupId");
         properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -63,5 +61,4 @@ public class KafkaConfig {
 
         return kafkaListenerContainerFactory;
     }
-
 }
