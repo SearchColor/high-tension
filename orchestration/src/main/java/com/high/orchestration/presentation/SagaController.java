@@ -4,6 +4,7 @@ import com.high.orchestration.application.OrderCreateSagaService;
 import com.high.orchestration.application.dto.request.OrderCreateRequest;
 import com.library.module.response.ApiResponse;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -25,7 +26,9 @@ public class SagaController {
 
     @PostMapping("/order")
     public ResponseEntity<ApiResponse<Void>> orderCreate(@Valid @RequestBody OrderCreateRequest orderCreateRequest) {
-        orderCreateSagaService.startOrderCreateStage(orderCreateRequest);
+        //인증인가 적용되면 헤더에서 주문자 ID 추출
+        UUID ordererId = UUID.randomUUID();
+        orderCreateSagaService.startOrderCreateStage(orderCreateRequest, ordererId);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("주문이 접수되었습니다."));
     }
 

@@ -24,12 +24,12 @@ public class OrderCreateSagaService {
     private final KafkaEventPublisher publisher;
 
     @Transactional
-    public void startOrderCreateStage(OrderCreateRequest orderCreateRequest) {
+    public void startOrderCreateStage(OrderCreateRequest orderCreateRequest, UUID ordererId) {
 
         //주문 사가 레코드 생성
         UUID sagaId = UUID.randomUUID();
 
-        OrderCreateCommandRequest orderCreateCommandRequest = OrderCreateCommandRequest.from(null, sagaId, orderCreateRequest);
+        OrderCreateCommandRequest orderCreateCommandRequest = OrderCreateCommandRequest.from(null, sagaId, ordererId, orderCreateRequest);
         try {
             SagaState sagaState = SagaState.create(
                 orderCreateCommandRequest.sagaId(),
