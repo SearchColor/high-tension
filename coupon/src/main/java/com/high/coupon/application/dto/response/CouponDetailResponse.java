@@ -15,10 +15,9 @@ public record CouponDetailResponse(
         LocalDateTime issueEndAt,
         LocalDateTime validUntil,
         LocalDateTime createdAt,
-        // todo String -> UUID
-        String createdBy,
+        UUID createdBy,
         LocalDateTime updatedAt,
-        String updatedBy
+        UUID updatedBy
 ) {
     public static CouponDetailResponse from(Coupon coupon) {
         return new CouponDetailResponse(

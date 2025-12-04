@@ -1,6 +1,10 @@
 package com.high.coupon.infrastructure.persistence;
 
+import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.repository.CouponIssueRepository;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -8,7 +12,30 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class CouponIssueRepositoryAdaptor implements CouponIssueRepository {
 
-    // todo: 쿠폰 생성 - 조회 기본 구현 완료 후 발급 이력 개발
     private final JpaCouponIssueRepository jpaCouponIssueRepository;
 
+    @Override
+    public boolean existsByCouponIdAndUserId(UUID couponId, UUID userId) {
+        return jpaCouponIssueRepository.existsByCouponIdAndUserId(couponId, userId);
+    }
+
+    @Override
+    public long countByCouponId(UUID couponId) {
+        return jpaCouponIssueRepository.countByCouponId(couponId);
+    }
+
+    @Override
+    public CouponIssue save(CouponIssue couponIssue) {
+        return jpaCouponIssueRepository.save(couponIssue);
+    }
+
+    @Override
+    public Optional<CouponIssue> findById(UUID couponIssueId) {
+        return jpaCouponIssueRepository.findById(couponIssueId);
+    }
+
+    @Override
+    public List<CouponIssue> findAllByUserId(UUID userId) {
+        return jpaCouponIssueRepository.findAllByUserIdWithCoupon(userId);
+    }
 }
