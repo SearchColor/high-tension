@@ -69,5 +69,18 @@ public class SagaState extends BaseUpdateEntity {
         );
     }
 
+    public void updateSagaState(
+        UUID orderId,
+        SagaStatus sagaStatus,
+        CurrentStep currentStep,
+        String payload
+    ) {
+        this.orderId = orderId;
+        this.sagaStatus = sagaStatus == null ? this.sagaStatus : sagaStatus;
+        this.currentStep = currentStep == null ? this.currentStep : currentStep;
+        this.payload = payload == null ? this.payload : payload;
+
+    }
+
 
 }

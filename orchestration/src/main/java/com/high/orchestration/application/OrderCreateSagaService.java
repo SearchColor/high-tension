@@ -2,7 +2,9 @@ package com.high.orchestration.application;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.orchestration.application.dto.internal.request.OrderCreateCommandRequest;
+import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
 import com.high.orchestration.application.dto.request.OrderCreateRequest;
+import com.high.orchestration.application.exception.SagaStateNotFoundException;
 import com.high.orchestration.application.port.EventPublisher;
 import com.high.orchestration.domain.entity.SagaState;
 import com.high.orchestration.domain.repository.SagaStateRepository;
@@ -56,4 +58,42 @@ public class OrderCreateSagaService {
         }
         log.info("주문 생성 saga 시작 성공");
     }
+
+    @Transactional
+    public void handlerOrderCreateSuccess(StockDeductionCommandRequest message) {
+        UUID sagaId = message.sagaId();
+
+        try {
+            SagaState sagaState =getSagaState(sagaId);
+
+            if(sagaState.getCurrentStep().isAfter(CurrentStep.ORDER_CREATE_VALIDATE)) {
+                log.warn("[Idempotency] 이미 처리된 이벤트: sagaId={}, currentStep={}",
+                    sagaId, sagaState.getCurrentStep());
+                return;
+            }
+
+            sagaState.updateSagaState(
+                message.orderId(),
+                null,
+                CurrentStep.ORDER_CREATE_STOCK,
+                message.toString()
+            );
+
+            SagaState updatedState = sagaStateRepository.save(sagaState);
+
+            log.info("[OrderCreateSagaService] handlerOrderCreateSuccess : saga 상태 업데이트 - sagaId={}, orderId={}", updatedState.getSagaId(), updatedState.getOrderId());
+
+            publisher.publishStockDeductionCommand("stock-deduction-request", message);
+            log.info("[OrderCreateSagaService] handlerOrderCreateSuccess : 재고차감 명령 발행 성공 ");
+
+        } catch (Exception e) {
+            log.error("[OrderCreateSagaService] handlerOrderCreateSuccess : 주문 생성 handler처리 실패");
+        }
+    }
+
+    public SagaState getSagaState(UUID sagaId) {
+        return sagaStateRepository.findById(sagaId).orElseThrow(SagaStateNotFoundException::new);
+    }
+
+
 }

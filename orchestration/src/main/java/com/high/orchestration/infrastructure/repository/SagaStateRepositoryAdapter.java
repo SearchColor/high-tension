@@ -2,6 +2,8 @@ package com.high.orchestration.infrastructure.repository;
 
 import com.high.orchestration.domain.entity.SagaState;
 import com.high.orchestration.domain.repository.SagaStateRepository;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,5 +16,10 @@ public class SagaStateRepositoryAdapter implements SagaStateRepository {
     @Override
     public SagaState save(SagaState sagaState) {
         return jpaSagaStateRepository.save(sagaState);
+    }
+
+    @Override
+    public Optional<SagaState> findById(UUID sagaId) {
+        return jpaSagaStateRepository.findById(sagaId);
     }
 }
