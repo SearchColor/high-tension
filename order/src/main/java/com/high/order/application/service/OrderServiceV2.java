@@ -92,7 +92,7 @@ public class OrderServiceV2 {
         );
         Order savedOrder = orderRepository.save(order);
 
-        return OrderSuccessResponse.of(order, request.sagaId(), request.ordererId());
+        return OrderSuccessResponse.of(order, request.sagaId());
     }
 
 
