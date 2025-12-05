@@ -1,0 +1,53 @@
+Gateway Rate Limiting Test Result
+Test Date: 2025-12-04 23:45:15
+========================================
+
+[Test 0] 회원가입
+✓ 회원가입 성공
+Email: test_1764859515@example.com
+
+[Test 1] JWT 토큰 획득 (로그인)
+✓ 토큰 획득 성공
+Token: eyJhbGciOiJIUzI1NiJ9...
+
+[Test 2] 정상 요청 - Rate Limit 헤더 확인
+HTTP Status: 200
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 9
+✓ 정상 요청 성공, Rate Limit 헤더 확인됨
+
+[Test 3] 10번 연속 요청 - 토큰 소진
+성공: 10/10
+실패: 0/10
+✓ 10번 요청 모두 성공
+
+[Test 4] 11번째 요청 - Rate Limit 초과 확인
+HTTP Status: 429
+Retry-After: 1
+Response Body: {"code":9200,"retryAfter":1,"success":false,"message":"요청 한도를 초과했습니다"}
+✓ 429 Too Many Requests 응답 확인
+Error Code: 9200
+Error Message: 요청 한도를 초과했습니다
+Retry After (body): 1
+✓ 올바른 에러 코드 (9200)
+
+[Test 5] 토큰 리필 확인 (10초 대기)
+HTTP Status: 200
+X-RateLimit-Remaining: 9
+✓ 요청 성공 (토큰 리필됨)
+리필된 토큰: 10개 (refill-rate: 1 token/sec × 10 sec)
+남은 토큰: 9 (10 - 1)
+
+========================================
+Test Summary
+========================================
+✓ Test 0: 회원가입
+✓ Test 1: JWT 토큰 획득
+✓ Test 2: Rate Limit 헤더 확인
+✓ Test 3: 10번 연속 요청 성공
+✓ Test 4: 11번째 요청 429 응답
+✓ Test 5: 토큰 리필 확인
+
+🎉 모든 테스트 성공! Rate Limiting이 정상 동작합니다.
+
+결과 파일: /c/Users/gy990/OneDrive/GYP/14.Master_Java/02.workspace/high-tension/gateway/scripts/rate-limiting-test-result-1764859515.txt

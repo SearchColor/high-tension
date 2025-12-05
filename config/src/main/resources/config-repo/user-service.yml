@@ -29,8 +29,8 @@ spring:
   security:
     jwt:
       secret: ${JWT_SECRET:change-this-secret-key-in-production-must-be-at-least-256-bits-long}
-      access-token-validity: 3600000  # 1 hour
-      refresh-token-validity: 604800000  # 7 days
+      access-token-validity: 86400000  # 24시간 (개발 환경용, 프로덕션: 3600000 = 1시간)
+      refresh-token-validity: 2592000000  # 30일 (개발 환경용, 프로덕션: 604800000 = 7일)
 
 management:
   zipkin:
