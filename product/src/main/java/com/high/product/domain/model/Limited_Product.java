@@ -19,10 +19,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "p_limitted_product")
+@Table(name = "p_limited_product")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Limitted_Product extends BaseCreateEntity {
+public class Limited_Product extends BaseCreateEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -49,12 +49,12 @@ public class Limitted_Product extends BaseCreateEntity {
 	private LocalDateTime end;
 
 	@Builder
-	public Limitted_Product(String name, int price, String category, String seller, int discountRate,
+	public Limited_Product(String name, int price, String category, String seller, int discountRate,
 		LocalDateTime end) {
 
 		// 할인율은 0% 미만이 될 수 없음
 		if (discountRate < 0 || discountRate > 100) {
-			throw new ProductException(ProductErrorCode.LIMITTED_PRODUCT_NOT_FOUND);
+			throw new ProductException(ProductErrorCode.DISCOUNT_RATE_OUT_OF_RANGE);
 		}
 
 		this.name = name;
@@ -66,9 +66,9 @@ public class Limitted_Product extends BaseCreateEntity {
 	}
 
 	// 한정상품 생성 정적 메서드
-	public static Limitted_Product createProduct(String name, Integer price, String category, String seller,
+	public static Limited_Product createProduct(String name, Integer price, String category, String seller,
 		int discountrate, LocalDateTime end) {
-		return Limitted_Product.builder()
+		return Limited_Product.builder()
 			.name(name)
 			.price(price)
 			.category(category)

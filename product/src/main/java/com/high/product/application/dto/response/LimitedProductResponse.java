@@ -3,10 +3,10 @@ package com.high.product.application.dto.response;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import com.high.product.domain.model.Limitted_Product;
+import com.high.product.domain.model.Limited_Product;
 
 // 한정상품 조회에 사용되는 Dto
-public record LimittedProductResponse(
+public record LimitedProductResponse(
 
 	UUID id,
 
@@ -26,8 +26,8 @@ public record LimittedProductResponse(
 
 	UUID createBy
 ) {
-	public static LimittedProductResponse from(Limitted_Product limittedProduct) {
-		return new LimittedProductResponse(
+	public static LimitedProductResponse from(Limited_Product limittedProduct) {
+		return new LimitedProductResponse(
 			limittedProduct.getId(),
 			limittedProduct.getName(),
 			limittedProduct.getPrice(),

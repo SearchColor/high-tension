@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import com.high.product.domain.model.Limited_Product_Stock;
 
-public record LimittedStockResponse(
+public record LimitedStockResponse(
 	UUID id,
 
 	UUID limitedProductId,

@@ -5,10 +5,10 @@ import java.util.UUID;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
-public record LimittedStockCreateRequest(
+public record LimitedStockCreateRequest(
 
 	@NotNull
-	UUID limittedProductId,
+	UUID limitedProductId,
 
 	@NotNull
 	@Min(0)

@@ -9,17 +9,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.high.product.application.dto.request.LimittedStockCreateRequest;
+import com.high.product.application.dto.request.LimitedStockCreateRequest;
 import com.high.product.application.dto.request.StockCreateRequest;
-import com.high.product.application.dto.response.LimittedStockResponse;
+import com.high.product.application.dto.response.LimitedStockResponse;
 import com.high.product.application.dto.response.StockResponse;
 import com.high.product.application.exception.ProductException;
-import com.high.product.domain.model.Limitted_Product;
-import com.high.product.domain.model.Limitted_Product_Stock;
+import com.high.product.domain.model.Limited_Product;
+import com.high.product.domain.model.Limited_Product_Stock;
 import com.high.product.domain.model.Product;
 import com.high.product.domain.model.Product_Stock;
-import com.high.product.domain.repository.Limitted_ProductRepository;
-import com.high.product.domain.repository.Limitted_StockRepository;
+import com.high.product.domain.repository.Limited_ProductRepository;
+import com.high.product.domain.repository.Limited_StockRepository;
 import com.high.product.domain.repository.ProductRepository;
 import com.high.product.domain.repository.StockRepository;
 import com.high.product.exception.ProductErrorCode;
@@ -32,9 +32,9 @@ import lombok.RequiredArgsConstructor;
 public class StockService {
 
 	private final StockRepository stockRepository;
-	private final Limitted_StockRepository limittedStockRepository;
+	private final Limited_StockRepository limitedStockRepository;
 	private final ProductRepository productRepository;
-	private final Limitted_ProductRepository limittedProductRepository;
+	private final Limited_ProductRepository limitedProductRepository;
 
 	// 일반상품 재고 등록
 	public StockResponse createStock(StockCreateRequest request) {
@@ -85,45 +85,45 @@ public class StockService {
 	}
 
 	// 한정상품 재고 등록
-	public LimittedStockResponse createLimittedStock(LimittedStockCreateRequest request) {
+	public LimitedStockResponse createLimitedStock(LimitedStockCreateRequest request) {
 
 		// 해당 상품이 있는지 확인
-		Limitted_Product product = limittedProductRepository.findById(request.limittedProductId())
+		Limited_Product product = limitedProductRepository.findById(request.limitedProductId())
 			.orElseThrow(() -> new ProductException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
 		// 해당 상품의 재고가 있는지 확인(상품 1개에 1개의 재고 등록가능)
-		if (limittedStockRepository.existsBylimittedProductId(request.limittedProductId())) {
+		if (limitedStockRepository.existsBylimitedProductId(request.limitedProductId())) {
 			throw new ProductException(ProductErrorCode.DUPLICATE_STOCK);
 		}
 
-		Limitted_Product_Stock limittedStock = Limitted_Product_Stock.createStock(
-			request.limittedProductId(),
+		Limited_Product_Stock limitedStock = Limited_Product_Stock.createStock(
+			request.limitedProductId(),
 			request.quantity()
 		);
 
-		Limitted_Product_Stock savedStock = limittedStockRepository.save(limittedStock);
+		Limited_Product_Stock savedStock = limitedStockRepository.save(limitedStock);
 
-		return LimittedStockResponse.from(savedStock);
+		return LimitedStockResponse.from(savedStock);
 	}
 
 	// 한정상품Id로 재고 단건 조회
-	public LimittedStockResponse getStockByLimittedProductById(UUID limittedProductId) {
+	public LimitedStockResponse getStockByLimitedProductById(UUID limitedProductId) {
 
-		Limitted_Product_Stock limittedProduct = limittedStockRepository.findById(limittedProductId)
+		Limited_Product_Stock limitedProduct = limitedStockRepository.findById(limitedProductId)
 			.orElseThrow(() -> new ProductException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
-		return LimittedStockResponse.from(limittedProduct);
+		return LimitedStockResponse.from(limitedProduct);
 	}
 
 	// 한정상품 재고 전체 조회 (페이징 & 정렬)
-	public Page<LimittedStockResponse> getAllLimittedStocks(int page, int size, String sort, String direction) {
+	public Page<LimitedStockResponse> getAllLimitedStocks(int page, int size, String sort, String direction) {
 
 		Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
 		Sort finalSort = Sort.by(sortDirection, sort);
 
 		Pageable pageable = PageRequest.of(page - 1, size, finalSort);
 
-		return limittedStockRepository.findAll(pageable)
-			.map(LimittedStockResponse::from);
+		return limitedStockRepository.findAll(pageable)
+			.map(LimitedStockResponse::from);
 	}
 }

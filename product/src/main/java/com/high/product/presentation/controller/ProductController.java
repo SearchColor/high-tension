@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.high.product.application.dto.request.LimittedProductCreateRequest;
+import com.high.product.application.dto.request.LimitedProductCreateRequest;
 import com.high.product.application.dto.request.ProductCreateRequest;
 import com.high.product.application.dto.request.ProductUpdateRequest;
-import com.high.product.application.dto.response.LimittedProductResponse;
+import com.high.product.application.dto.response.LimitedProductResponse;
 import com.high.product.application.dto.response.ProductResponse;
 import com.high.product.application.service.ProductService;
 import com.library.jpa.response.PageResponse;
@@ -113,11 +113,11 @@ public class ProductController {
 	}
 
 	// 한정상품 등록
-	@PostMapping("/limitted-products")
-	public ResponseEntity<ApiResponse<LimittedProductResponse>> createLimittedProduct(
-		@RequestBody @Valid LimittedProductCreateRequest request) {
+	@PostMapping("/limited-products")
+	public ResponseEntity<ApiResponse<LimitedProductResponse>> createLimitedProduct(
+		@RequestBody @Valid LimitedProductCreateRequest request) {
 
-		LimittedProductResponse response = productService.createLimittedProduct(request);
+		LimitedProductResponse response = productService.createLimitedProduct(request);
 
 		return new ResponseEntity<>(
 			ApiResponse.success(response, "한정 상품이 성공적으로 등록되었습니다."),
@@ -126,25 +126,25 @@ public class ProductController {
 	}
 
 	// 한정상품 단건 조회
-	@GetMapping("/limitted-products/{limittedProductId}")
-	public ResponseEntity<ApiResponse<LimittedProductResponse>> getLimittedProductById(
-		@PathVariable UUID limittedProductId) {
-		LimittedProductResponse response = productService.getLimittedProductById(limittedProductId);
+	@GetMapping("/limited-products/{limitedProductId}")
+	public ResponseEntity<ApiResponse<LimitedProductResponse>> getLimitedProductById(
+		@PathVariable UUID limitedProductId) {
+		LimitedProductResponse response = productService.getLimitedProductById(limitedProductId);
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
 	// 한정상품 전체 조회
-	@GetMapping("/limitted-products")
-	public ResponseEntity<ApiResponse<PageResponse<LimittedProductResponse>>> getAllLimittedProducts(
+	@GetMapping("/limited-products")
+	public ResponseEntity<ApiResponse<PageResponse<LimitedProductResponse>>> getAllLimitedProducts(
 		@RequestParam(defaultValue = "1") int page,
 		@RequestParam(defaultValue = "10") int size,
 		@RequestParam(defaultValue = "createdAt") String sort,
 		@RequestParam(defaultValue = "desc") String direction // asc/desc
 	) {
 
-		Page<LimittedProductResponse> pageResult = productService.getAllLimittedProducts(page, size, sort, direction);
+		Page<LimitedProductResponse> pageResult = productService.getAllLimitedProducts(page, size, sort, direction);
 
-		PageResponse<LimittedProductResponse> response = PageResponse.fromPage(
+		PageResponse<LimitedProductResponse> response = PageResponse.fromPage(
 			pageResult,
 			sort,
 			"asc".equalsIgnoreCase(direction)
@@ -154,8 +154,8 @@ public class ProductController {
 	}
 
 	// 한정상품 카테고리별 조회
-	@GetMapping("/limitted-products/category")
-	public ResponseEntity<ApiResponse<PageResponse<LimittedProductResponse>>> getLimittedProductsByCategory(
+	@GetMapping("/limited-products/category")
+	public ResponseEntity<ApiResponse<PageResponse<LimitedProductResponse>>> getLimitedProductsByCategory(
 		@RequestParam String category,
 		@RequestParam(defaultValue = "1") int page,
 		@RequestParam(defaultValue = "10") int size,
@@ -163,10 +163,10 @@ public class ProductController {
 		@RequestParam(defaultValue = "desc") String direction // asc/desc
 	) {
 
-		Page<LimittedProductResponse> pageResult = productService.getLimittedProductsByCategory(category, page, size,
+		Page<LimitedProductResponse> pageResult = productService.getLimitedProductsByCategory(category, page, size,
 			sort, direction);
 
-		PageResponse<LimittedProductResponse> response = PageResponse.fromPage(
+		PageResponse<LimitedProductResponse> response = PageResponse.fromPage(
 			pageResult,
 			sort,
 			"asc".equalsIgnoreCase(direction)

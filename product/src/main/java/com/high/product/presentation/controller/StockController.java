@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.high.product.application.dto.request.LimittedStockCreateRequest;
+import com.high.product.application.dto.request.LimitedStockCreateRequest;
 import com.high.product.application.dto.request.StockCreateRequest;
-import com.high.product.application.dto.response.LimittedStockResponse;
+import com.high.product.application.dto.response.LimitedStockResponse;
 import com.high.product.application.dto.response.StockResponse;
 import com.high.product.application.service.StockService;
 import com.library.jpa.response.PageResponse;
@@ -70,11 +70,11 @@ public class StockController {
 	}
 
 	// 한정상품 재고 등록
-	@PostMapping("/limitted-products/stocks")
-	public ResponseEntity<ApiResponse<LimittedStockResponse>> createLimittedStock(
-		@RequestBody @Valid LimittedStockCreateRequest request) {
+	@PostMapping("/limited-products/stocks")
+	public ResponseEntity<ApiResponse<LimitedStockResponse>> createLimitedStock(
+		@RequestBody @Valid LimitedStockCreateRequest request) {
 
-		LimittedStockResponse response = stockService.createLimittedStock(request);
+		LimitedStockResponse response = stockService.createLimitedStock(request);
 		return new ResponseEntity<>(
 			ApiResponse.success(response, "한정상품 재고 정보가 성공적으로 등록되었습니다."),
 			HttpStatus.CREATED
@@ -82,24 +82,24 @@ public class StockController {
 	}
 
 	// ID로 단건 조회
-	@GetMapping("/limitted-products/stocks/{limittedProductId}")
-	public ResponseEntity<ApiResponse<LimittedStockResponse>> getStockByLimittedProductById(
-		@PathVariable UUID limittedProductId) {
-		LimittedStockResponse response = stockService.getStockByLimittedProductById(limittedProductId);
+	@GetMapping("/limited-products/stocks/{limitedProductId}")
+	public ResponseEntity<ApiResponse<LimitedStockResponse>> getStockByLimitedProductById(
+		@PathVariable UUID limitedProductId) {
+		LimitedStockResponse response = stockService.getStockByLimitedProductById(limitedProductId);
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
 	// 페이징 및 정렬 적용 전체 조회
-	@GetMapping("/limitted-products/stocks")
-	public ResponseEntity<ApiResponse<PageResponse<LimittedStockResponse>>> getAllLimittedStocks(
+	@GetMapping("/limited-products/stocks")
+	public ResponseEntity<ApiResponse<PageResponse<LimitedStockResponse>>> getAllLimitedStocks(
 		@RequestParam(defaultValue = "1") int page,
 		@RequestParam(defaultValue = "10") int size,
 		@RequestParam(defaultValue = "createdAt") String sort,
 		@RequestParam(defaultValue = "desc") String direction
 	) {
-		Page<LimittedStockResponse> pageResult = stockService.getAllLimittedStocks(page, size, sort, direction);
+		Page<LimitedStockResponse> pageResult = stockService.getAllLimitedStocks(page, size, sort, direction);
 
-		PageResponse<LimittedStockResponse> response = PageResponse.fromPage(
+		PageResponse<LimitedStockResponse> response = PageResponse.fromPage(
 			pageResult,
 			sort,
 			"asc".equalsIgnoreCase(direction)
