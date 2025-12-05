@@ -17,13 +17,37 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-@Transactional
 @RequiredArgsConstructor
-public class UserCommandService {
+public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+
+    /**
+     * 사용자 ID로 사용자 정보 조회 (읽기 전용)
+     */
+    @Transactional(readOnly = true)
+    public UserResponse getUserById(String userId) {
+        UUID userUuid;
+
+        try {
+            userUuid = UUID.fromString(userId);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid UUID format for userId: {}", userId);
+            throw new IllegalArgumentException("Invalid user ID format", e);
+        }
+
+        User user = userRepository.findByIdAndDeletedAtIsNull(userUuid)
+                .orElseThrow(() -> {
+                    log.warn("User not found or deleted: userId={}", userId);
+                    return new UserNotFoundException();
+                });
+
+        log.info("User info retrieved successfully: userId={}, email={}", user.getUserId(), user.getEmail());
+
+        return UserResponse.from(user);
+    }
 
     /**
      * 사용자 정보 수정
@@ -32,6 +56,7 @@ public class UserCommandService {
      * @param request 수정할 사용자 정보
      * @return UserResponse
      */
+    @Transactional
     public UserResponse updateUserInfo(UUID userId, UpdateUserRequest request) {
         // 최소 1개 필드 검증
         if (request.name() == null && request.phoneNumber() == null &&
@@ -69,6 +94,7 @@ public class UserCommandService {
      * @param userId  사용자 ID (SecurityContext에서 추출)
      * @param request 현재 비밀번호 및 새 비밀번호
      */
+    @Transactional
     public void changePassword(UUID userId, ChangePasswordRequest request) {
         // 사용자 조회
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)
@@ -97,6 +123,7 @@ public class UserCommandService {
      * @param userId  사용자 ID (SecurityContext에서 추출)
      * @param request 비밀번호 재확인
      */
+    @Transactional
     public void deleteUser(UUID userId, DeleteUserRequest request) {
         // 사용자 조회
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)

@@ -4,8 +4,7 @@ import com.high.user.application.dto.request.*;
 import com.high.user.application.dto.response.TokenResponse;
 import com.high.user.application.dto.response.UserResponse;
 import com.high.user.application.service.UserAuthService;
-import com.high.user.application.service.UserCommandService;
-import com.high.user.application.service.UserQueryService;
+import com.high.user.application.service.UserService;
 import com.library.module.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserAuthService userAuthService;
-    private final UserCommandService userCommandService;
-    private final UserQueryService userQueryService;
+    private final UserService userService;
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<UserResponse>> signup(
@@ -80,7 +78,7 @@ public class UserController {
 
         log.info("Get my info request received: userId={}", userId);
 
-        UserResponse response = userQueryService.getUserById(userId);
+        UserResponse response = userService.getUserById(userId);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -96,7 +94,7 @@ public class UserController {
 
         log.info("Update user info request received: userId={}", userId);
 
-        UserResponse response = userCommandService.updateUserInfo(userId, request);
+        UserResponse response = userService.updateUserInfo(userId, request);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -112,7 +110,7 @@ public class UserController {
 
         log.info("Change password request received: userId={}", userId);
 
-        userCommandService.changePassword(userId, request);
+        userService.changePassword(userId, request);
 
         return ResponseEntity.ok(ApiResponse.success(null));
     }
@@ -128,7 +126,7 @@ public class UserController {
 
         log.info("Delete user request received: userId={}", userId);
 
-        userCommandService.deleteUser(userId, request);
+        userService.deleteUser(userId, request);
 
         return ResponseEntity.noContent().build();
     }
