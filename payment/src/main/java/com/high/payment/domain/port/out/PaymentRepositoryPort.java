@@ -1,8 +1,12 @@
 package com.high.payment.domain.port.out;
 
+import java.util.Optional;
+import java.util.UUID;
+
 import com.high.payment.domain.model.Payment;
 
 public interface PaymentRepositoryPort {
 	Payment save(Payment payment);
-	// Payment findById(UUID id); // 필요 시 추가
+
+	Optional<Payment> findById(UUID id);
 }

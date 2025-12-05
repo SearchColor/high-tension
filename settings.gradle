@@ -1,0 +1,11 @@
+rootProject.name = 'high-tension'
+
+include 'cart'
+include 'coupon'
+include 'external'
+include 'gateway'
+include 'orchestration'
+include 'order'
+include 'payment'
+include 'product'
+include 'user'
