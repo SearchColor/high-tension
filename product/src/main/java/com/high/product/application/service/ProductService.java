@@ -36,11 +36,6 @@ public class ProductService {
 	// 일반상품 생성
 	public ProductResponse createProduct(ProductCreateRequest request) {
 
-		// 상풍명 중복 확인
-		if (productRepository.existsByName(request.name())) {
-			throw new ProductException(ProductErrorCode.DUPLICATE_PRODUCT_NAME);
-		}
-
 		Product product = Product.createProduct(
 			request.name(),
 			request.price(),
@@ -120,10 +115,6 @@ public class ProductService {
 	// 한정상품 등록
 	public LimitedProductResponse createLimitedProduct(LimitedProductCreateRequest request) {
 
-		// 상풍명 중복 확인
-		if (productRepository.existsByName(request.name())) {
-			throw new ProductException(ProductErrorCode.DUPLICATE_PRODUCT_NAME);
-		}
 
 		Limited_Product limitedProduct = Limited_Product.createProduct(
 			request.name(),
