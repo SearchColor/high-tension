@@ -127,6 +127,7 @@ public class OrderCreateSagaService {
         }
     }
 
+    //이 메서드는 수정될 예정
     @Transactional
     public void handlerPaymentCreateSuccess(ClearCartCommandRequest request) {
         log.info("[OrderCreateSagaService] handlerPaymentCreateSuccess - 결제생성 완료 후 handler 유입 성공");
@@ -141,6 +142,8 @@ public class OrderCreateSagaService {
             updateAndSaveSagaState(sagaState, null, request.toString());
 
             publisher.publishClearCartCommand("cart-clear-request", request);
+
+            //TODO: 종료 시점과 종료 처리 고민중...
             sagaState.updateCurrentStep(CurrentStep.ORDER_CREATE_COMPLETE);
             sagaStateRepository.save(sagaState);
 
