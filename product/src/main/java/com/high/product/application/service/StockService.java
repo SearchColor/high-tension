@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.high.product.application.dto.request.LimittedStockCreateRequest;
 import com.high.product.application.dto.request.StockCreateRequest;
-import com.high.product.application.dto.response.LimittedProductResponse;
 import com.high.product.application.dto.response.LimittedStockResponse;
 import com.high.product.application.dto.response.StockResponse;
 import com.high.product.application.exception.ProductException;

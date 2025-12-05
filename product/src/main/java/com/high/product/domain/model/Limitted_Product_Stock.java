@@ -2,8 +2,8 @@ package com.high.product.domain.model;
 
 import java.util.UUID;
 
-import com.high.product.exception.ProductErrorCode;
 import com.high.product.application.exception.ProductException;
+import com.high.product.exception.ProductErrorCode;
 import com.library.jpa.common.entity.BaseCreateEntity;
 
 import jakarta.persistence.Column;
