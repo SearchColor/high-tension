@@ -32,7 +32,9 @@ spring:
       discovery:
         locator:
           enabled: true
-      routes:
+      server:
+        webflux:
+          routes:
             # 1. User Service (8100) - Authentication base
             - id: user-service
               uri: lb://user-service

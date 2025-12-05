@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -22,6 +24,7 @@ import java.util.UUID;
 
 @Slf4j
 @Component
+@Order(2)  // HeaderAuthenticationFilter 다음 실행
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -31,6 +34,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+
+        // SecurityContext 체크: 이미 인증되어 있으면 JWT 검증 스킵
+        Authentication existingAuth = SecurityContextHolder.getContext().getAuthentication();
+        if (existingAuth != null
+            && existingAuth.isAuthenticated()
+            && !(existingAuth instanceof AnonymousAuthenticationToken)) {
+
+            log.debug("SecurityContext already set (via Gateway headers) - Skipping JWT validation");
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             String token = resolveToken(request);
 
@@ -42,6 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 } else {
                     Authentication authentication = getAuthentication(token);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                    log.debug("JWT authentication successful (direct call)");
                 }
             }
         } catch (Exception e) {
