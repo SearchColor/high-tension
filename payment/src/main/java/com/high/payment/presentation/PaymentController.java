@@ -1,7 +1,11 @@
 package com.high.payment.presentation;
 
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -58,5 +62,23 @@ public class PaymentController {
 
 		// 2. 성공 시 201 Created 응답 반환
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+	}
+
+	// 결제 조회 API (GET /api/v1/payments/{paymentId})
+	@GetMapping("/{paymentId}")
+	public ResponseEntity<CreatePaymentResponse> getPayment(
+		@PathVariable UUID paymentId) {
+
+		// 1. PathVariable 데이터 로그 추가
+		log.info("[Payment] 결제 조회 요청 수신: PaymentId={}", paymentId);
+
+		CreatePaymentResponse response = paymentService.getPayment(paymentId);
+
+		// 2. 서비스 처리 후 응답 데이터 상세 로그 추가
+		log.info("[Payment] 결제 조회 성공. PaymentId={}, OrderId={}, Amount={}",
+				 response.paymentId(), response.orderId(), response.amount());
+
+		// 3. 200 OK 응답 반환
+		return ResponseEntity.ok(response);
 	}
 }
