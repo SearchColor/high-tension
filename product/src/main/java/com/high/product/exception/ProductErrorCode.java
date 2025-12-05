@@ -27,7 +27,7 @@ public enum ProductErrorCode implements BaseErrorCode {
 	PRODUCT_ALREADY_DELETED(3105, HttpStatus.BAD_REQUEST, "올바른 상품이 아니므로 다른 상품의 재고관련 요청 부탁드립니다."),
 
 	// 한정상품 관련 에러코드
-	LIMITTED_PRODUCT_NOT_FOUND(3200, HttpStatus.BAD_REQUEST, "할인율은 0% 미만이거나 100% 넘게 초과될 수 없습니다.");
+	DISCOUNT_RATE_OUT_OF_RANGE(3200, HttpStatus.BAD_REQUEST, "할인율은 0% 미만이거나 100% 넘게 초과될 수 없습니다.");
 
 	private final int code;
 	private final HttpStatus status;
