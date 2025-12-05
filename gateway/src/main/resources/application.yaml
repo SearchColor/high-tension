@@ -159,5 +159,5 @@ logging:
 
 # Rate Limiting configuration (Token Bucket Algorithm)
 rate-limit:
-  max-tokens: 10         # 버킷 최대 용량 (tokens) - TEST ONLY
-  refill-rate: 1         # 초당 토큰 리필 속도 (tokens/sec) - TEST ONLY
+  max-tokens: 100        # 버킷 최대 용량 (tokens) - TEST ONLY
+  refill-rate: 10        # 초당 토큰 리필 속도 (tokens/sec) - TEST ONLY
