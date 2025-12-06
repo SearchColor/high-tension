@@ -1,7 +1,8 @@
-package com.high.order.application.service;
+package com.high.order.application;
 
 import static java.util.stream.Collectors.toList;
 
+import com.high.order.application.dto.external.ProductResponse;
 import com.high.order.application.dto.internal.OrderItemCreateInfo;
 import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.application.dto.request.OrderItemDeliveryStatusChangeRequest;
@@ -14,6 +15,7 @@ import com.high.order.application.dto.response.OrderListResponse;
 import com.high.order.application.dto.response.OrderResponse;
 import com.high.order.application.exception.OrderBadRequestException;
 import com.high.order.application.exception.OrderNotFoundException;
+import com.high.order.application.service.ProductService;
 import com.high.order.domain.entity.Order;
 import com.high.order.domain.entity.OrderItem;
 import com.high.order.domain.exception.OrderItemNotFoundExeption;
@@ -21,7 +23,6 @@ import com.high.order.domain.repository.OrderItemRepository;
 import com.high.order.domain.repository.OrderRepository;
 import com.high.order.domain.vo.OrderItemStatus;
 import com.high.order.domain.vo.OrderStatus;
-import com.high.order.infrastructure.client.ProductDto;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
@@ -38,6 +39,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
+    private final ProductService productService;
 
     //FeignClient 통신 전 임시데이터
     UUID customerId =  UUID.randomUUID(); //유저
@@ -53,24 +55,29 @@ public class OrderService {
         /**
          * TODO:
          *  1. 로그인한 사용자 권한 검증
-         *  2. productID 존재여부 검증
+         *  2. productID 존재여부 검증 (OK)
          *  3. couponID 존재여부 검증 (사용가능한지)
          */
 
+        log.info("주문 생성 시작 ");
         List<OrderItemCreateInfo> orderItemCreateInfoList = request.itemList()
             .stream()
             .map( itemDto -> {
-                //feignClient 구현 후 mapper 사용예정
-                ProductDto productDto = ProductDto.init();
+
+                ProductResponse response =
+                    productService.getProductById(itemDto.productId()).getBody().data();
+
                 return new OrderItemCreateInfo(
-                    itemDto.productId(),
-                    productDto.producerId(),
-                    productDto.price(),
+                    response.productId(),
+                    UUID.randomUUID(), //producerId 임시 값
+                    response.price(),
                     itemDto.quantity()
                 );
             }).toList();
+        log.info("feignClient 통신성공 ");
 
-        List<OrderItem> itemList = orderItemCreateInfoList.stream()
+        List<OrderItem> itemList =
+            orderItemCreateInfoList.stream()
             .map(item -> OrderItem.create(
                 item.productId(),
                 item.producerId(),
@@ -78,6 +85,9 @@ public class OrderService {
                 item.unitPrice()
             )).toList();
 
+        log.info("itemList 담기 성공");
+
+        //TODO: 쿠폰 검증
         Order order = Order.createOrder(
             customerId,
             request.couponId(),
@@ -89,6 +99,8 @@ public class OrderService {
             itemList,
             discountRate
         );
+        log.info("order 담기 성공");
+
         Order savedOrder = orderRepository.save(order);
 
         return OrderResponse.from(savedOrder);

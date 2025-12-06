@@ -9,7 +9,7 @@ import com.high.order.application.dto.response.OrderDetailResponse;
 import com.high.order.application.dto.response.OrderItemIdResponse;
 import com.high.order.application.dto.response.OrderListResponse;
 import com.high.order.application.dto.response.OrderResponse;
-import com.high.order.application.service.OrderService;
+import com.high.order.application.OrderService;
 import com.library.module.response.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.List;

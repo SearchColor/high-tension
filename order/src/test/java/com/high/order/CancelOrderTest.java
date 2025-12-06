@@ -9,7 +9,7 @@ import com.high.order.application.dto.response.OrderResponse;
 import com.high.order.application.exception.OrderBadRequestException;
 import com.high.order.domain.exception.OrderItemNotFoundExeption;
 import com.high.order.application.exception.OrderNotFoundException;
-import com.high.order.application.service.OrderService;
+import com.high.order.application.OrderService;
 import com.high.order.domain.entity.Order;
 import com.high.order.domain.entity.OrderItem;
 import com.high.order.domain.repository.OrderItemRepository;
