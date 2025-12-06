@@ -15,6 +15,8 @@ import com.high.order.application.dto.response.OrderListResponse;
 import com.high.order.application.dto.response.OrderResponse;
 import com.high.order.application.exception.OrderBadRequestException;
 import com.high.order.application.exception.OrderNotFoundException;
+import com.high.order.application.service.CouponService;
+import com.high.order.application.service.PaymentService;
 import com.high.order.application.service.ProductService;
 import com.high.order.domain.entity.Order;
 import com.high.order.domain.entity.OrderItem;
@@ -40,6 +42,8 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final ProductService productService;
+    private final CouponService couponService;
+    private final PaymentService paymentService;
 
     //FeignClient 통신 전 임시데이터
     UUID customerId =  UUID.randomUUID(); //유저
@@ -148,7 +152,10 @@ public class OrderService {
 
         Order order = getOrderForUser(orderId);
 
-        //TODO: 결제가 PENDING 상태인지 확인하기
+        //TODO: 결제가 PENDING 상태인지 확인하기 - 수정필요
+        paymentService.getPayment(orderId);
+
+
         if (!order.getOrderStatus().canTransitionTo(OrderStatus.CANCELED)) {
             throw new OrderBadRequestException();
         }
