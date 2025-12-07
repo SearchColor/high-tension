@@ -16,3 +16,11 @@ management:
   tracing:
     sampling:
       probability: 1.0
+
+kafka:
+  bootstrap-servers: localhost:9092
+  consumer:
+    group-id: cart-service-group
+
+  topic:
+    clear-cart: cart.clear.request
