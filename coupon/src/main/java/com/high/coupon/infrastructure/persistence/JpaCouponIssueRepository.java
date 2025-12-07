@@ -12,9 +12,6 @@ public interface JpaCouponIssueRepository extends JpaRepository<CouponIssue, UUI
     boolean existsByCouponIdAndUserId(UUID couponId, UUID userId);
     long countByCouponId(UUID couponId);
 
-    // @Query("SELECT ci FROM CouponIssue ci JOIN FETCH ci.coupon WHERE ci.userId = :userId")
-    // List<CouponIssue> findAllByUserIdWithCoupon(@Param("userId") UUID userId);
-
     @Query("""
     SELECT ci FROM CouponIssue ci
     JOIN FETCH ci.coupon
