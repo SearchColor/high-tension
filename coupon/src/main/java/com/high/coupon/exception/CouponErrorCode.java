@@ -28,10 +28,10 @@ public enum CouponErrorCode implements BaseErrorCode {
     COUPON_INVALID_DATE(6505, HttpStatus.BAD_REQUEST, "쿠폰 발행/유효 기간을 입력해주세요"),
     COUPON_INVALID_DISCOUNT_RATE(6506, HttpStatus.BAD_REQUEST, "쿠폰 할인율은 1~100% 사이여야 하며, 소수점은 허용되지 않습니다."),
 
-    COUPON_EXPIRED(6505, HttpStatus.BAD_REQUEST, "쿠폰 사용 기간이 만료되어 복원되지 않습니다."),
+    COUPON_EXPIRED(6507, HttpStatus.BAD_REQUEST, "쿠폰 사용 기간이 만료되어 복원되지 않습니다."),
 
-    COUPON_INVALID_ISSUE_PERIOD(6507, HttpStatus.BAD_REQUEST, "발행 종료일이 시작일보다 이전입니다."),
-    COUPON_INVALID_VALID_UNTIL(6508, HttpStatus.BAD_REQUEST, "유효기간이 발행 종료일보다 이전입니다."),
+    COUPON_INVALID_ISSUE_PERIOD(6508, HttpStatus.BAD_REQUEST, "발행 종료일이 시작일보다 이전입니다."),
+    COUPON_INVALID_VALID_UNTIL(6509, HttpStatus.BAD_REQUEST, "유효기간이 발행 종료일보다 이전입니다."),
 
     ;
     private final int code;
