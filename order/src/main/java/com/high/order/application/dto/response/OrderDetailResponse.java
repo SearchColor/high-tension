@@ -1,6 +1,7 @@
 package com.high.order.application.dto.response;
 
 import com.high.order.domain.entity.Order;
+import com.high.order.domain.entity.OrderItem;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -36,9 +37,29 @@ public record OrderDetailResponse(
             order.getDeliveryAddress(),
             order.getDetailAddress(),
             order.getRequestMessage(),
-            LocalDateTime.now(), //BaseEntity적용 전 임시
+            order.getCreatedAt(),
             order.getOrderItems().stream().map(OrderItemResponse::from).toList()
 
+        );
+    }
+
+    public static OrderDetailResponse seller(Order order, List<OrderItem> orderItems) {
+
+        return new OrderDetailResponse(
+            order.getOrderId(),
+            order.getCustomerId(),
+            order.getCouponId(),
+            order.getTotalPrice(),
+            order.getDiscountAmount(),
+            order.getPaidAmount(),
+            order.getOrderStatus().toString(),
+            order.getRecipient(),
+            order.getRecipientContact(),
+            order.getDeliveryAddress(),
+            order.getDetailAddress(),
+            order.getRequestMessage(),
+            order.getCreatedAt(),
+            orderItems.stream().map(OrderItemResponse::from).toList()
         );
     }
 }

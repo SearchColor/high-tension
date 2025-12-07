@@ -38,13 +38,13 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    @PreAuthorize("hasAnyRole('USER', 'MASTER')")
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/product")
     public ResponseEntity<ApiResponse<OrderResponse>> createOrder(@Valid @RequestBody OrderCreateRequest productOrderCreateRequest,
-        @AuthenticationPrincipal UserPrincipal user) {
-        System.out.println("UserId = " + user.getUserId());
-        System.out.println("Roles = " + user.getAuthorities());
-        OrderResponse response = orderService.createOrder(productOrderCreateRequest);
+        @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        System.out.println("UserId = " + userPrincipal.getUserId());
+        System.out.println("Roles = " + userPrincipal.getRole());
+        OrderResponse response = orderService.createOrder(productOrderCreateRequest, userPrincipal);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
@@ -57,49 +57,55 @@ public class OrderController {
 
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @GetMapping("/{orderId}")
-    public ResponseEntity<ApiResponse<OrderDetailResponse>> getOrderDetail(@PathVariable("orderId") UUID orderId) {
-        OrderDetailResponse response = orderService.getOrderDetail(orderId);
+    public ResponseEntity<ApiResponse<OrderDetailResponse>> getOrderDetail(@PathVariable("orderId") UUID orderId,
+        @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        OrderDetailResponse response = orderService.getOrderDetail(orderId, userPrincipal);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<OrderListResponse>>> getOrders() {
-        List<OrderListResponse> responses = orderService.getOrders();
+    public ResponseEntity<ApiResponse<List<OrderListResponse>>> getOrders(
+        @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        List<OrderListResponse> responses = orderService.getOrders(userPrincipal);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responses));
     }
 
 
     //전체 취소
-    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
+    @PreAuthorize("hasAnyRole('USER','MASTER')")
     @PatchMapping("/{orderId}/cancel")
-    public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(@PathVariable UUID orderId) {
-        OrderResponse response = orderService.cancelOrder(orderId);
+    public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(@PathVariable UUID orderId,
+        @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        OrderResponse response = orderService.cancelOrder(orderId, userPrincipal);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
     //부분 취소
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @PatchMapping("/{orderId}/cancel/{orderItemId}")
-    public ResponseEntity<ApiResponse<OrderItemIdResponse>> cancelOrderItem(@PathVariable UUID orderId, @PathVariable UUID orderItemId) {
-        OrderItemIdResponse response = orderService.cancelOrderItem(orderId, orderItemId);
+    public ResponseEntity<ApiResponse<OrderItemIdResponse>> cancelOrderItem(@PathVariable UUID orderId, @PathVariable UUID orderItemId,
+        @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        OrderItemIdResponse response = orderService.cancelOrderItem(orderId, orderItemId,userPrincipal);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
     //주문 정보 변경
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @PatchMapping("/{orderId}")
-    public ResponseEntity<ApiResponse<OrderResponse>> updateOrder(@PathVariable UUID orderId, @Valid @RequestBody OrderUpdateRequest request) {
-        OrderResponse response = orderService.updateOrder(orderId,request);
+    public ResponseEntity<ApiResponse<OrderResponse>> updateOrder(@PathVariable UUID orderId, @Valid @RequestBody OrderUpdateRequest request,
+        @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        OrderResponse response = orderService.updateOrder(orderId, request, userPrincipal);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
     //주문 상태 변경
-    @PreAuthorize("hasAnyRole('SELLER', 'MASTER')")
+    @PreAuthorize("hasRole('MASTER')")
     @PatchMapping("/{orderId}/status")
     public ResponseEntity<ApiResponse<OrderResponse>> changeOrderStatus(@PathVariable UUID orderId, @RequestBody
-    OrderStatusChangeRequest request) {
-        OrderResponse response = orderService.changeOrderStatus(orderId, request);
+    OrderStatusChangeRequest request, @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        OrderResponse response = orderService.changeOrderStatus(orderId, request, userPrincipal);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
@@ -107,8 +113,9 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @PatchMapping("/{orderId}/items/{orderItemId}/status")
     public ResponseEntity<ApiResponse<OrderItemIdResponse>> changeOrderItemStatus(@PathVariable UUID orderId, @PathVariable UUID orderItemId,
-                                            @RequestBody @Valid OrderItemStatusChangeRequest request) {
-        OrderItemIdResponse response = orderService.changeOrderItemStatus(orderId, orderItemId, request);
+                                            @RequestBody @Valid OrderItemStatusChangeRequest request,
+                                            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        OrderItemIdResponse response = orderService.changeOrderItemStatus(orderId, orderItemId, request, userPrincipal);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
@@ -117,16 +124,17 @@ public class OrderController {
 
     @PatchMapping("/{orderId}/items/{orderItemId}/delivery-status")
     public ResponseEntity<ApiResponse<OrderItemIdResponse>> changeOrderItemDeliveryStatus(
-                        @PathVariable UUID orderId, @PathVariable UUID orderItemId, @RequestBody @Valid OrderItemDeliveryStatusChangeRequest request) {
+                        @PathVariable UUID orderId, @PathVariable UUID orderItemId, @RequestBody @Valid OrderItemDeliveryStatusChangeRequest request,
+                        @AuthenticationPrincipal UserPrincipal userPrincipal) {
         log.info("진입");
-        OrderItemIdResponse response = orderService.changeOrderItemDeliveryStatus(orderId, orderItemId, request);
+        OrderItemIdResponse response = orderService.changeOrderItemDeliveryStatus(orderId, orderItemId, request, userPrincipal);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
-    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
+    @PreAuthorize("hasAnyRole('USER', 'MASTER')")
     @DeleteMapping("/{orderId}")
-    public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable UUID orderId) {
-        orderService.deleteOrder(orderId);
+    public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable UUID orderId, @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        orderService.deleteOrder(orderId, userPrincipal);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("삭제되었습니다."));
     }
 
