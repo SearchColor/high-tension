@@ -2,7 +2,7 @@ spring:
   application:
     name: external-service
   config:
-    import: "optional:configserver:"
+    import: "optional:configserver: , optional:classpath:secrets.yml"
   cloud:
     config:
       discovery:
