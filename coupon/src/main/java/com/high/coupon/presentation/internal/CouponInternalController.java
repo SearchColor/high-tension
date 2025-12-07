@@ -25,12 +25,12 @@ public class CouponInternalController {
     // todo API 추가 internal 명세서 정리 필요
 
     /**
-     * 사용자 별 보유 쿠폰 조회
+     * 사용자 별 보유 쿠폰(사용 가능 상태) 조회
      * GET /api/v1/internal/coupons?userId={userId}
      */
     @GetMapping
     public ApiResponse<List<UserCouponResponse>> getUserCoupons(@RequestParam UUID userId) {
-        List<UserCouponResponse> result = couponIssueService.getUserCoupons(userId);
+        List<UserCouponResponse> result = couponIssueService.getAvailableUserCoupons(userId);
         return ApiResponse.success(result);
     }
 
@@ -39,7 +39,7 @@ public class CouponInternalController {
      * PUT /api/v1/internal/coupons/{couponIssueId}/use?userId={userId}
      */
     @PutMapping("/{couponIssueId}/use")
-    public ApiResponse<CouponUseResponse> useCouponInternal(
+    public ApiResponse<CouponUseResponse> useCoupon(
             @PathVariable UUID couponIssueId,
             @RequestParam UUID userId
     ) {

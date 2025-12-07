@@ -72,9 +72,20 @@ public class CouponIssueService {
      */
 
 
-    // 사용자 별 쿠폰 조회
-    public List<UserCouponResponse> getUserCoupons(UUID userId) {
-        List<CouponIssue> issues = couponIssueRepository.findAllByUserId(userId);
+    // 사용자 별 쿠폰 조회 todo 삭제 예정
+//    public List<UserCouponResponse> getUserCoupons(UUID userId) {
+//        List<CouponIssue> issues = couponIssueRepository.findAllByUserId(userId);
+//
+//        return issues.stream()
+//                .map(UserCouponResponse::from)
+//                .toList();
+//    }
+
+    // 사용자 별 사용 가능한 쿠폰 조회
+    public List<UserCouponResponse> getAvailableUserCoupons(UUID userId) {
+
+        List<CouponIssue> issues =
+                couponIssueRepository.findAvailableByUserId(userId);
 
         return issues.stream()
                 .map(UserCouponResponse::from)
