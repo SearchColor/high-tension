@@ -1,7 +1,6 @@
 package com.high.coupon.domain.entity;
 
 import com.high.coupon.domain.exception.CouponAlreadyUsedException;
-import com.high.coupon.domain.exception.CouponExpiredException;
 import com.high.coupon.domain.exception.CouponIssuePeriodInvalidException;
 import com.high.coupon.domain.exception.CouponNotOwnedException;
 import com.high.coupon.domain.exception.CouponNotValidPeriodException;
@@ -112,20 +111,22 @@ public class CouponIssue extends BaseEntity {
 
     /**
      * 주문 / 결제 취소 시 쿠폰 복원
-     * 동일한 유효기간 이내에서만 복원 가능
+     * 동일한 유효기간 이내에서만 복원됨
      */
     public void restoreCoupon(LocalDateTime now) {
 
         if (Boolean.FALSE.equals(this.isUsed) || this.usedAt == null) {
             // 이미 사용 가능 상태이거나, 사용 기록이 없는 쿠폰은 종료 (ex. 사용 실패 후 재시도)
-            log.info("Coupon {} is already unused or has no used record.", this.id);
+            log.info("쿠폰 issueId: {} 미사용 상태 혹은 사용이력이 없어 복원처리를 종료합니다.", this.id);
             return;
         }
 
         // 유효기간 체크 (동일한 유효기간 이내에서만 복원 가능)
         if (now.isAfter(this.validEndAt)) {
             // 유효기간이 만료된 후에는 복원되지 않음
-            throw new CouponExpiredException();
+            log.warn("쿠폰 유효기간 만료로 인해 쿠폰(issueID: {}) 복원이 불가능합니다. 복원 처리를 생략합니다. (만료일: {}, 요청일시: {})",
+                    this.id, this.validEndAt, now);
+            return;
         }
 
         this.isUsed = false; // true -> false 복원

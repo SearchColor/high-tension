@@ -101,7 +101,7 @@ public class CouponIssueService {
         LocalDateTime now = LocalDateTime.now();
         couponIssue.restoreCoupon(now);
 
-        log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 복원 : couponIssueId={}", couponIssueId);
+        log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 복원 프로세스 종료 : couponIssueId={}", couponIssueId);
 
         return CouponUseResponse.from(couponIssue);
     }
