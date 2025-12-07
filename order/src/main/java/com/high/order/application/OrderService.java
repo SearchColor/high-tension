@@ -25,7 +25,6 @@ import com.high.order.domain.repository.OrderItemRepository;
 import com.high.order.domain.repository.OrderRepository;
 import com.high.order.domain.vo.OrderItemStatus;
 import com.high.order.domain.vo.OrderStatus;
-import com.high.order.infrastructure.security.UserPrincipal;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
@@ -54,9 +53,7 @@ public class OrderService {
 
 
     @Transactional
-    public OrderResponse createOrder(OrderCreateRequest request, UserPrincipal userPrincipal) {
-
-        UUID customerId = userPrincipal.getUserId();
+    public OrderResponse createOrder(OrderCreateRequest request, UUID userId, String userRole) {
 
         //TODO: 유저 검증(유저 조회)
 
@@ -91,7 +88,7 @@ public class OrderService {
         //TODO: 쿠폰 검증
 
         Order order = Order.createOrder(
-            customerId,
+            userId,
             request.couponId(),
             request.recipient(),
             request.recipientContact(),
@@ -110,7 +107,7 @@ public class OrderService {
 
 
 
-    public OrderDetailResponse getOrderDetail(UUID orderId,  UserPrincipal userPrincipal) {
+    public OrderDetailResponse getOrderDetail(UUID orderId, UUID userId, String userRole) {
         /**
          * TODO:
          *   1. 권한에 따른 조회 분기
@@ -118,8 +115,6 @@ public class OrderService {
          *      ㄴ) seller - orderItem의 producerID가 본인인 데이터 조회 가능 (삭제된 데이터까지 조회가 가능하게)
          *      ㄷ) user - 자신의 주문만 조회 가능
          */
-        UUID userId = userPrincipal.getUserId();
-        String userRole = userPrincipal.getRole();
 
         if(userRole.equals(ROLE_PREFIX + "MASTER")) {
             Order order = getOrderForAdmin(orderId);
@@ -142,12 +137,10 @@ public class OrderService {
 
     }
 
-    public List<OrderListResponse> getOrders(UserPrincipal userPrincipal) {
+    public List<OrderListResponse> getOrders(UUID userId, String userRole) {
         /**
          * TODO: 권한에 따른 조회 데이터 필터링
          */
-        UUID userId = userPrincipal.getUserId();
-        String userRole = userPrincipal.getRole();
 
         if(userRole.equals(ROLE_PREFIX + "MASTER")) {
             List<Order> orderList = orderRepository.findAll(); //TODO: 페이징
@@ -167,19 +160,13 @@ public class OrderService {
 
 
     @Transactional
-    public void deleteOrder(UUID orderId, UserPrincipal userPrincipal) {
+    public void deleteOrder(UUID orderId, UUID userId, String userRole) {
 
-        UUID userId = userPrincipal.getUserId();
-        String userRole = userPrincipal.getRole();
-        Order order;
+        Order order = getOrderForAdmin(orderId);
 
-        if(userRole.equals(ROLE_PREFIX + "MASTER")) {
-            order = getOrderForAdmin(orderId);
-
+        if(userRole.equals(ROLE_PREFIX + "USER")) {
+            order = getOrderForUser(orderId, userId);
         }
-
-        order = getOrderForUser(orderId, userId);
-
 
         if(order.isDeleted()) {
             throw new OrderNotFoundException();
@@ -188,16 +175,15 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderResponse cancelOrder(UUID orderId, UserPrincipal userPrincipal) {
-        UUID customerId = userPrincipal.getUserId();
-        String userRole = userPrincipal.getRole();
+    public OrderResponse cancelOrder(UUID orderId, UUID userId, String userRole) {
+
         Order order;
 
         order = getOrderForAdmin(orderId);
 
 
         if(userRole.equals(ROLE_PREFIX + "USER")) {
-            order = getOrderForUser(orderId, customerId);
+            order = getOrderForUser(orderId, userId);
 
         }
         //TODO: 결제가 PENDING 상태인지 확인하기 - 수정필요
@@ -227,9 +213,8 @@ public class OrderService {
 
     }
 
-    public OrderItemIdResponse cancelOrderItem(UUID orderId, UUID orderItemId,  UserPrincipal userPrincipal) {
-        UUID userId = userPrincipal.getUserId();
-        String userRole = userPrincipal.getRole();
+    public OrderItemIdResponse cancelOrderItem(UUID orderId, UUID orderItemId, UUID userId, String userRole) {
+
         Order order;
         OrderItem orderItem;
 
@@ -281,15 +266,12 @@ public class OrderService {
         return OrderItemIdResponse.from(orderItem);
     }
 
-    public OrderResponse changeOrderStatus(UUID orderId, OrderStatusChangeRequest request, UserPrincipal userPrincipal) {
+    public OrderResponse changeOrderStatus(UUID orderId, OrderStatusChangeRequest request, UUID userId, String userRole) {
         /**
          * TODO:
          *  1. 주문 존재여부 검증
          *  2. 변경 권한이 있는지 검증
          */
-
-        UUID userId = userPrincipal.getUserId();
-        String userRole = userPrincipal.getRole();
 
         Order order= getOrderForAdmin(orderId);
 
@@ -304,7 +286,7 @@ public class OrderService {
 
     //TODO 주문 완료처리 서비스 만들기(주문 생성 -> 주문 완료)
 
-    public OrderItemIdResponse changeOrderItemStatus(UUID orderId, UUID orderItemId, OrderItemStatusChangeRequest request,  UserPrincipal userPrincipal) {
+    public OrderItemIdResponse changeOrderItemStatus(UUID orderId, UUID orderItemId, OrderItemStatusChangeRequest request, UUID userId, String userRole) {
 
         //TODO: return_request -> return은 판매자,마스터만 변경가능
         OrderItem orderItem = getOrderItemForUser(orderItemId);
@@ -347,7 +329,7 @@ public class OrderService {
     }
 
 
-    public OrderItemIdResponse changeOrderItemDeliveryStatus(UUID orderId, UUID orderItemId, OrderItemDeliveryStatusChangeRequest request,  UserPrincipal userPrincipal) {
+    public OrderItemIdResponse changeOrderItemDeliveryStatus(UUID orderId, UUID orderItemId, OrderItemDeliveryStatusChangeRequest request, UUID userId, String userRole) {
         OrderItem orderItem = getOrderItemForUser(orderItemId);
 
         if(orderItem.getOrderItemStatus().cannotChangeDeliveryStatus()) {
@@ -362,10 +344,8 @@ public class OrderService {
 
 
 
-    public OrderResponse updateOrder(UUID orderId, @Valid OrderUpdateRequest request, UserPrincipal userPrincipal) {
+    public OrderResponse updateOrder(UUID orderId, @Valid OrderUpdateRequest request,  UUID userId, String userRole) {
 
-        UUID customerId = userPrincipal.getUserId();
-        String userRole = userPrincipal.getRole();
 
         if(userRole.equals(ROLE_PREFIX + "MASTER")) {
 
@@ -376,7 +356,7 @@ public class OrderService {
         }
 
 
-        Order order = getOrderForUser(orderId, customerId);
+        Order order = getOrderForUser(orderId,userId);
 
 
 

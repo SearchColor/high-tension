@@ -44,7 +44,9 @@ public class OrderController {
         @AuthenticationPrincipal UserPrincipal userPrincipal) {
         System.out.println("UserId = " + userPrincipal.getUserId());
         System.out.println("Roles = " + userPrincipal.getRole());
-        OrderResponse response = orderService.createOrder(productOrderCreateRequest, userPrincipal);
+        UUID userId = userPrincipal.getUserId();
+        String userRole = userPrincipal.getRole();
+        OrderResponse response = orderService.createOrder(productOrderCreateRequest, userId, userRole);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
@@ -59,7 +61,9 @@ public class OrderController {
     @GetMapping("/{orderId}")
     public ResponseEntity<ApiResponse<OrderDetailResponse>> getOrderDetail(@PathVariable("orderId") UUID orderId,
         @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        OrderDetailResponse response = orderService.getOrderDetail(orderId, userPrincipal);
+        UUID userId = userPrincipal.getUserId();
+        String userRole = userPrincipal.getRole();
+        OrderDetailResponse response = orderService.getOrderDetail(orderId,userId, userRole);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
@@ -68,7 +72,9 @@ public class OrderController {
     public ResponseEntity<ApiResponse<List<OrderListResponse>>> getOrders(
         @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
-        List<OrderListResponse> responses = orderService.getOrders(userPrincipal);
+        UUID userId = userPrincipal.getUserId();
+        String userRole = userPrincipal.getRole();
+        List<OrderListResponse> responses = orderService.getOrders(userId, userRole);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responses));
     }
 
@@ -78,7 +84,9 @@ public class OrderController {
     @PatchMapping("/{orderId}/cancel")
     public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(@PathVariable UUID orderId,
         @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        OrderResponse response = orderService.cancelOrder(orderId, userPrincipal);
+        UUID userId = userPrincipal.getUserId();
+        String userRole = userPrincipal.getRole();
+        OrderResponse response = orderService.cancelOrder(orderId, userId, userRole);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
@@ -87,7 +95,9 @@ public class OrderController {
     @PatchMapping("/{orderId}/cancel/{orderItemId}")
     public ResponseEntity<ApiResponse<OrderItemIdResponse>> cancelOrderItem(@PathVariable UUID orderId, @PathVariable UUID orderItemId,
         @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        OrderItemIdResponse response = orderService.cancelOrderItem(orderId, orderItemId,userPrincipal);
+        UUID userId = userPrincipal.getUserId();
+        String userRole = userPrincipal.getRole();
+        OrderItemIdResponse response = orderService.cancelOrderItem(orderId, orderItemId, userId, userRole);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
@@ -96,7 +106,9 @@ public class OrderController {
     @PatchMapping("/{orderId}")
     public ResponseEntity<ApiResponse<OrderResponse>> updateOrder(@PathVariable UUID orderId, @Valid @RequestBody OrderUpdateRequest request,
         @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        OrderResponse response = orderService.updateOrder(orderId, request, userPrincipal);
+        UUID userId = userPrincipal.getUserId();
+        String userRole = userPrincipal.getRole();
+        OrderResponse response = orderService.updateOrder(orderId, request, userId, userRole);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
@@ -105,7 +117,9 @@ public class OrderController {
     @PatchMapping("/{orderId}/status")
     public ResponseEntity<ApiResponse<OrderResponse>> changeOrderStatus(@PathVariable UUID orderId, @RequestBody
     OrderStatusChangeRequest request, @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        OrderResponse response = orderService.changeOrderStatus(orderId, request, userPrincipal);
+        UUID userId = userPrincipal.getUserId();
+        String userRole = userPrincipal.getRole();
+        OrderResponse response = orderService.changeOrderStatus(orderId, request, userId, userRole);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
@@ -115,7 +129,9 @@ public class OrderController {
     public ResponseEntity<ApiResponse<OrderItemIdResponse>> changeOrderItemStatus(@PathVariable UUID orderId, @PathVariable UUID orderItemId,
                                             @RequestBody @Valid OrderItemStatusChangeRequest request,
                                             @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        OrderItemIdResponse response = orderService.changeOrderItemStatus(orderId, orderItemId, request, userPrincipal);
+        UUID userId = userPrincipal.getUserId();
+        String userRole = userPrincipal.getRole();
+        OrderItemIdResponse response = orderService.changeOrderItemStatus(orderId, orderItemId, request, userId, userRole);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
@@ -126,15 +142,18 @@ public class OrderController {
     public ResponseEntity<ApiResponse<OrderItemIdResponse>> changeOrderItemDeliveryStatus(
                         @PathVariable UUID orderId, @PathVariable UUID orderItemId, @RequestBody @Valid OrderItemDeliveryStatusChangeRequest request,
                         @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        log.info("진입");
-        OrderItemIdResponse response = orderService.changeOrderItemDeliveryStatus(orderId, orderItemId, request, userPrincipal);
+        UUID userId = userPrincipal.getUserId();
+        String userRole = userPrincipal.getRole();
+        OrderItemIdResponse response = orderService.changeOrderItemDeliveryStatus(orderId, orderItemId, request, userId, userRole);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
     @PreAuthorize("hasAnyRole('USER', 'MASTER')")
     @DeleteMapping("/{orderId}")
     public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable UUID orderId, @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        orderService.deleteOrder(orderId, userPrincipal);
+        UUID userId = userPrincipal.getUserId();
+        String userRole = userPrincipal.getRole();
+        orderService.deleteOrder(orderId, userId, userRole);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("삭제되었습니다."));
     }
 
