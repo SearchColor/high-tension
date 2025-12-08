@@ -9,6 +9,7 @@ import com.high.orchestration.application.dto.internal.request.PaymentCreateComm
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
 import com.high.orchestration.application.dto.internal.response.OrderCreateFailCommandResponse;
 import com.high.orchestration.infrastructure.adaptor.OrderCreateAdapter;
+import com.high.orchestration.infrastructure.exception.FailToConvertMessageException;
 import com.high.orchestration.infrastructure.kafka.dto.response.OrderCreateFailedMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.OrderCreateSuccessMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateSuccessMessage;
@@ -78,9 +79,16 @@ public class KafkaConsumer {
             try {
 
                 StockDeductionFailMessage message = objectMapper.readValue(stockDeductionFailMessage, StockDeductionFailMessage.class);
+                if(message == null){
+                    throw new FailToConvertMessageException();
+                }
+                log.info("재고 차감 실패 이벤트 구독 후 handler유입 전 StockDeductionFailMessage sagaId : {} ", message.sagaId());
+
                 OrderDeleteCommandRequest request = adapter.toOrderDeleteCommand(message);
                 //TODO: try-catch 예외처리 세분화
+                log.info("재고 차감 실패 이벤트 구독 후 handler유입 전 OrderDeleteCommandRequest sagaId : {} ", request.sagaId());
                 orderCreateSagaService.handlerStockDeductionFailed(request, message.reason());
+                log.info("보상 트랜잭션 실행 전");
                 orderCreateSagaService.stockDeductionFailedCompensation(request);
 
             } catch (Exception e) {

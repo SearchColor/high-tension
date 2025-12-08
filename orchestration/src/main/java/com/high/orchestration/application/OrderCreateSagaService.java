@@ -151,6 +151,7 @@ public class OrderCreateSagaService {
     @Transactional
     public void handlerStockDeductionFailed(OrderDeleteCommandRequest request, String errorMessage) {
         log.info("[OrderCreateSagaService] handlerStockDeductionFailed - 재고차감 실패 후 handler 유입 성공");
+        log.info("[OrderCreateSagaService] handlerStockDeductionFailed - sagaId : {}", request.sagaId());
         UUID sagaId = request.sagaId();
         SagaState sagaState = getSagaState(sagaId);
 

@@ -54,8 +54,8 @@ public class OrderCreateAdapter {
 
     public OrderDeleteCommandRequest toOrderDeleteCommand(StockDeductionFailMessage message) {
         return new OrderDeleteCommandRequest(
-            message.orderId(),
-            message.sagaId()
+            message.sagaId(),
+            message.orderId()
         );
     }
 }
