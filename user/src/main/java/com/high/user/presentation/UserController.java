@@ -1,16 +1,17 @@
 package com.high.user.presentation;
 
-import com.high.user.application.dto.request.LoginRequest;
-import com.high.user.application.dto.request.SignupRequest;
+import com.high.user.application.dto.request.*;
 import com.high.user.application.dto.response.TokenResponse;
 import com.high.user.application.dto.response.UserResponse;
 import com.high.user.application.service.UserAuthService;
+import com.high.user.application.service.UserService;
 import com.library.module.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserAuthService userAuthService;
+    private final UserService userService;
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<UserResponse>> signup(
@@ -46,13 +48,16 @@ public class UserController {
                 .ok(ApiResponse.success(response));
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
             @RequestHeader("Authorization") String bearerToken) {
-        // SecurityContext에서 userId 추출
+        // JWT 인증 정보에서 userId 추출
+        // SecurityContext → Authentication → Principal(userId)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userId = authentication.getName();
 
+        // Bearer 토큰에서 실제 JWT 추출 ("Bearer " prefix 제거)
         String accessToken = bearerToken.substring(7);
 
         log.info("Logout request received: userId={}", userId);
@@ -60,5 +65,69 @@ public class UserController {
         userAuthService.logout(accessToken, userId);
 
         return ResponseEntity.ok(ApiResponse.success("로그아웃 되었습니다."));
+    }
+
+    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> getMyInfo() {
+        // JWT 인증 정보에서 userId 추출
+        // Gateway의 JwtAuthenticationGlobalFilter에서 검증된 정보
+        // SecurityContext → Authentication → Principal(userId)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = authentication.getName();
+
+        log.info("Get my info request received: userId={}", userId);
+
+        UserResponse response = userService.getUserById(userId);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserInfo(
+            @Valid @RequestBody UpdateUserRequest request) {
+        // JWT 인증 정보에서 userId 추출
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userIdStr = authentication.getName();
+        java.util.UUID userId = java.util.UUID.fromString(userIdStr);
+
+        log.info("Update user info request received: userId={}", userId);
+
+        UserResponse response = userService.updateUserInfo(userId, request);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
+    @PatchMapping("/me/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request) {
+        // JWT 인증 정보에서 userId 추출
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userIdStr = authentication.getName();
+        java.util.UUID userId = java.util.UUID.fromString(userIdStr);
+
+        log.info("Change password request received: userId={}", userId);
+
+        userService.changePassword(userId, request);
+
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteUser(
+            @Valid @RequestBody DeleteUserRequest request) {
+        // JWT 인증 정보에서 userId 추출
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userIdStr = authentication.getName();
+        java.util.UUID userId = java.util.UUID.fromString(userIdStr);
+
+        log.info("Delete user request received: userId={}", userId);
+
+        userService.deleteUser(userId, request);
+
+        return ResponseEntity.noContent().build();
     }
 }

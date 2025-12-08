@@ -38,4 +38,26 @@ public class OrderRepositoryAdapter implements OrderRepository {
     public List<Order> findAllByDeletedAtIsNull() {
         return jpaOrderRepository.findAllByDeletedAtIsNull();
     }
+
+    @Override
+    public Optional<Order> findByOrderIdAndCustomerIdAndDeletedAtIsNull(UUID orderId, UUID customerId) {
+        return jpaOrderRepository.findByOrderIdAndCustomerIdAndDeletedAtIsNull(orderId, customerId);
+    }
+
+    @Override
+    public List<Order> findOrdersForSeller(UUID sellerId) {
+        return jpaOrderRepository.findOrdersForSeller(sellerId);
+    }
+
+    @Override
+    public List<Order> findAllByCustomerIdAndDeletedAtIsNull(UUID userId) {
+        return jpaOrderRepository.findAllByCustomerIdAndDeletedAtIsNull(userId);
+    }
+
+    @Override
+    public Optional<Order> findOrderForSeller(UUID orderId, UUID sellerId) {
+        return jpaOrderRepository.findOrderForSeller(orderId, sellerId);
+    }
+
+
 }

@@ -29,11 +29,11 @@ spring:
 
   cloud:
     gateway:
+      discovery:
+        locator:
+          enabled: true
       server:
         webflux:
-          discovery:
-            locator:
-              enabled: true
           routes:
             # 1. User Service (8100) - Authentication base
             - id: user-service
@@ -154,3 +154,10 @@ logging:
   level:
     org.springframework.cloud.gateway: DEBUG
     org.springframework.web: DEBUG
+    com.high.gateway.filter: DEBUG
+    com.high.gateway.service: DEBUG
+
+# Rate Limiting configuration (Token Bucket Algorithm)
+rate-limit:
+  max-tokens: 100        # 버킷 최대 용량 (tokens)
+  refill-rate: 10        # 초당 토큰 리필 속도 (tokens/sec)

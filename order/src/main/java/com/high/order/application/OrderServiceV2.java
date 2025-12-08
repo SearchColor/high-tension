@@ -1,7 +1,8 @@
-package com.high.order.application.service;
+package com.high.order.application;
 
 import static java.util.stream.Collectors.toList;
 
+import com.high.order.application.dto.external.ProductResponse;
 import com.high.order.application.dto.internal.OrderItemCreateInfo;
 import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
 import com.high.order.application.dto.internal.kafka.response.OrderSuccessResponse;
@@ -15,6 +16,7 @@ import com.high.order.application.dto.response.OrderListResponse;
 import com.high.order.application.dto.response.OrderResponse;
 import com.high.order.application.exception.OrderBadRequestException;
 import com.high.order.application.exception.OrderNotFoundException;
+import com.high.order.application.service.ProductService;
 import com.high.order.domain.entity.Order;
 import com.high.order.domain.entity.OrderItem;
 import com.high.order.domain.exception.OrderItemNotFoundExeption;
@@ -22,7 +24,6 @@ import com.high.order.domain.repository.OrderItemRepository;
 import com.high.order.domain.repository.OrderRepository;
 import com.high.order.domain.vo.OrderItemStatus;
 import com.high.order.domain.vo.OrderStatus;
-import com.high.order.infrastructure.client.ProductDto;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
@@ -39,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrderServiceV2 {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
+    private final ProductService productService;
 
     //FeignClient 통신 전 임시데이터
     UUID customerId =  UUID.randomUUID(); //유저
@@ -54,31 +56,38 @@ public class OrderServiceV2 {
         /**
          * TODO:
          *  1. 로그인한 사용자 권한 검증
-         *  2. productID 존재여부 검증
+         *  2. productID 존재여부 검증 (OK)
          *  3. couponID 존재여부 검증 (사용가능한지)
          */
 
+        log.info("주문 생성 서비스 유입");
         List<OrderItemCreateInfo> orderItemCreateInfoList = request.itemList()
             .stream()
             .map( itemDto -> {
-                //feignClient 구현 후 mapper 사용예정
-                ProductDto productDto = ProductDto.init();
+
+                ProductResponse response =
+                    productService.getProductById(itemDto.productId()).getBody().data();
+
                 return new OrderItemCreateInfo(
-                    itemDto.productId(),
-                    productDto.producerId(),
-                    productDto.price(),
+                    response.productId(),
+                    UUID.randomUUID(),
+                    response.price(),
                     itemDto.quantity()
                 );
             }).toList();
+        log.info("상품 feignClient 조회 성공");
 
         List<OrderItem> itemList = orderItemCreateInfoList.stream()
             .map(item -> OrderItem.create(
                 item.productId(),
-                item.producerId(),
+                UUID.randomUUID(), //TODO: 임시
                 item.quantity(),
                 item.unitPrice()
             )).toList();
 
+        log.info("itemList 담기 성공");
+
+        //TODO: 쿠폰 검증
         Order order = Order.createOrder(
             customerId,
             request.couponId(),
@@ -90,9 +99,11 @@ public class OrderServiceV2 {
             itemList,
             discountRate
         );
+        log.info("order 담기 성공");
+
         Order savedOrder = orderRepository.save(order);
 
-        return OrderSuccessResponse.of(order, request.sagaId(), request.ordererId());
+        return OrderSuccessResponse.of(savedOrder, request.sagaId());
     }
 
 

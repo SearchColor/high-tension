@@ -19,8 +19,10 @@ public enum OrderErrorCode implements BaseErrorCode {
     ORDER_CANCELLATION_NOT_ALLOWED(4003, HttpStatus.BAD_REQUEST, "주문을 취소할 수 없습니다."),
     ILLEGAL_ARGUMENT_EXCEPTION(4005, HttpStatus.BAD_REQUEST, "잘못된 요청값입니다."),
 
-    //Kafka Exception
-    EMPTY_KAFKA_MESSAGE(4006, HttpStatus.NOT_FOUND,"kafka 메시지가 비어있습니다.");
+    //External Exception
+    EMPTY_KAFKA_MESSAGE(4006, HttpStatus.NOT_FOUND,"kafka 메시지가 비어있습니다."),
+    PRODUCT_NOT_FOUND(4007, HttpStatus.NOT_FOUND, "상품이 존재하지 않습니다.")
+
     ;
 
 

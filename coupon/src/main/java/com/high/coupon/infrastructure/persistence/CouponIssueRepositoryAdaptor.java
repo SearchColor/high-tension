@@ -35,7 +35,7 @@ public class CouponIssueRepositoryAdaptor implements CouponIssueRepository {
     }
 
     @Override
-    public List<CouponIssue> findAllByUserId(UUID userId) {
-        return jpaCouponIssueRepository.findAllByUserIdWithCoupon(userId);
+    public List<CouponIssue> findAvailableByUserId(UUID userId){
+        return jpaCouponIssueRepository.findAvailableByUserId(userId);
     }
 }

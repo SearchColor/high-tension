@@ -11,4 +11,9 @@ public interface OrderRepository {
     List<Order> findAll();
     Optional<Order> findByOrderIdAndDeletedAtIsNull(UUID orderId);
     List<Order> findAllByDeletedAtIsNull();
+    Optional<Order> findByOrderIdAndCustomerIdAndDeletedAtIsNull(UUID orderId, UUID customerId);
+    List<Order> findOrdersForSeller(UUID sellerId);
+    List<Order> findAllByCustomerIdAndDeletedAtIsNull(UUID userId);
+    Optional<Order> findOrderForSeller(UUID orderId, UUID sellerId);
+
 }

@@ -1,5 +1,7 @@
 package com.high.payment.application.service;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -107,5 +109,15 @@ public class PaymentServiceImpl implements PaymentService {
 
 		// 4. 응답 DTO 반환
 		return CreatePaymentResponse.from(savedPayment);
+	}
+
+	@Override
+	@Transactional
+	public CreatePaymentResponse getPayment(UUID paymentId) {
+		Payment payment = paymentRepositoryPort.findById(paymentId)
+											   .orElseThrow(
+												   () -> new RuntimeException("결제 정보를 찾을 수 없습니다. ID: " + paymentId));
+
+		return CreatePaymentResponse.from(payment);
 	}
 }

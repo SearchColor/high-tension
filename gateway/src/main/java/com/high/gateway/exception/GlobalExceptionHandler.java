@@ -39,9 +39,21 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
         HttpStatus status;
         int code;
         String message;
+        Integer retryAfter = null;
 
+        // RateLimitExceededException 특별 처리 (Retry-After 헤더 추가)
+        if (ex instanceof RateLimitExceededException) {
+            RateLimitExceededException rateLimitEx = (RateLimitExceededException) ex;
+            status = rateLimitEx.getBaseErrorCode().getStatus();
+            code = rateLimitEx.getBaseErrorCode().getCode();
+            message = rateLimitEx.getBaseErrorCode().getMessage();
+            retryAfter = rateLimitEx.getRetryAfter();
+
+            // Retry-After 헤더 추가
+            exchange.getResponse().getHeaders().add("Retry-After", String.valueOf(retryAfter));
+        }
         // CustomException 처리 (common-module 패턴)
-        if (ex instanceof CustomException) {
+        else if (ex instanceof CustomException) {
             CustomException customException = (CustomException) ex;
             status = customException.getBaseErrorCode().getStatus();
             code = customException.getBaseErrorCode().getCode();
@@ -53,7 +65,7 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
             message = "서버 내부 오류가 발생했습니다";
         }
 
-        return writeErrorResponse(exchange, status, code, message);
+        return writeErrorResponse(exchange, status, code, message, retryAfter);
     }
 
     /**
@@ -61,10 +73,11 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
      * {
      *   "success": false,
      *   "code": 9000,
-     *   "message": "유효하지 않은 토큰입니다"
+     *   "message": "유효하지 않은 토큰입니다",
+     *   "retryAfter": 1  // Rate Limit 에러인 경우에만
      * }
      */
-    private Mono<Void> writeErrorResponse(ServerWebExchange exchange, HttpStatus status, int code, String message) {
+    private Mono<Void> writeErrorResponse(ServerWebExchange exchange, HttpStatus status, int code, String message, Integer retryAfter) {
         exchange.getResponse().setStatusCode(status);
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
@@ -72,6 +85,11 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
         errorResponse.put("success", false);
         errorResponse.put("code", code);
         errorResponse.put("message", message);
+
+        // Rate Limit 에러인 경우 retryAfter 추가
+        if (retryAfter != null) {
+            errorResponse.put("retryAfter", retryAfter);
+        }
 
         try {
             byte[] bytes = objectMapper.writeValueAsBytes(errorResponse);

@@ -19,6 +19,18 @@ public class OrderItemRepositoryAdapter implements OrderItemRepository {
     }
 
     @Override
+    public Optional<OrderItem> findByOrderIdAndOrderItemIdAndProducerIdAndDeletedAtIsNull(
+        UUID orderId, UUID orderItemId, UUID producerId) {
+        return jpaOrderItemRepository.findByOrder_OrderIdAndOrderItemIdAndProducerIdAndDeletedAtIsNull(orderId, orderItemId, producerId);
+    }
+
+    @Override
+    public Optional<OrderItem> findByOrderIdAndOrderItemIdAndDeletedAtIsNull(UUID orderId,
+        UUID orderItemId) {
+        return jpaOrderItemRepository.findByOrder_OrderIdAndOrderItemIdAndDeletedAtIsNull(orderId, orderItemId);
+    }
+
+    @Override
     public OrderItem save(OrderItem orderItem) {
         return jpaOrderItemRepository.save(orderItem);
     }

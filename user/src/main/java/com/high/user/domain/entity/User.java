@@ -104,6 +104,9 @@ public class User extends BaseEntity {
 
     // Business logic: 전화번호 수정
     public void updatePhoneNumber(String phoneNumber) {
+        if (phoneNumber != null && !phoneNumber.matches("^(010)(-?\\d{4})(-?\\d{4})$")) {
+            throw new IllegalArgumentException("전화번호 형식이 올바르지 않습니다");
+        }
         this.phoneNumber = phoneNumber;
     }
 
