@@ -2,9 +2,9 @@ package com.high.order.application.dto.internal.kafka.request;
 
 import java.util.UUID;
 
-public record OrderCreateFailCommand(
+public record DeleteOrderCommand(
     UUID sagaId,
-    String reason
+    UUID orderId
 ) {
 
 }

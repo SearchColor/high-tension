@@ -2,13 +2,15 @@ package com.high.order.infrastructure.adapter;
 
 import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
 import com.high.order.application.dto.internal.kafka.request.CreateOrderItemCommand;
+import com.high.order.application.dto.internal.kafka.request.DeleteOrderCommand;
 import com.high.order.infrastructure.kafka.dto.response.OrderCreateRequestMessage;
+import com.high.order.infrastructure.kafka.dto.response.OrderDeleteRequestMessage;
 import org.springframework.stereotype.Component;
 
 @Component
 public class OrderCreateAdapter {
 
-    public CreateOrderCommand toCommand(OrderCreateRequestMessage message) {
+    public CreateOrderCommand toCreateCommand(OrderCreateRequestMessage message) {
         return new CreateOrderCommand(
             message.couponId(),
             message.sagaId(),
@@ -27,5 +29,12 @@ public class OrderCreateAdapter {
             ).toList()
         );
 
+    }
+
+    public DeleteOrderCommand toDeleteCommand(OrderDeleteRequestMessage message) {
+        return new DeleteOrderCommand(
+            message.sagaId(),
+            message.orderId()
+        );
     }
 }
