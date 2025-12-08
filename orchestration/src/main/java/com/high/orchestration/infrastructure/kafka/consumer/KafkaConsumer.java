@@ -3,6 +3,7 @@ package com.high.orchestration.infrastructure.kafka.consumer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.orchestration.application.OrderCreateSagaService;
 import com.high.orchestration.application.dto.internal.request.ClearCartCommandRequest;
+import com.high.orchestration.application.dto.internal.request.CouponUseCommandRequest;
 import com.high.orchestration.application.dto.internal.response.OrderCreateFailCommandResponse;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
@@ -31,14 +32,14 @@ public class KafkaConsumer {
 
             try {
                 OrderCreateSuccessMessage message = objectMapper.readValue(orderCreateSuccessMessage, OrderCreateSuccessMessage.class);
-                StockDeductionCommandRequest request = adapter.toStockDeductionCommand(message);
-                orderCreateSagaService.handlerOrderCreateSuccess(request);
+                StockDeductionCommandRequest stockRequest = adapter.toStockDeductionCommand(message);
+                CouponUseCommandRequest couponRequest = adapter.toCouponUseCommandRequest(message);
+                orderCreateSagaService.handlerOrderCreateSuccess(stockRequest, couponRequest);
             } catch (Exception e) {
                 log.error("[KafkaConsumer] orderCreateSuccess : 메시지 파싱 실패 : {}", orderCreateSuccessMessage, e);
             }
         }
 
-        //TODO: 주문 생성 실패 이벤트 구독 로직
         @KafkaListener(topics = "order-create-fail")
         public void orderCreateFail(String orderCreateFailMessage) {
             log.info("[kafkaConsumer] orderCreateFail : orderCreateFailMessage {}", orderCreateFailMessage);

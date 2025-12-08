@@ -2,6 +2,7 @@ package com.high.orchestration.infrastructure.kafka.producer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.orchestration.application.dto.internal.request.ClearCartCommandRequest;
+import com.high.orchestration.application.dto.internal.request.CouponUseCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
@@ -41,6 +42,14 @@ public class KafkaEventPublisher implements EventPublisher {
     @Override
     public void publishClearCartCommand(String topic, ClearCartCommandRequest clearCartCommandRequest) {
         send(topic, clearCartCommandRequest);
+        log.info("[KafkaEventPublisher] publicClearCartCommand 이벤트 발행 성공");
+    }
+
+
+    @Override
+    public void publishCouponUseCommand(String topic, CouponUseCommandRequest commandRequest) {
+        send(topic, commandRequest);
+        log.info("[KafkaEventPublisher] publicCouponUserCommand 이벤트 발행 성공");
     }
 
 

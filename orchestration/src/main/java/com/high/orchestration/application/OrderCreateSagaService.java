@@ -1,6 +1,7 @@
 package com.high.orchestration.application;
 
 import com.high.orchestration.application.dto.internal.request.ClearCartCommandRequest;
+import com.high.orchestration.application.dto.internal.request.CouponUseCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.response.OrderCreateFailCommandResponse;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
@@ -84,9 +85,9 @@ public class OrderCreateSagaService {
     }
 
     @Transactional
-    public void handlerOrderCreateSuccess(StockDeductionCommandRequest request) {
+    public void handlerOrderCreateSuccess(StockDeductionCommandRequest stockRequest, CouponUseCommandRequest commandRequest) {
         log.info("[OrderCreateSagaService] handlerOrderCreateSuccess - 주문생성완료 후 handler 유입 성공");
-        UUID sagaId = request.sagaId();
+        UUID sagaId = stockRequest.sagaId();
         SagaState sagaState = getSagaState(sagaId);
         try {
 
@@ -94,10 +95,12 @@ public class OrderCreateSagaService {
                 return;
             }
 
-            updateAndSaveSagaState(sagaState, CurrentStep.ORDER_CREATE_STOCK, request.toString());
+            updateAndSaveSagaState(sagaState, CurrentStep.ORDER_CREATE_STOCK, stockRequest.toString());
 
-            publisher.publishStockDeductionCommand("stock-deduction-request", request);
+            publisher.publishCouponUseCommand("coupon-use-request", commandRequest);
+            publisher.publishStockDeductionCommand("stock-deduction-request", stockRequest);
             log.info("[OrderCreateSagaService] handlerOrderCreateSuccess : 재고차감 명령 발행 성공 ");
+
 
         } catch (Exception e) {
             log.error("[OrderCreateSagaService] handlerOrderCreateSuccess : 주문 생성 handler처리 실패");
