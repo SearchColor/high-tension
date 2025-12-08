@@ -33,6 +33,7 @@ dependencies {
 	// Common Libraries
 	implementation 'com.github.sharedeffort:common-module:v1.1.9'
 	implementation 'com.github.sharedeffort:common-jpa:v1.0.1'
+	implementation 'com.github.sharedeffort:common-security:v1.0.0'
 
 	// Spring Boot Starters
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
