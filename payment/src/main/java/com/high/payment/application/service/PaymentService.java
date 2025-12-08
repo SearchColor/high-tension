@@ -11,4 +11,8 @@ public interface PaymentService {
 	CreatePaymentResponse createPayment(CreatePaymentRequest request);
 
 	CreatePaymentResponse getPayment(UUID paymentId);
+
+	void verifyAndFinalizePayment(String impUid, String merchantUid);
+
+	void cancelPayment(UUID orderId);
 }
