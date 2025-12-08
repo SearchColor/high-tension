@@ -107,7 +107,6 @@ public class CouponIssueService {
             throw new CouponNotValidPeriodException();
         }
 
-        // 4. 검증 통과 시 정보 반환
         return CouponValidationResponse.from(couponIssue);
     }
 

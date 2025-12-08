@@ -24,8 +24,6 @@ public interface JpaCouponIssueRepository extends JpaRepository<CouponIssue, UUI
 """)
     List<CouponIssue> findAvailableByUserId(@Param("userId") UUID userId);
 
-    // todo 쿼리 임시 확인 Optional<CouponIssue> findByIdAndUserId(UUID couponIssueId, UUID userId);
-
     // 단건 검증 조회용
     @Query("""
         SELECT ci FROM CouponIssue ci
