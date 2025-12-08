@@ -2,6 +2,7 @@ package com.high.coupon.presentation.internal;
 
 import com.high.coupon.application.CouponIssueService;
 import com.high.coupon.application.dto.response.CouponUseResponse;
+import com.high.coupon.application.dto.response.CouponValidationResponse;
 import com.high.coupon.application.dto.response.UserCouponResponse;
 import com.library.module.response.ApiResponse;
 import java.util.List;
@@ -30,8 +31,21 @@ public class CouponInternalController {
      */
     @GetMapping
     public ApiResponse<List<UserCouponResponse>> getUserCoupons(@RequestParam UUID userId) {
-        List<UserCouponResponse> result = couponIssueService.getAvailableUserCoupons(userId);
-        return ApiResponse.success(result);
+        List<UserCouponResponse> response = couponIssueService.getAvailableUserCoupons(userId);
+        return ApiResponse.success(response);
+    }
+
+    /**
+     * 쿠폰 단건 유효성 검증 및 할인 정보
+     * GET /api/v1/internal/coupons/{couponIssueId}/validate?userId={userId}
+     */
+    @GetMapping("/{couponIssueId}/validate")
+    public ApiResponse<CouponValidationResponse> validateCoupon(
+            @PathVariable UUID couponIssueId,
+            @RequestParam UUID userId
+    ) {
+        CouponValidationResponse response = couponIssueService.validateCoupon(couponIssueId, userId);
+        return ApiResponse.success(response);
     }
 
     /**
