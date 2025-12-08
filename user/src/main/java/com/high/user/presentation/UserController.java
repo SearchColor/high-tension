@@ -6,15 +6,16 @@ import com.high.user.application.dto.response.UserResponse;
 import com.high.user.application.service.UserAuthService;
 import com.high.user.application.service.UserService;
 import com.library.module.response.ApiResponse;
+import com.library.security.util.SecurityContextUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -52,17 +53,12 @@ public class UserController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
             @RequestHeader("Authorization") String bearerToken) {
-        // JWT 인증 정보에서 userId 추출
-        // SecurityContext → Authentication → Principal(userId)
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userId = authentication.getName();
-
-        // Bearer 토큰에서 실제 JWT 추출 ("Bearer " prefix 제거)
+        UUID userId = SecurityContextUtil.getCurrentUserId();
         String accessToken = bearerToken.substring(7);
 
         log.info("Logout request received: userId={}", userId);
 
-        userAuthService.logout(accessToken, userId);
+        userAuthService.logout(accessToken, userId.toString());
 
         return ResponseEntity.ok(ApiResponse.success("로그아웃 되었습니다."));
     }
@@ -70,15 +66,11 @@ public class UserController {
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserResponse>> getMyInfo() {
-        // JWT 인증 정보에서 userId 추출
-        // Gateway의 JwtAuthenticationGlobalFilter에서 검증된 정보
-        // SecurityContext → Authentication → Principal(userId)
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userId = authentication.getName();
+        UUID userId = SecurityContextUtil.getCurrentUserId();
 
         log.info("Get my info request received: userId={}", userId);
 
-        UserResponse response = userService.getUserById(userId);
+        UserResponse response = userService.getUserById(userId.toString());
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -87,10 +79,7 @@ public class UserController {
     @PutMapping("/me")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserInfo(
             @Valid @RequestBody UpdateUserRequest request) {
-        // JWT 인증 정보에서 userId 추출
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userIdStr = authentication.getName();
-        java.util.UUID userId = java.util.UUID.fromString(userIdStr);
+        UUID userId = SecurityContextUtil.getCurrentUserId();
 
         log.info("Update user info request received: userId={}", userId);
 
@@ -103,10 +92,7 @@ public class UserController {
     @PatchMapping("/me/password")
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @Valid @RequestBody ChangePasswordRequest request) {
-        // JWT 인증 정보에서 userId 추출
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userIdStr = authentication.getName();
-        java.util.UUID userId = java.util.UUID.fromString(userIdStr);
+        UUID userId = SecurityContextUtil.getCurrentUserId();
 
         log.info("Change password request received: userId={}", userId);
 
@@ -119,10 +105,7 @@ public class UserController {
     @DeleteMapping("/me")
     public ResponseEntity<Void> deleteUser(
             @Valid @RequestBody DeleteUserRequest request) {
-        // JWT 인증 정보에서 userId 추출
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userIdStr = authentication.getName();
-        java.util.UUID userId = java.util.UUID.fromString(userIdStr);
+        UUID userId = SecurityContextUtil.getCurrentUserId();
 
         log.info("Delete user request received: userId={}", userId);
 
