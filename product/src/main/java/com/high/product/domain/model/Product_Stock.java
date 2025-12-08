@@ -48,7 +48,7 @@ public class Product_Stock extends BaseEntity {
 			.build();
 	}
 
-	// 재고 증가 (증가 / 복원)
+	// 재고 증가 (기존 재고에서 증가 / 복원)
 	public void increase(int amount) {
 		if (amount <= 0) {
 			throw new ProductException(ProductErrorCode.NEGATIVE_STOCK_OPERATION);
@@ -57,7 +57,7 @@ public class Product_Stock extends BaseEntity {
 	}
 
 	// 재고 감소(주문)
-	public void decrease(int amount) {
+	public void reduce(int amount) {
 		if (amount <= 0) {
 			throw new ProductException(ProductErrorCode.NEGATIVE_STOCK_OPERATION);
 		}

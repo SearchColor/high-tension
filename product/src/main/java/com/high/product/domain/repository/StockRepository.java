@@ -5,9 +5,12 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
 
 import com.high.product.domain.model.Product_Stock;
+
+import jakarta.persistence.LockModeType;
 
 public interface StockRepository {
 
@@ -21,4 +24,9 @@ public interface StockRepository {
 	Optional<Product_Stock> findByProductId(UUID productId);
 
 	boolean existsByProductId(UUID productId);
+
+	// 비관적 락 적용
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("select p from Product_Stock p where p.productId = :productId")
+	Optional<Product_Stock> findByProductIdForUpdate(UUID productId);
 }
