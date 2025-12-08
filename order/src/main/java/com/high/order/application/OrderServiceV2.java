@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.toList;
 import com.high.order.application.dto.external.ProductResponse;
 import com.high.order.application.dto.internal.OrderItemCreateInfo;
 import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
+import com.high.order.application.dto.internal.kafka.request.ProcessOrderSuccessCommand;
 import com.high.order.application.dto.internal.kafka.response.OrderSuccessResponse;
 import com.high.order.application.dto.request.OrderItemDeliveryStatusChangeRequest;
 import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
@@ -34,6 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
+//오케스트레이션 버전 service
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -61,9 +63,9 @@ public class OrderServiceV2 {
          */
 
         //실패 테스트를 위한 로직
-//        if(request.orderId() != null) {
-//            throw new OrderBadRequestException();
-//        }
+        if(request.sagaId() != null) {
+            throw new OrderBadRequestException();
+        }
 
         log.info("주문 생성 서비스 유입");
         List<OrderItemCreateInfo> orderItemCreateInfoList = request.itemList()
@@ -220,6 +222,13 @@ public class OrderServiceV2 {
         order.updateStatus(nextStatus);
         orderRepository.save(order);
         return OrderResponse.from(order);
+    }
+
+    public void processOrderSuccess(ProcessOrderSuccessCommand command) {
+        UUID orderId = command.orderId();
+        Order order = getOrderForUser(orderId);
+        order.updateStatus(OrderStatus.SUCCESS);
+        orderRepository.save(order);
     }
 
     public OrderItemIdResponse changeOrderItemStatus(UUID orderId, UUID orderItemId, OrderItemStatusChangeRequest request) {

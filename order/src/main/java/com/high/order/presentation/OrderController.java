@@ -113,7 +113,7 @@ public class OrderController {
     }
 
     //주문 상태 변경
-    @PreAuthorize("hasRole('MASTER')")
+    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @PatchMapping("/{orderId}/status")
     public ResponseEntity<ApiResponse<OrderResponse>> changeOrderStatus(@PathVariable UUID orderId, @RequestBody
     OrderStatusChangeRequest request, @AuthenticationPrincipal UserPrincipal userPrincipal) {
