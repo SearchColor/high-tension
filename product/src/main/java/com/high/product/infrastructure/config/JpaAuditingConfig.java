@@ -5,8 +5,10 @@ import java.util.UUID;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -20,10 +22,14 @@ public class JpaAuditingConfig {
 			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
 			if (authentication == null || !authentication.isAuthenticated()) {
-				return Optional.of(UUID.randomUUID());
+				return Optional.empty();
 			}
 
-			return Optional.of(UUID.randomUUID());
+			try {
+				return Optional.of(UUID.fromString(authentication.getName())); // userId 저장
+			} catch (IllegalArgumentException e) {
+				return Optional.empty();
+			}
 		};
 	}
 }
