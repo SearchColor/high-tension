@@ -1,0 +1,41 @@
+======================================
+User Service CRUD API Test
+======================================
+Results will be saved to: /c/Users/gy990/OneDrive/GYP/14.Master_Java/02.workspace/high-tension/user/scripts/user-crud-test-result-20251205_171215.txt
+
+[Test 1] Signup
+{"success":true,"data":{"userId":"e97ce8dd-0df4-4c04-b2e5-ce575eb63767","email":"testuser1764922335@example.com","name":"TestUser","role":"USER"}}
+
+[Test 2] Login
+{"success":true,"data":{"accessToken":"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJlOTdjZThkZC0wZGY0LTRjMDQtYjJlNS1jZTU3NWViNjM3NjciLCJyb2xlIjoiVVNFUiIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NjQ5MjIzMzUsImV4cCI6MTc2NDkyNTkzNX0.a1H4B09IAFK5E1cxKlP2TyCR_j_wvAcV4HoCBijbT8c","refreshToken":"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJlOTdjZThkZC0wZGY0LTRjMDQtYjJlNS1jZTU3NWViNjM3NjciLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc2NDkyMjMzNSwiZXhwIjoxNzY1NTI3MTM1fQ.xdNk-Tut4fvHoDrNiVD5RdhnHn75K28jz6Kr0um-WBM","expiresIn":3600000}}
+
+
+[Test 3] Get My Info
+{"success":true,"data":{"userId":"e97ce8dd-0df4-4c04-b2e5-ce575eb63767","email":"testuser1764922335@example.com","name":"TestUser","role":"USER"}}
+
+[Test 4] Update User Info (All Fields)
+{"success":true,"data":{"userId":"e97ce8dd-0df4-4c04-b2e5-ce575eb63767","email":"testuser1764922335@example.com","name":"UpdatedName","role":"USER"}}
+
+[Test 5] Update User Info (Name Only)
+{"success":true,"data":{"userId":"e97ce8dd-0df4-4c04-b2e5-ce575eb63767","email":"testuser1764922335@example.com","name":"NameOnly","role":"USER"}}
+
+[Test 6] Change Password
+{"success":true}
+
+[Test 7] Re-login with New Password
+{"success":true,"data":{"accessToken":"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJlOTdjZThkZC0wZGY0LTRjMDQtYjJlNS1jZTU3NWViNjM3NjciLCJyb2xlIjoiVVNFUiIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NjQ5MjIzMzcsImV4cCI6MTc2NDkyNTkzN30.fLasY0SlHziYU-_pCafhH1LWjuJMRwFXoLAeOxrzQ9M","refreshToken":"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJlOTdjZThkZC0wZGY0LTRjMDQtYjJlNS1jZTU3NWViNjM3NjciLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc2NDkyMjMzNywiZXhwIjoxNzY1NTI3MTM3fQ.gNUbIw3fqgeJdzZ7RD-_29v9ZC5c00RNfRLk1B4enFw","expiresIn":3600000}}
+
+
+[Test 8] Delete Account (204 Expected)
+Status: 204
+
+[Test 9] Re-login with Deleted Account (Fail Expected)
+{"success":false,"data":{"errorCode":2200,"errorMessage":"이메일 또는 비밀번호가 일치하지 않습니다"}}
+
+[Test 10] Access without Auth (401 Expected)
+Status: 401
+
+======================================
+Test Completed
+Results saved to: /c/Users/gy990/OneDrive/GYP/14.Master_Java/02.workspace/high-tension/user/scripts/user-crud-test-result-20251205_171215.txt
+======================================

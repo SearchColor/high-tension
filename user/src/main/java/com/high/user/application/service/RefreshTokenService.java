@@ -55,4 +55,9 @@ public class RefreshTokenService {
         String key = BLACKLIST_PREFIX + accessToken;
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));
     }
+
+    public void deleteByUserId(String userId) {
+        String key = REFRESH_TOKEN_PREFIX + userId;
+        redisTemplate.delete(key);
+    }
 }

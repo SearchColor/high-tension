@@ -1,5 +1,6 @@
 package com.high.user.infrastructure.config;
 
+import com.high.user.infrastructure.security.HeaderAuthenticationFilter;
 import com.high.user.infrastructure.security.JwtAuthenticationEntryPoint;
 import com.high.user.infrastructure.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final HeaderAuthenticationFilter headerAuthenticationFilter;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
@@ -44,14 +46,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 회원가입, 로그인은 인증 불필요
                         .requestMatchers("/api/v1/users/signup", "/api/v1/users/login").permitAll()
-                        // 나머지는 모두 허용 (임시, 추후 권한별 설정 필요)
-                        .anyRequest().permitAll())
+                        // 나머지는 인증 필요
+                        .anyRequest().authenticated())
 
                 // 예외 처리
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint))
 
-                // JWT Filter 등록
+                // 필터 순서: Header (1) → JWT (2) → UsernamePassword
+                .addFilterBefore(headerAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
