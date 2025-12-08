@@ -51,7 +51,7 @@ public class KafkaConsumer {
             CreateOrderCommand command = adapter.toCreateCommand(orderCreateRequestMessage);
             log.info("[KafkaConsumer] handleOrderCreateRequest : 주문 생성 로직 실행");
             OrderSuccessResponse response = orderService.createOrder(command);
-
+            log.info("[주문 생성 성공 메시지 response.sagaId: {}, orderId: {} ", response.sagaId(), response.orderId());
             publisher.sendOrderCreateSuccess("order-create-success", response);
             log.info("[KafkaConsumer] handlerOrderCreatRequest : 주문 생성 성공 메시지 생성");
         } catch (Exception e) {

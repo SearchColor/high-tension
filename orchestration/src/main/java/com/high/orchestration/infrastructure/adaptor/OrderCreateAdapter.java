@@ -33,8 +33,8 @@ public class OrderCreateAdapter {
 
     public StockDeductionCommandRequest toStockDeductionCommand(OrderCreateSuccessMessage message) {
         return new StockDeductionCommandRequest(
-            message.orderId(),
-            message.sagaId()
+            message.sagaId(),
+            message.orderId()
         );
     }
 

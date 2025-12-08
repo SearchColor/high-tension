@@ -4,14 +4,14 @@ import com.high.order.domain.entity.Order;
 import java.util.UUID;
 
 public record OrderSuccessResponse(
-    UUID orderId,
-    UUID sagaId
+    UUID sagaId,
+    UUID orderId
 
 ) {
     public static OrderSuccessResponse of(Order order, UUID sagaId) {
         return new OrderSuccessResponse(
-            order.getOrderId(),
-            sagaId
+            sagaId,
+            order.getOrderId()
         );
     }
 }
