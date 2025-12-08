@@ -1,5 +1,7 @@
 package com.high.product.application.dto.request;
 
+import java.util.UUID;
+
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,7 +17,7 @@ public record ProductCreateRequest(
 	@NotBlank(message = "카테고리는 필수입니다.")
 	String category,
 
-	@NotBlank(message = "판매자 정보는 필수입니다.")
-	String seller
+	@NotNull(message = "판매자 정보는 필수입니다.")
+	UUID seller
 ) {
 }
