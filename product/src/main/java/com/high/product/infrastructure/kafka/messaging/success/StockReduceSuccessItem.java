@@ -1,4 +1,5 @@
 package com.high.product.infrastructure.kafka.messaging.success;
 
-public class StockReduceSuccessItem {
-}
+import java.util.UUID;
+
+public record StockReduceSuccessItem(UUID productId, Integer quantity) {}
