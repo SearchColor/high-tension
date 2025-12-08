@@ -85,7 +85,27 @@ services:
     networks:
       - msa-network
 
-  # 5. Eureka Server (서비스 디스커버리)
+  # 5. Config Server (중앙 설정 서버)
+  config-server:
+    image: gradle:8.5-jdk17
+    container_name: msa-config
+    working_dir: /app
+    volumes:
+      - ./config:/app
+      - gradle-cache:/root/.gradle
+    command: gradle bootRun --no-daemon
+    ports:
+      - "8888:8888"
+    networks:
+      - msa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # 6. Eureka Server (서비스 디스커버리)
   eureka-server:
     image: gradle:8.5-jdk17
     container_name: msa-eureka
@@ -96,6 +116,9 @@ services:
     command: gradle bootRun --no-daemon
     ports:
       - "8761:8761"
+    depends_on:
+      config-server:
+        condition: service_healthy
     networks:
       - msa-network
     healthcheck:
@@ -105,7 +128,7 @@ services:
       retries: 5
       start_period: 60s
 
-  # 6. Gateway Service (API Gateway)
+  # 7. Gateway Service (API Gateway)
   gateway-service:
     image: gradle:8.5-jdk17
     container_name: msa-gateway
@@ -129,7 +152,7 @@ services:
       REDIS_PORT: 6379
       JWT_SECRET: ${JWT_SECRET}
 
-  # 7. User Service (사용자 관리)
+  # 8. User Service (사용자 관리)
   user-service:
     image: gradle:8.5-jdk17
     container_name: msa-user
@@ -141,23 +164,23 @@ services:
     ports:
       - "8100:8100"
     depends_on:
+      mysql:
+        condition: service_started
       redis:
         condition: service_started
       eureka-server:
         condition: service_healthy
     networks:
       - msa-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     environment:
-      SPRING_PROFILES_ACTIVE: local
-      SERVER_PORT: 8100
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/user_service?createDatabaseIfNotExist=true
+      # Config Server에서 기본 설정 가져오지만, 환경변수로 오버라이드
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/user_service?serverTimezone=UTC&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: redis
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: user-service
 
