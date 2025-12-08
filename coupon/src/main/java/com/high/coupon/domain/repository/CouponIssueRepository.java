@@ -14,4 +14,7 @@ public interface CouponIssueRepository {
 
     // 사용자 별 사용 가능 쿠폰만 조회
     List<CouponIssue> findAvailableByUserId(UUID userId);
+
+    // 쿠폰 단건 검증
+    Optional<CouponIssue> findByIdAndUserId(UUID couponIssueId, UUID userId);
 }

@@ -24,3 +24,7 @@ eureka:
   instance:
     instance-id: external-service
     hostname: localhost
+
+
+slack:
+  token: ${SLACK_TOKEN}

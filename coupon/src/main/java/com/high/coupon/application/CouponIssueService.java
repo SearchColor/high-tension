@@ -2,12 +2,15 @@ package com.high.coupon.application;
 
 import com.high.coupon.application.dto.response.CouponIssueResponse;
 import com.high.coupon.application.dto.response.CouponUseResponse;
+import com.high.coupon.application.dto.response.CouponValidationResponse;
 import com.high.coupon.application.dto.response.UserCouponResponse;
 import com.high.coupon.application.exception.CouponIssueNotFoundException;
 import com.high.coupon.application.exception.CouponOutOfStockException;
 import com.high.coupon.domain.entity.Coupon;
 import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.exception.CouponAlreadyIssuedException;
+import com.high.coupon.domain.exception.CouponAlreadyUsedException;
+import com.high.coupon.domain.exception.CouponNotValidPeriodException;
 import com.high.coupon.domain.repository.CouponIssueRepository;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -80,6 +83,31 @@ public class CouponIssueService {
         return issues.stream()
                 .map(UserCouponResponse::from)
                 .toList();
+    }
+
+    // 쿠폰 단건 유효성 검증용
+    public CouponValidationResponse validateCoupon(UUID couponIssueId, UUID userId) {
+
+        // 1. 조회
+        CouponIssue couponIssue = couponIssueRepository.findByIdAndUserId(couponIssueId, userId)
+                .orElseThrow(CouponIssueNotFoundException::new);
+
+        // 2. 사용 여부
+        if (Boolean.TRUE.equals(couponIssue.getIsUsed())) {
+            log.warn("[INTERNAL] Coupon-Issue-Service - 검증 실패: 이미 사용된 쿠폰 "
+                    + "- couponIssueId={}, usedAt={}", couponIssueId, couponIssue.getUsedAt());
+            throw new CouponAlreadyUsedException();
+        }
+
+        // 3. 유효 기간
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(couponIssue.getValidStartAt()) || now.isAfter(couponIssue.getValidEndAt())) {
+            log.warn("[INTERNAL] Coupon-Issue-Service - 검증 실패: 유효기간 불일치 "
+                    + "- couponIssueId={}, validEndAt={}, now={}", couponIssueId, couponIssue.getValidEndAt(), now);
+            throw new CouponNotValidPeriodException();
+        }
+
+        return CouponValidationResponse.from(couponIssue);
     }
 
 
