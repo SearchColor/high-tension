@@ -5,6 +5,7 @@ import com.high.orchestration.application.dto.internal.request.CouponUseCommandR
 import com.high.orchestration.application.dto.internal.request.OrderCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderDeleteCommandRequest;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
+import com.high.orchestration.application.dto.internal.request.ProcessOrderSuccessCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
 
 public interface EventPublisher {
@@ -21,4 +22,6 @@ public interface EventPublisher {
     void publishCouponUseCommand(String topic, CouponUseCommandRequest commandRequest);
 
     void publishOrderDeleteCommand(String topic, OrderDeleteCommandRequest request);
-}
+
+    void publishOrderSuccessProcessingCommand(String topic, ProcessOrderSuccessCommandRequest orderRequest);
+    }

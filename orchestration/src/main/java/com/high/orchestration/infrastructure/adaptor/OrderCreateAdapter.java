@@ -3,6 +3,7 @@ package com.high.orchestration.infrastructure.adaptor;
 import com.high.orchestration.application.dto.internal.request.ClearCartCommandRequest;
 import com.high.orchestration.application.dto.internal.request.CouponUseCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderDeleteCommandRequest;
+import com.high.orchestration.application.dto.internal.request.ProcessOrderSuccessCommandRequest;
 import com.high.orchestration.application.dto.internal.response.OrderCreateFailCommandResponse;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
@@ -40,15 +41,22 @@ public class OrderCreateAdapter {
 
     public PaymentCreateCommandRequest toPaymentCreateCommand(StockDeductionSuccessMessage message) {
         return new PaymentCreateCommandRequest(
-            message.orderId(),
-            message.sagaId()
+            message.sagaId(),
+            message.orderId()
         );
     }
 
     public ClearCartCommandRequest toClearCartCommand(PaymentCreateSuccessMessage message) {
         return new ClearCartCommandRequest(
-            message.orderId(),
-            message.sagaId()
+            message.sagaId(),
+            message.orderId()
+        );
+    }
+
+    public ProcessOrderSuccessCommandRequest toProcessOrderSuccessCommand(PaymentCreateSuccessMessage message) {
+        return new ProcessOrderSuccessCommandRequest(
+            message.sagaId(),
+            message.orderId()
         );
     }
 

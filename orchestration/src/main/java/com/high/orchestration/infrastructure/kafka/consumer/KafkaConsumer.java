@@ -6,6 +6,7 @@ import com.high.orchestration.application.dto.internal.request.ClearCartCommandR
 import com.high.orchestration.application.dto.internal.request.CouponUseCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderDeleteCommandRequest;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
+import com.high.orchestration.application.dto.internal.request.ProcessOrderSuccessCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
 import com.high.orchestration.application.dto.internal.response.OrderCreateFailCommandResponse;
 import com.high.orchestration.infrastructure.adaptor.OrderCreateAdapter;
@@ -15,6 +16,7 @@ import com.high.orchestration.infrastructure.kafka.dto.response.OrderCreateSucce
 import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateSuccessMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.StockDeductionFailMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.StockDeductionSuccessMessage;
+import com.high.orchestration.infrastructure.kafka.producer.KafkaEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -28,6 +30,7 @@ public class KafkaConsumer {
         private final OrderCreateSagaService orderCreateSagaService;
         private final ObjectMapper objectMapper;
         private final OrderCreateAdapter adapter;
+        private final KafkaEventPublisher publisher;
 
     @KafkaListener(topics = "order-create-success")
         public void orderCreateSuccess(String orderCreateSuccessMessage) {
@@ -103,12 +106,24 @@ public class KafkaConsumer {
 
             try {
                 PaymentCreateSuccessMessage message = objectMapper.readValue(paymentCreateSuccessMessage, PaymentCreateSuccessMessage.class);
-                ClearCartCommandRequest request = adapter.toClearCartCommand(message);
-                orderCreateSagaService.handlerPaymentCreateSuccess(request);
+                ClearCartCommandRequest cartRequest = adapter.toClearCartCommand(message);
+                ProcessOrderSuccessCommandRequest orderRequest = adapter.toProcessOrderSuccessCommand(message);
+
+                orderCreateSagaService.handlerPaymentCreateSuccess(message.sagaId(), message.orderId());
+                publisher.publishClearCartCommand("cart-clear-request", cartRequest);
+                log.info("[OrderCreateSagaService] handlerPaymentCreateSuccess : 장바구니 비우기 명령 성공");
+                publisher.publishOrderSuccessProcessingCommand("order-process-success", orderRequest);
+                log.info("[OrderCreateSagaService] handlerPaymentCreateSuccess : 주문 성공 상태 변경 명령 성공");
+
+                orderCreateSagaService.endOrderCreateSaga(message.sagaId());
+
+
             } catch (Exception e) {
                 log.error("[KafkaConsumer] paymentCreateSuccess : 메시지 파싱 실패 : {}", paymentCreateSuccessMessage, e);
 
             }
         }
+
+        //@KafkaListener(topics = "")
 
 }

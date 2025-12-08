@@ -6,6 +6,7 @@ import com.high.orchestration.application.dto.internal.request.CouponUseCommandR
 import com.high.orchestration.application.dto.internal.request.OrderCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderDeleteCommandRequest;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
+import com.high.orchestration.application.dto.internal.request.ProcessOrderSuccessCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
 import com.high.orchestration.application.port.EventPublisher;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,11 @@ public class KafkaEventPublisher implements EventPublisher {
         log.info("[KafkaEventPublisher] publicClearCartCommand 이벤트 발행 성공");
     }
 
+    public void publishOrderSuccessProcessingCommand(String topic, ProcessOrderSuccessCommandRequest processOrderSuccessCommandRequest) {
+        send(topic, processOrderSuccessCommandRequest);
+        log.info("[KafkaEventPublisher] publishOrderSuccessProcessingCommand 이벤트 발행 성공");
+
+    }
 
     @Override
     public void publishCouponUseCommand(String topic, CouponUseCommandRequest couponUseCommandRequest) {
@@ -58,6 +64,7 @@ public class KafkaEventPublisher implements EventPublisher {
         send(topic, orderDeleteCommandRequest);
         log.info("[KafkaEventPublisher] publicOrderDeleteCommand 보상트랜잭션 이벤트 발행 성공");
     }
+
 
 
     private void send(String topic, Object messageObj) {
@@ -78,4 +85,5 @@ public class KafkaEventPublisher implements EventPublisher {
             throw new RuntimeException("Kafka 메시지 직렬화 오류", e);
         }
     }
+
 }

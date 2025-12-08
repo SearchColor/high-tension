@@ -187,9 +187,8 @@ public class OrderCreateSagaService {
 
     //이 메서드는 수정될 예정
     @Transactional
-    public void handlerPaymentCreateSuccess(ClearCartCommandRequest request) {
+    public void handlerPaymentCreateSuccess(UUID sagaId, UUID orderId) {
         log.info("[OrderCreateSagaService] handlerPaymentCreateSuccess - 결제생성 완료 후 handler 유입 성공");
-        UUID sagaId = request.sagaId();
         SagaState sagaState = getSagaState(sagaId);
 
         try {
@@ -197,15 +196,8 @@ public class OrderCreateSagaService {
                 return;
             }
 
-            updateAndSaveSagaState(sagaState, null, request.toString());
+            updateAndSaveSagaState(sagaState, null, orderId.toString());
 
-            publisher.publishClearCartCommand("cart-clear-request", request);
-
-            //TODO: 종료 시점과 종료 처리 고민중...
-            sagaState.updateCurrentStep(CurrentStep.ORDER_CREATE_COMPLETE);
-            sagaStateRepository.save(sagaState);
-
-            log.info("[OrderCreateSagaService] handlerPaymentCreateSuccess : 장바구니 비우기 명령 성공 - Saga 끝");
 
         } catch (Exception e) {
             log.error("[OrderCreateSagaService] handlerPaymentCreateSuccess : 결제 요청 handler처리 실패");
@@ -213,6 +205,23 @@ public class OrderCreateSagaService {
 
         }
     }
+
+    public void endOrderCreateSaga(UUID sagaId) {
+        SagaState sagaState = getSagaState(sagaId);
+        try {
+            if (checkIdempotency(sagaState, CurrentStep.ORDER_CREATE_COMPLETE)) {
+                return;
+            }
+
+            updateAndSaveSagaState(sagaState, CurrentStep.ORDER_CREATE_COMPLETE, sagaId.toString());
+            sagaStateRepository.save(sagaState);
+        } catch (Exception e) {
+            log.error("[OrderCreateSagaService] endOrderCreateSaga : saga 완료 처리 실패");
+            recordSagaError(sagaState, e);
+        }
+    }
+
+
 
     public SagaState getSagaState(UUID sagaId) {
         return sagaStateRepository.findById(sagaId).orElseThrow(SagaStateNotFoundException::new);
@@ -240,5 +249,6 @@ public class OrderCreateSagaService {
         sagaState.recordError(e.getMessage());
         sagaStateRepository.save(sagaState);
     }
+
 
 }
