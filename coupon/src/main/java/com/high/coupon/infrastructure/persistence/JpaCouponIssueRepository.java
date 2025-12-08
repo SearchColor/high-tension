@@ -2,6 +2,7 @@ package com.high.coupon.infrastructure.persistence;
 
 import com.high.coupon.domain.entity.CouponIssue;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,6 +13,7 @@ public interface JpaCouponIssueRepository extends JpaRepository<CouponIssue, UUI
     boolean existsByCouponIdAndUserId(UUID couponId, UUID userId);
     long countByCouponId(UUID couponId);
 
+    // 리스트 조회
     @Query("""
     SELECT ci FROM CouponIssue ci
     JOIN FETCH ci.coupon
@@ -21,4 +23,18 @@ public interface JpaCouponIssueRepository extends JpaRepository<CouponIssue, UUI
       AND ci.validEndAt >= CURRENT_TIMESTAMP
 """)
     List<CouponIssue> findAvailableByUserId(@Param("userId") UUID userId);
+
+    // todo 쿼리 임시 확인 Optional<CouponIssue> findByIdAndUserId(UUID couponIssueId, UUID userId);
+
+    // 단건 검증 조회용
+    @Query("""
+        SELECT ci FROM CouponIssue ci
+        JOIN FETCH ci.coupon
+        WHERE ci.id = :couponIssueId
+          AND ci.userId = :userId
+    """)
+    Optional<CouponIssue> findByIdAndUserId(
+            @Param("couponIssueId") UUID couponIssueId,
+            @Param("userId") UUID userId
+    );
 }
