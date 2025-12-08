@@ -27,6 +27,6 @@ eureka:
 
 logging:
   level:
-    org.springframework.transaction: TRACE
+    org.springframework.transaction: DEBUG
     org.hibernate.SQL: INFO
     org.hibernate.type.descriptor.sql: INFO

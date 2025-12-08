@@ -11,5 +11,7 @@ public interface CouponIssueRepository {
     long countByCouponId(UUID couponId);
     CouponIssue save(CouponIssue couponIssue);
     Optional<CouponIssue> findById(UUID couponIssueId);
-    List<CouponIssue> findAllByUserId(UUID userId);
+
+    // 사용자 별 사용 가능 쿠폰만 조회
+    List<CouponIssue> findAvailableByUserId(UUID userId);
 }

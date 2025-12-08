@@ -71,10 +71,11 @@ public class CouponIssueService {
      * ----- internal 메서드 -----
      */
 
+    // 사용자 별 사용 가능한 쿠폰 조회
+    public List<UserCouponResponse> getAvailableUserCoupons(UUID userId) {
 
-    // 사용자 별 쿠폰 조회
-    public List<UserCouponResponse> getUserCoupons(UUID userId) {
-        List<CouponIssue> issues = couponIssueRepository.findAllByUserId(userId);
+        List<CouponIssue> issues =
+                couponIssueRepository.findAvailableByUserId(userId);
 
         return issues.stream()
                 .map(UserCouponResponse::from)
@@ -101,7 +102,7 @@ public class CouponIssueService {
         LocalDateTime now = LocalDateTime.now();
         couponIssue.restoreCoupon(now);
 
-        log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 복원 : couponIssueId={}", couponIssueId);
+        log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 복원 프로세스 종료 : couponIssueId={}", couponIssueId);
 
         return CouponUseResponse.from(couponIssue);
     }
