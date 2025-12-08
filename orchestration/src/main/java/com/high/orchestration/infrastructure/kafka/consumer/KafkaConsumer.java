@@ -4,13 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.orchestration.application.OrderCreateSagaService;
 import com.high.orchestration.application.dto.internal.request.ClearCartCommandRequest;
 import com.high.orchestration.application.dto.internal.request.CouponUseCommandRequest;
-import com.high.orchestration.application.dto.internal.response.OrderCreateFailCommandResponse;
+import com.high.orchestration.application.dto.internal.request.OrderDeleteCommandRequest;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
+import com.high.orchestration.application.dto.internal.response.OrderCreateFailCommandResponse;
 import com.high.orchestration.infrastructure.adaptor.OrderCreateAdapter;
 import com.high.orchestration.infrastructure.kafka.dto.response.OrderCreateFailedMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.OrderCreateSuccessMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateSuccessMessage;
+import com.high.orchestration.infrastructure.kafka.dto.response.StockDeductionFailMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.StockDeductionSuccessMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +28,7 @@ public class KafkaConsumer {
         private final ObjectMapper objectMapper;
         private final OrderCreateAdapter adapter;
 
-        @KafkaListener(topics = "order-create-success")
+    @KafkaListener(topics = "order-create-success")
         public void orderCreateSuccess(String orderCreateSuccessMessage) {
             log.info("[KafkaConsumer] orderCreateSuccess : orderCreateSuccessMessage: {}", orderCreateSuccessMessage);
 
@@ -69,6 +71,23 @@ public class KafkaConsumer {
         }
 
         //TODO: 재고차감 실패 이벤트 구독 로직
+        @KafkaListener(topics = "stock-deduction-fail")
+        public void stockDeductionFail(String stockDeductionFailMessage) {
+            log.info("[KafkaConsumer] stockDeductionFail :  stockDeductionFailMessage: {}", stockDeductionFailMessage);
+
+            try {
+
+                StockDeductionFailMessage message = objectMapper.readValue(stockDeductionFailMessage, StockDeductionFailMessage.class);
+                OrderDeleteCommandRequest request = adapter.toOrderDeleteCommand(message);
+                //TODO: try-catch 예외처리 세분화
+                orderCreateSagaService.handlerStockDeductionFailed(request, message.reason());
+                orderCreateSagaService.stockDeductionFailedCompensation(request);
+
+            } catch (Exception e) {
+                log.error("[KafkaConsumer] stockDeductionFail : 재고 차감 실패 메시지 처리 실패 : {}", stockDeductionFailMessage, e);
+            }
+
+        }
 
         @KafkaListener(topics = "payment-create-success")
         public void paymentCreateSuccess(String paymentCreateSuccessMessage) {

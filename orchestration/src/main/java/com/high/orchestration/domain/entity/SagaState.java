@@ -94,4 +94,8 @@ public class SagaState extends BaseUpdateEntity {
         this.errorMessage = errorMessage;
     }
 
+    public void updateSagaStatus(SagaStatus sagaStatus) {
+        this.sagaStatus = sagaStatus;
+    }
+
 }

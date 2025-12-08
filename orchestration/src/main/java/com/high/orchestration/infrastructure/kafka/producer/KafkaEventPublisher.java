@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.orchestration.application.dto.internal.request.ClearCartCommandRequest;
 import com.high.orchestration.application.dto.internal.request.CouponUseCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderCreateCommandRequest;
+import com.high.orchestration.application.dto.internal.request.OrderDeleteCommandRequest;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
 import com.high.orchestration.application.port.EventPublisher;
@@ -47,9 +48,15 @@ public class KafkaEventPublisher implements EventPublisher {
 
 
     @Override
-    public void publishCouponUseCommand(String topic, CouponUseCommandRequest commandRequest) {
-        send(topic, commandRequest);
+    public void publishCouponUseCommand(String topic, CouponUseCommandRequest couponUseCommandRequest) {
+        send(topic, couponUseCommandRequest);
         log.info("[KafkaEventPublisher] publicCouponUserCommand 이벤트 발행 성공");
+    }
+
+    @Override
+    public void publishOrderDeleteCommand(String topic, OrderDeleteCommandRequest orderDeleteCommandRequest) {
+        send(topic, orderDeleteCommandRequest);
+        log.info("[KafkaEventPublisher] publicOrderDeleteCommand 보상트랜잭션 이벤트 발행 성공");
     }
 
 

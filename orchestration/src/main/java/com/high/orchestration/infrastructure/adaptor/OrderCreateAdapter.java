@@ -2,12 +2,14 @@ package com.high.orchestration.infrastructure.adaptor;
 
 import com.high.orchestration.application.dto.internal.request.ClearCartCommandRequest;
 import com.high.orchestration.application.dto.internal.request.CouponUseCommandRequest;
+import com.high.orchestration.application.dto.internal.request.OrderDeleteCommandRequest;
 import com.high.orchestration.application.dto.internal.response.OrderCreateFailCommandResponse;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
 import com.high.orchestration.infrastructure.kafka.dto.response.OrderCreateFailedMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.OrderCreateSuccessMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateSuccessMessage;
+import com.high.orchestration.infrastructure.kafka.dto.response.StockDeductionFailMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.StockDeductionSuccessMessage;
 import org.springframework.stereotype.Component;
 
@@ -45,6 +47,13 @@ public class OrderCreateAdapter {
 
     public ClearCartCommandRequest toClearCartCommand(PaymentCreateSuccessMessage message) {
         return new ClearCartCommandRequest(
+            message.orderId(),
+            message.sagaId()
+        );
+    }
+
+    public OrderDeleteCommandRequest toOrderDeleteCommand(StockDeductionFailMessage message) {
+        return new OrderDeleteCommandRequest(
             message.orderId(),
             message.sagaId()
         );
