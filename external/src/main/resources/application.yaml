@@ -2,7 +2,7 @@ spring:
   application:
     name: external-service
   config:
-    import: "optional:configserver: , optional:classpath:secrets.yml"
+    import: "optional:configserver:"
   cloud:
     config:
       discovery:
@@ -24,3 +24,7 @@ eureka:
   instance:
     instance-id: external-service
     hostname: localhost
+
+
+slack:
+  token: ${SLACK_TOKEN}
