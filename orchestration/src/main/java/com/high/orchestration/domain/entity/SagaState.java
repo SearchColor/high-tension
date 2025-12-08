@@ -89,5 +89,9 @@ public class SagaState extends BaseUpdateEntity {
         this.sagaStatus = SagaStatus.FAILED;
     }
 
+    public void fail(String errorMessage) {
+        this.sagaStatus = SagaStatus.FAILED;
+        this.errorMessage = errorMessage;
+    }
 
 }

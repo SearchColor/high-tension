@@ -2,6 +2,7 @@ package com.high.orchestration.application;
 
 import com.high.orchestration.application.dto.internal.request.ClearCartCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderCreateCommandRequest;
+import com.high.orchestration.application.dto.internal.response.OrderCreateFailCommandResponse;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
 import com.high.orchestration.application.dto.request.OrderCreateRequest;
@@ -106,6 +107,20 @@ public class OrderCreateSagaService {
     }
 
     @Transactional
+    public void handleOrderCreateFailed(OrderCreateFailCommandResponse request) {
+        UUID sagaId = request.sagaId();
+        SagaState sagaState = getSagaState(sagaId);
+
+        try {
+            sagaState.fail("주문 생성 실패: " + request.reason());
+            log.error("[OrderCreateSagaService] handlerOrderCreateFailed 유입 - 실패상태 업데이트 :  sagaId={}, reason={}",
+                sagaId, request.reason());
+        } catch (Exception e) {
+            log.error("[OrderCreateSagaService] handlerOrderCreateFailed 유입 - 주문 생성 실패 처리 중 오류: sagaId={}", sagaId, e);
+        }
+    }
+
+    @Transactional
     public void handlerStockDeductionSuccess(PaymentCreateCommandRequest request) {
         log.info("[OrderCreateSagaService] handlerStockDeductionSuccess - 재고차감 완료 후 handler 유입 성공");
         UUID sagaId = request.sagaId();
@@ -126,8 +141,8 @@ public class OrderCreateSagaService {
             recordSagaError(sagaState, e);
         }
     }
-
     //이 메서드는 수정될 예정
+
     @Transactional
     public void handlerPaymentCreateSuccess(ClearCartCommandRequest request) {
         log.info("[OrderCreateSagaService] handlerPaymentCreateSuccess - 결제생성 완료 후 handler 유입 성공");

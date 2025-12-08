@@ -1,13 +1,13 @@
 package com.high.orchestration.infrastructure.kafka.consumer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.orchestration.application.OrderCreateSagaService;
 import com.high.orchestration.application.dto.internal.request.ClearCartCommandRequest;
+import com.high.orchestration.application.dto.internal.response.OrderCreateFailCommandResponse;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
 import com.high.orchestration.infrastructure.adaptor.OrderCreateAdapter;
+import com.high.orchestration.infrastructure.kafka.dto.response.OrderCreateFailedMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.OrderCreateSuccessMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateSuccessMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.StockDeductionSuccessMessage;
@@ -25,7 +25,7 @@ public class KafkaConsumer {
         private final ObjectMapper objectMapper;
         private final OrderCreateAdapter adapter;
 
-        @KafkaListener(topics = "order-success-create")
+        @KafkaListener(topics = "order-create-success")
         public void orderCreateSuccess(String orderCreateSuccessMessage) {
             log.info("[KafkaConsumer] orderCreateSuccess : orderCreateSuccessMessage: {}", orderCreateSuccessMessage);
 
@@ -39,6 +39,18 @@ public class KafkaConsumer {
         }
 
         //TODO: 주문 생성 실패 이벤트 구독 로직
+        @KafkaListener(topics = "order-create-fail")
+        public void orderCreateFail(String orderCreateFailMessage) {
+            log.info("[kafkaConsumer] orderCreateFail : orderCreateFailMessage {}", orderCreateFailMessage);
+            try {
+                OrderCreateFailedMessage message = objectMapper.readValue(orderCreateFailMessage, OrderCreateFailedMessage.class);
+                OrderCreateFailCommandResponse request = adapter.toOrderCreateFailCommand(message);
+                orderCreateSagaService.handleOrderCreateFailed(request);
+                log.info("주문 생성 실패 메시지 처리 완료");
+            } catch (Exception e) {
+                log.error("주문 실패 메시지 파싱 실패");
+            }
+        }
 
 
         @KafkaListener(topics = "stock-deduction-success")
