@@ -29,11 +29,11 @@ public class Payment {
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 
-	@Column(name = "order_id", nullable = false)
+	@Column(name = "order_id", nullable = false, unique = true)
 	private UUID orderId; // 주문 서비스에서 넘어온 ID
 
-	@Column(name = "user_id", nullable = false)
-	private UUID userId;
+	@Column(name = "user_id", nullable = false, length = 50)
+	private String userId;
 
 	@Column(name = "payment_amount", nullable = false)
 	private BigDecimal amount;
@@ -52,13 +52,19 @@ public class Payment {
 	@Builder.Default
 	private LocalDateTime createdAt = LocalDateTime.now();
 
-	// 상태 변경 로직 (도메인 책임)
+	public void fail() {
+		this.status = PaymentStatus.FAILED;
+	}
+
 	public void complete(String pgTid) {
 		this.status = PaymentStatus.COMPLETED;
 		this.pgTid = pgTid;
 	}
 
-	public void fail() {
-		this.status = PaymentStatus.FAILED;
+	public void cancel() {
+		if (this.status != PaymentStatus.COMPLETED) {
+			throw new IllegalStateException("COMPLETED 상태가 아니면 취소할 수 없습니다.");
+		}
+		this.status = PaymentStatus.CANCELED;
 	}
 }

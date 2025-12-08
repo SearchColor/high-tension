@@ -1,5 +1,10 @@
 package com.high.payment.infrastrcutre.adapter.out.persistence;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import com.high.payment.domain.model.PaymentOutbox;
@@ -16,5 +21,25 @@ public class PaymentOutboxRepositoryAdapter implements PaymentOutboxRepositoryPo
 	@Override
 	public PaymentOutbox save(PaymentOutbox outbox) {
 		return jpaRepository.save(outbox);
+	}
+
+	@Override
+	public Optional<PaymentOutbox> findById(UUID id) {
+		return jpaRepository.findById(id);
+	}
+
+	@Override
+	public List<PaymentOutbox> findTop100ByOrderByCreatedAtAsc() {
+		return jpaRepository.findTop100ByOrderByCreatedAtAsc();
+	}
+
+	@Override
+	public List<PaymentOutbox> findAllByStatus(PaymentOutbox.OutboxStatus status, Pageable pageable) {
+		return jpaRepository.findAllByStatus(status, pageable);
+	}
+
+	@Override
+	public void deleteAll(List<PaymentOutbox> outboxes) {
+		jpaRepository.deleteAll(outboxes);
 	}
 }
