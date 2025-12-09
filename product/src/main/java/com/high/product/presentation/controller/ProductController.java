@@ -37,7 +37,7 @@ public class ProductController {
 
 	// 일반상품 생성
 	@PostMapping("/products")
-	// @PreAuthorize("hasAnyRole('SELLER','MASTER')")
+	@PreAuthorize("hasAnyRole('SELLER','MASTER')")
 	public ResponseEntity<ApiResponse<ProductResponse>> createProduct(
 		@RequestBody @Valid ProductCreateRequest request) {
 
@@ -50,7 +50,7 @@ public class ProductController {
 
 	// 일반상품 ID로 단건 조회
 	@GetMapping("/products/{productId}")
-	// @PreAuthorize("isAuthenticated()")
+	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable UUID productId) {
 		ProductResponse response = productService.getProductById(productId);
 		return ResponseEntity.ok(ApiResponse.success(response));
@@ -58,7 +58,7 @@ public class ProductController {
 
 	// 일반상품 전체 조회(페이징 및 정렬 적용)
 	@GetMapping("/products")
-	// @PreAuthorize("isAuthenticated()")
+	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> getProducts(
 		@RequestParam(defaultValue = "1") int page,
 		@RequestParam(defaultValue = "10") int size,
@@ -80,7 +80,7 @@ public class ProductController {
 
 	// 일반상품 카테고리별 조회
 	@GetMapping("/products/category")
-	// @PreAuthorize("isAuthenticated()")
+	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> getProductsByCategory(
 		@RequestParam String category,
 		@RequestParam(defaultValue = "1") int page,
@@ -102,7 +102,7 @@ public class ProductController {
 
 	// 일반상품 수정
 	@PutMapping("/products/{productId}")
-	// @PreAuthorize("hasAnyRole('SELLER','MASTER')")
+	@PreAuthorize("hasAnyRole('SELLER','MASTER')")
 	public ResponseEntity<ApiResponse<ProductResponse>> updateProduct(
 		@PathVariable UUID productId,
 		@RequestBody @Valid ProductUpdateRequest request) {
@@ -113,7 +113,7 @@ public class ProductController {
 
 	// 일반상품 삭제
 	@DeleteMapping("/products/{productId}")
-	// @PreAuthorize("hasAnyRole('SELLER','MASTER')")
+	@PreAuthorize("hasAnyRole('SELLER','MASTER')")
 	public ResponseEntity<ApiResponse<?>> deleteProduct(@PathVariable UUID productId) {
 		productService.deleteProduct(productId);
 		return ResponseEntity.ok(ApiResponse.success("상품이 성공적으로 삭제되었습니다."));
@@ -121,7 +121,7 @@ public class ProductController {
 
 	// 한정상품 등록
 	@PostMapping("/limited-products")
-	// @PreAuthorize("hasAnyRole('SELLER','MASTER')")
+	@PreAuthorize("hasAnyRole('SELLER','MASTER')")
 	public ResponseEntity<ApiResponse<LimitedProductResponse>> createLimitedProduct(
 		@RequestBody @Valid LimitedProductCreateRequest request) {
 
@@ -135,7 +135,7 @@ public class ProductController {
 
 	// 한정상품 단건 조회
 	@GetMapping("/limited-products/{limitedProductId}")
-	// @PreAuthorize("isAuthenticated()")
+	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<LimitedProductResponse>> getLimitedProductById(
 		@PathVariable UUID limitedProductId) {
 		LimitedProductResponse response = productService.getLimitedProductById(limitedProductId);
@@ -144,7 +144,7 @@ public class ProductController {
 
 	// 한정상품 전체 조회
 	@GetMapping("/limited-products")
-	// @PreAuthorize("isAuthenticated()")
+	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<PageResponse<LimitedProductResponse>>> getAllLimitedProducts(
 		@RequestParam(defaultValue = "1") int page,
 		@RequestParam(defaultValue = "10") int size,
@@ -165,7 +165,7 @@ public class ProductController {
 
 	// 한정상품 카테고리별 조회
 	@GetMapping("/limited-products/category")
-	// @PreAuthorize("isAuthenticated()")
+	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<PageResponse<LimitedProductResponse>>> getLimitedProductsByCategory(
 		@RequestParam String category,
 		@RequestParam(defaultValue = "1") int page,
