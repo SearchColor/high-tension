@@ -12,6 +12,8 @@ import com.high.coupon.domain.exception.CouponAlreadyIssuedException;
 import com.high.coupon.domain.exception.CouponAlreadyUsedException;
 import com.high.coupon.domain.exception.CouponNotValidPeriodException;
 import com.high.coupon.domain.repository.CouponIssueRepository;
+import com.high.coupon.infrastructure.client.OrderClient;
+import com.high.coupon.infrastructure.client.dto.OrderResponse;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +33,7 @@ public class CouponIssueService {
 
     private final CouponService couponService; // 쿠폰 조회용
     private final CouponIssueRepository couponIssueRepository;
+    private final OrderClient orderClient;
 
     /**
      * 쿠폰 발급
@@ -135,5 +138,46 @@ public class CouponIssueService {
     private CouponIssue getCouponIssue(UUID couponIssueId) {
         return couponIssueRepository.findById(couponIssueId)
                 .orElseThrow(CouponIssueNotFoundException::new);
+    }
+
+
+
+    /**
+     * ========================================================================
+     * >>>>>> saga / kafka 연계용 wrapper 메서드
+     * orderId를 기반으로 couponIssuedId를 조회하고 기존 메서드는 재사용 하도록 분리 설계
+     * =========================================================================
+     */
+
+    /**
+     * Kafka 메시지(orderId) 기반 쿠폰 사용 처리
+     */
+    @Transactional
+    public void useCouponByOrderId(UUID orderId){
+
+        OrderResponse order = orderClient.getOrder(orderId).data();
+
+        UUID couponIssuedId = order.couponIssueId();
+        UUID userId = order.userId();
+
+        log.info("[SAGA] couponIssueService 사용 요청: orderId={}, couponIssueId={}, userId={}",
+                orderId, couponIssuedId, userId);
+
+        useCoupon(couponIssuedId, userId);
+    }
+
+    /**
+     * Kafka 메시지(orderId) 기반 쿠폰 복원 처리
+     * todo 복원도 오케스트레이션에 포함될 시 추가
+     */
+    @Transactional
+    public void restoreCouponByOrderId(UUID orderId) {
+
+        OrderResponse order = orderClient.getOrder(orderId).data();
+        UUID couponIssueId = order.couponIssueId();
+
+        log.info("[SAGA] couponIssueService Coupon 복원 요청: orderId={}, couponIssueId={}", orderId, couponIssueId);
+
+        restoreCoupon(couponIssueId);
     }
 }
