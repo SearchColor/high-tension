@@ -2,7 +2,6 @@ package com.high.order.application;
 
 import static java.util.stream.Collectors.toList;
 
-import com.high.order.application.dto.external.ProductResponse;
 import com.high.order.application.dto.internal.OrderItemCreateInfo;
 import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
 import com.high.order.application.dto.internal.kafka.request.ProcessOrderSuccessCommand;
@@ -72,14 +71,21 @@ public class OrderServiceV2 {
             .stream()
             .map( itemDto -> {
 
-                ProductResponse response =
-                    productService.getProductById(itemDto.productId()).getBody().data();
+                //TODO: product feignClient통신 임시무력화
+                //ProductResponse response = productService.getProductById(itemDto.productId()).getBody().data();
+
+//                return new OrderItemCreateInfo(
+//                    response.productId(),
+//                    UUID.randomUUID(),
+//                    response.price(),
+//                    itemDto.quantity()
+//                );
 
                 return new OrderItemCreateInfo(
-                    response.productId(),
                     UUID.randomUUID(),
-                    response.price(),
-                    itemDto.quantity()
+                    UUID.randomUUID(),
+                    2000,
+                    30
                 );
             }).toList();
         log.info("상품 feignClient 조회 성공");
@@ -96,7 +102,7 @@ public class OrderServiceV2 {
 
         //TODO: 쿠폰 검증
         Order order = Order.createOrder(
-            customerId,
+            request.ordererId(),
             request.couponId(),
             request.recipient(),
             request.recipientContact(),
@@ -109,8 +115,8 @@ public class OrderServiceV2 {
         log.info("order 담기 성공");
 
         Order savedOrder = orderRepository.save(order);
-
-        return OrderSuccessResponse.of(savedOrder, request.sagaId());
+        OrderSuccessResponse orderSuccessResponse = OrderSuccessResponse.of(savedOrder, request.sagaId());
+        return orderSuccessResponse;
     }
 
 

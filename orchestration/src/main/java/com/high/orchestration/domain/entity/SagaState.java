@@ -98,4 +98,7 @@ public class SagaState extends BaseUpdateEntity {
         this.sagaStatus = sagaStatus;
     }
 
+    public void updateOrderId(UUID orderId) {
+        this.orderId = orderId;
+    }
 }

@@ -2,7 +2,6 @@ package com.high.order.application;
 
 import static java.util.stream.Collectors.toList;
 
-import com.high.order.application.dto.external.ProductResponse;
 import com.high.order.application.dto.internal.OrderItemCreateInfo;
 import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.application.dto.request.OrderItemDeliveryStatusChangeRequest;
@@ -45,7 +44,6 @@ public class OrderService {
     private final CouponService couponService;
     private final PaymentService paymentService;
 
-    private static final String ROLE_PREFIX = "ROLE_";
 
     //쿠폰 임시
     BigDecimal discountRate = new BigDecimal("10");
@@ -62,23 +60,29 @@ public class OrderService {
             .stream()
             .map( itemDto -> {
 
-                ProductResponse response =
-                    productService.getProductById(itemDto.productId()).getBody().data();
+                //TODO: product feignClient통신 임시무력화
+                //ProductResponse response =productService.getProductById(itemDto.productId()).getBody().data();
+
+//                return new OrderItemCreateInfo(
+//                    response.productId(),
+//                    UUID.randomUUID(), //producerId 임시 값
+//                    response.price(),
+//                    itemDto.quantity()
+//                );
 
                 return new OrderItemCreateInfo(
-                    response.productId(),
-                    UUID.randomUUID(), //producerId 임시 값
-                    response.price(),
-                    itemDto.quantity()
+                    UUID.randomUUID(),
+                    UUID.randomUUID(),
+                    2000,
+                    30
                 );
             }).toList();
         log.info("feignClient 통신성공 ");
 
-        List<OrderItem> itemList =
-            orderItemCreateInfoList.stream()
+        List<OrderItem> itemList = orderItemCreateInfoList.stream()
             .map(item -> OrderItem.create(
                 item.productId(),
-                item.producerId(),
+                UUID.randomUUID(),
                 item.quantity(),
                 item.unitPrice()
             )).toList();
@@ -107,6 +111,7 @@ public class OrderService {
 
 
 
+    @Transactional(readOnly = true)
     public OrderDetailResponse getOrderDetail(UUID orderId, UUID userId, String userRole) {
         /**
          * TODO:
@@ -116,13 +121,13 @@ public class OrderService {
          *      ㄷ) user - 자신의 주문만 조회 가능
          */
 
-        if(userRole.equals(ROLE_PREFIX + "MASTER")) {
+        if(userRole.equals("MASTER")) {
             Order order = getOrderForAdmin(orderId);
             return OrderDetailResponse.from(order);
         }
 
 
-        if(userRole.equals(ROLE_PREFIX + "SELLER")) {
+        if(userRole.equals("SELLER")) {
             Order order = getOrderForAdmin(orderId);
 
             List<OrderItem> itemList = order.getOrderItems().stream()
@@ -137,17 +142,18 @@ public class OrderService {
 
     }
 
+    @Transactional(readOnly = true)
     public List<OrderListResponse> getOrders(UUID userId, String userRole) {
         /**
          * TODO: 권한에 따른 조회 데이터 필터링
          */
 
-        if(userRole.equals(ROLE_PREFIX + "MASTER")) {
+        if(userRole.equals("MASTER")) {
             List<Order> orderList = orderRepository.findAll(); //TODO: 페이징
             return orderList.stream().map(OrderListResponse::from).collect(toList());
         }
 
-        if(userRole.equals(ROLE_PREFIX + "SELLER")) { //TODO: product 통신 후 테스트 필요
+        if(userRole.equals("SELLER")) { //TODO: product 통신 후 테스트 필요
             List<Order> orderList = orderRepository.findOrdersForSeller(userId);
             return orderList.stream().map(OrderListResponse::from).collect(toList());
 
@@ -164,7 +170,7 @@ public class OrderService {
 
         Order order = getOrderForAdmin(orderId);
 
-        if(userRole.equals(ROLE_PREFIX + "USER")) {
+        if(userRole.equals("USER")) {
             order = getOrderForUser(orderId, userId);
         }
 
@@ -182,7 +188,7 @@ public class OrderService {
         order = getOrderForAdmin(orderId);
 
 
-        if(userRole.equals(ROLE_PREFIX + "USER")) {
+        if(userRole.equals("USER")) {
             order = getOrderForUser(orderId, userId);
 
         }
@@ -223,14 +229,14 @@ public class OrderService {
                 .orElseThrow(OrderItemNotFoundExeption::new);
 
 
-        if(userRole.equals(ROLE_PREFIX + "SELLER")) {
+        if(userRole.equals("SELLER")) {
             order = orderRepository.findOrderForSeller(orderId, userId)
                 .orElseThrow(OrderNotFoundException::new);
             orderItem = orderItemRepository.findByOrderIdAndOrderItemIdAndProducerIdAndDeletedAtIsNull(orderId, orderItemId, userId)
                 .orElseThrow(OrderItemNotFoundExeption::new);
         }
 
-        if(userRole.equals(ROLE_PREFIX + "USER")) {
+        if(userRole.equals("USER")) {
             log.info("주문 부분취소 - user 주문 조회");
             order = getOrderForUser(orderId, userId);
             orderItem = orderItemRepository.findByOrderIdAndOrderItemIdAndDeletedAtIsNull(orderId,
@@ -347,11 +353,11 @@ public class OrderService {
     public OrderResponse updateOrder(UUID orderId, @Valid OrderUpdateRequest request,  UUID userId, String userRole) {
 
 
-        if(userRole.equals(ROLE_PREFIX + "MASTER")) {
+        if(userRole.equals("MASTER")) {
 
         }
 
-        if(userRole.equals(ROLE_PREFIX + "SELLER")) {
+        if(userRole.equals("SELLER")) {
 
         }
 

@@ -3,11 +3,13 @@ package com.high.order.infrastructure.config;
 import com.library.security.util.SecurityContextUtil;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
+@Slf4j
 @Configuration
 @EnableJpaAuditing(auditorAwareRef = "auditorProvider")
 public class JpaAuditingConfig {
@@ -15,15 +17,22 @@ public class JpaAuditingConfig {
     @Bean
     public AuditorAware<UUID> auditorProvider() {
         return () -> {
+            // 1. Kafka 메시지 기반 (ThreadLocal)
+            UUID messageUserId = MessageContext.getUserId();
+            if (messageUserId != null) {
+                return Optional.of(messageUserId);
+            }
+
+            // 2. HTTP 기반(SecurityContext)
             String userIdString = SecurityContextUtil.getCurrentUserIdAsString();
-            if (userIdString == null || userIdString.isBlank()) {
-                return Optional.empty();
+            if (userIdString != null && !userIdString.isBlank()) {
+                try {
+                    return Optional.of(UUID.fromString(userIdString));
+                } catch (IllegalArgumentException ignored) {}
             }
-            try {
-                return Optional.of(UUID.fromString(userIdString));
-            } catch (IllegalArgumentException e) {
-                return Optional.empty();
-            }
+
+            return Optional.empty();
         };
     }
+
 }

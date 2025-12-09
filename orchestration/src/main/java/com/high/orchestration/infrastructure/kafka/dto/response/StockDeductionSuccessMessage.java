@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record StockDeductionSuccessMessage(
     UUID sagaId,
-    UUID orderId
+    UUID orderId,
+    UUID userId
     ) {
 }

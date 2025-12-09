@@ -4,7 +4,8 @@ import java.util.UUID;
 
 public record CouponUseCommandRequest(
     UUID sagaId,
-    UUID orderId
+    UUID orderId,
+    UUID userId
 ) {
 
 }

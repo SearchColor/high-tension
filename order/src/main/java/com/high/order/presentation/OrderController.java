@@ -60,7 +60,7 @@ public class OrderController {
     public ResponseEntity<ApiResponse<OrderDetailResponse>> getOrderDetail(@PathVariable("orderId") UUID orderId) {
         UUID userId = SecurityContextUtil.getCurrentUserId();
         String userRole = SecurityContextUtil.getCurrentUserRole();
-        OrderDetailResponse response = orderService.getOrderDetail(orderId,userId, userRole);
+        OrderDetailResponse response = orderService.getOrderDetail(orderId, userId, userRole);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 

@@ -22,14 +22,16 @@ public class OrderCreateAdapter {
     public OrderCreateFailCommandResponse toOrderCreateFailCommand(OrderCreateFailedMessage message) {
         return new OrderCreateFailCommandResponse(
             message.sagaId(),
-            message.reason()
+            message.reason(),
+            message.userId()
         );
     }
 
     public CouponUseCommandRequest toCouponUseCommandRequest(OrderCreateSuccessMessage message) {
         return new CouponUseCommandRequest(
             message.sagaId(),
-            message.orderId()
+            message.orderId(),
+            message.userId()
         );
 
     }
@@ -37,49 +39,56 @@ public class OrderCreateAdapter {
     public StockDeductionCommandRequest toStockDeductionCommand(OrderCreateSuccessMessage message) {
         return new StockDeductionCommandRequest(
             message.sagaId(),
-            message.orderId()
+            message.orderId(),
+            message.userId()
         );
     }
 
     public PaymentCreateCommandRequest toPaymentCreateCommand(StockDeductionSuccessMessage message) {
         return new PaymentCreateCommandRequest(
             message.sagaId(),
-            message.orderId()
+            message.orderId(),
+            message.userId()
         );
     }
 
     public ClearCartCommandRequest toClearCartCommand(PaymentCreateSuccessMessage message) {
         return new ClearCartCommandRequest(
             message.sagaId(),
-            message.orderId()
+            message.orderId(),
+            message.userId()
         );
     }
 
     public ProcessOrderSuccessCommandRequest toProcessOrderSuccessCommand(PaymentCreateSuccessMessage message) {
         return new ProcessOrderSuccessCommandRequest(
             message.sagaId(),
-            message.orderId()
+            message.orderId(),
+            message.userId()
         );
     }
 
     public OrderDeleteCommandRequest toOrderDeleteCommand(StockDeductionFailMessage message) {
         return new OrderDeleteCommandRequest(
             message.sagaId(),
-            message.orderId()
+            message.orderId(),
+            message.userId()
         );
     }
 
     public OrderDeleteCommandRequest toOrderDeleteCommand(PaymentCreateFailMessage message) {
         return new OrderDeleteCommandRequest(
             message.sagaId(),
-            message.orderId()
+            message.orderId(),
+            message.userId()
         );
     }
 
     public StockRestoreCommandRequest toStockRestoreCommand(PaymentCreateFailMessage message) {
         return new StockRestoreCommandRequest(
             message.sagaId(),
-            message.orderId()
+            message.orderId(),
+            message.userId()
         );
     }
 }

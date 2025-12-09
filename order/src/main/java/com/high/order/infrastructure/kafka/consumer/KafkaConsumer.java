@@ -11,6 +11,7 @@ import com.high.order.application.dto.internal.kafka.response.OrderDeleteRespons
 import com.high.order.application.dto.internal.kafka.response.OrderSuccessResponse;
 import com.high.order.application.port.EventPublisher;
 import com.high.order.infrastructure.adapter.OrderCreateAdapter;
+import com.high.order.infrastructure.config.MessageContext;
 import com.high.order.infrastructure.exception.EmptyKafkaMessageException;
 import com.high.order.infrastructure.kafka.dto.response.OrderCreateRequestMessage;
 import com.high.order.infrastructure.kafka.dto.response.OrderDeleteRequestMessage;
@@ -40,6 +41,7 @@ public class KafkaConsumer {
             orderCreateRequestMessage = objectMapper.readValue(message, OrderCreateRequestMessage.class);
             System.out.println(objectMapper.writeValueAsString(orderCreateRequestMessage));
 
+
             if(orderCreateRequestMessage == null) {
                 log.info("[Kafka Consumer] handleOrderCreateRequest : 메시지가 비어있음");
                 throw new EmptyKafkaMessageException();
@@ -50,10 +52,13 @@ public class KafkaConsumer {
         }
 
         try {
+
             CreateOrderCommand command = adapter.toCreateCommand(orderCreateRequestMessage);
+            MessageContext.setUserId(command.ordererId()); // 메시지에 담긴 userId 세팅
+            log.info("command orderId : {}", command.ordererId());
             log.info("[KafkaConsumer] handleOrderCreateRequest : 주문 생성 로직 실행");
             OrderSuccessResponse response = orderService.createOrder(command);
-            log.info("[주문 생성 성공 메시지 response.sagaId: {}, orderId: {} ", response.sagaId(), response.orderId());
+            log.info("[주문 생성 성공 메시지 response.sagaId: {}, orderId: {}, userId: {} ", response.sagaId(), response.orderId(), response.userId());
             publisher.sendOrderCreateSuccess("order-create-success", response);
             log.info("[KafkaConsumer] handlerOrderCreatRequest : 주문 생성 성공 메시지 생성");
         } catch (Exception e) {
@@ -68,7 +73,7 @@ public class KafkaConsumer {
 
             OrderCreateFailedResponse orderCreateFailedResponse =
                 OrderCreateFailedResponse.of(orderCreateRequestMessage.sagaId(),
-                    errorMessage);
+                    errorMessage, orderCreateRequestMessage.ordererId() );
 
             publisher.sendOrderCreateFail("order-create-fail", orderCreateFailedResponse);
 
@@ -142,4 +147,5 @@ public class KafkaConsumer {
         orderService.processOrderSuccess(command);
         log.info("[Kafka Consumer] handleOrderProcessSuccess : 주문 상태를 성공으로 변경 완료");
     }
+
 }

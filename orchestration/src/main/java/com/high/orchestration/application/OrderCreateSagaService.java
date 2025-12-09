@@ -57,12 +57,12 @@ public class OrderCreateSagaService {
 
 
     @Transactional
-    public void startOrderCreateStage(OrderCreateRequest orderCreateRequest, UUID ordererId) {
+    public void startOrderCreateStage(OrderCreateRequest orderCreateRequest, UUID userId) {
 
         //주문 사가 레코드 생성
         UUID sagaId = UUID.randomUUID();
 
-        OrderCreateCommandRequest orderCreateCommandRequest = OrderCreateCommandRequest.from(null, sagaId, ordererId, orderCreateRequest);
+        OrderCreateCommandRequest orderCreateCommandRequest = OrderCreateCommandRequest.from(null, sagaId, userId, orderCreateRequest);
 
         SagaState sagaState = initSagaState(
             sagaId,
@@ -72,8 +72,8 @@ public class OrderCreateSagaService {
             orderCreateCommandRequest.toString()
         );
 
-        log.info("[SagaService - startOrderCreateStage] - Saga Started : sagaId={}",
-            sagaId);
+        log.info("[SagaService - startOrderCreateStage] - Saga Started : sagaId={}, userId= {}",
+            sagaId, orderCreateCommandRequest.ordererId());
 
         try {
             publisher.publishOrderCreateCommand("order-create-request", orderCreateCommandRequest);
@@ -98,7 +98,7 @@ public class OrderCreateSagaService {
             }
 
             updateAndSaveSagaState(sagaState, CurrentStep.ORDER_CREATE_STOCK, stockRequest.toString());
-
+            sagaState.updateOrderId(stockRequest.orderId());
             publisher.publishCouponUseCommand("coupon-use-request", commandRequest);
             publisher.publishStockDeductionCommand("stock-deduction-request", stockRequest);
             log.info("[OrderCreateSagaService] handlerOrderCreateSuccess : 재고차감 명령 발행 성공 ");
@@ -287,8 +287,8 @@ public class OrderCreateSagaService {
         sagaState.updateSagaState(null, nextStep, payload);
         SagaState updatedState = sagaStateRepository.save(sagaState);
 
-        log.info("[OrderCreateSagaService] saga 상태 업데이트 - sagaId={}, orderId={}, step={}",
-            updatedState.getSagaId(), updatedState.getOrderId(), nextStep);
+        log.info("[OrderCreateSagaService] saga 상태 업데이트 - sagaId={}, step={}",
+            updatedState.getSagaId(), nextStep);
 
     }
 

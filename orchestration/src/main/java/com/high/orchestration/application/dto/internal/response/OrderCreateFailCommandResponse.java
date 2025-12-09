@@ -4,7 +4,8 @@ import java.util.UUID;
 
 public record OrderCreateFailCommandResponse(
     UUID sagaId,
-    String reason
+    String reason,
+    UUID userId
 ) {
 
 }

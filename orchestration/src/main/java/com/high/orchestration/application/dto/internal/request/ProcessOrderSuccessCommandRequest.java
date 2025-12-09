@@ -4,7 +4,8 @@ import java.util.UUID;
 
 public record ProcessOrderSuccessCommandRequest(
     UUID sagaId,
-    UUID orderId
+    UUID orderId,
+    UUID userId
 ) {
 
 }

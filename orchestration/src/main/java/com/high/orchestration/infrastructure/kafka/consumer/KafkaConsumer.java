@@ -43,6 +43,8 @@ public class KafkaConsumer {
             StockDeductionCommandRequest stockRequest = adapter.toStockDeductionCommand(message);
             CouponUseCommandRequest couponRequest = adapter.toCouponUseCommandRequest(message);
             orderCreateSagaService.handlerOrderCreateSuccess(stockRequest, couponRequest);
+            log.info("ID: {}", message.userId());
+            log.info("ID : {}, ID: {}", stockRequest.userId(), couponRequest.userId());
         } catch (Exception e) {
             log.error("[KafkaConsumer] orderCreateSuccess : 메시지 파싱 실패 : {}", orderCreateSuccessMessage, e);
             }

@@ -5,7 +5,8 @@ import java.util.UUID;
 public record StockDeductionFailMessage(
     UUID sagaId,
     UUID orderId,
-    String reason
+    String reason,
+    UUID userId
 
 ) {
 
