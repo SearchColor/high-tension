@@ -12,6 +12,7 @@ import com.high.payment.application.dto.CreatePaymentRequest;
 import com.high.payment.application.dto.CreatePaymentResponse;
 import com.high.payment.application.dto.IamportPaymentInfo;
 import com.high.payment.application.dto.PaymentCompletedEvent;
+import com.high.payment.application.dto.PaymentDetailResponse;
 import com.high.payment.application.port.out.IamportClientPort;
 import com.high.payment.domain.model.Payment;
 import com.high.payment.domain.model.PaymentOutbox;
@@ -122,6 +123,16 @@ public class PaymentServiceImpl implements PaymentService {
 												   () -> new RuntimeException("결제 정보를 찾을 수 없습니다. ID: " + paymentId));
 
 		return CreatePaymentResponse.from(payment);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public PaymentDetailResponse getPaymentByOrderId(UUID orderId) {
+		Payment payment = paymentRepositoryPort.findByOrderId(orderId)
+										   .orElseThrow(() -> new RuntimeException("OrderId " + orderId + "에 해당하는 결제 정보를 찾을 수 없습니다."));
+
+		// DTO로 변환하여 반환
+		return PaymentDetailResponse.from(payment);
 	}
 
 	@Override
