@@ -4,11 +4,13 @@ import com.high.orchestration.application.dto.internal.request.ClearCartCommandR
 import com.high.orchestration.application.dto.internal.request.CouponUseCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderDeleteCommandRequest;
 import com.high.orchestration.application.dto.internal.request.ProcessOrderSuccessCommandRequest;
+import com.high.orchestration.application.dto.internal.request.StockRestoreCommandRequest;
 import com.high.orchestration.application.dto.internal.response.OrderCreateFailCommandResponse;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
 import com.high.orchestration.infrastructure.kafka.dto.response.OrderCreateFailedMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.OrderCreateSuccessMessage;
+import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateFailMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateSuccessMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.StockDeductionFailMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.StockDeductionSuccessMessage;
@@ -62,6 +64,20 @@ public class OrderCreateAdapter {
 
     public OrderDeleteCommandRequest toOrderDeleteCommand(StockDeductionFailMessage message) {
         return new OrderDeleteCommandRequest(
+            message.sagaId(),
+            message.orderId()
+        );
+    }
+
+    public OrderDeleteCommandRequest toOrderDeleteCommand(PaymentCreateFailMessage message) {
+        return new OrderDeleteCommandRequest(
+            message.sagaId(),
+            message.orderId()
+        );
+    }
+
+    public StockRestoreCommandRequest toStockRestoreCommand(PaymentCreateFailMessage message) {
+        return new StockRestoreCommandRequest(
             message.sagaId(),
             message.orderId()
         );

@@ -63,9 +63,9 @@ public class OrderServiceV2 {
          */
 
         //실패 테스트를 위한 로직
-        if(request.sagaId() != null) {
-            throw new OrderBadRequestException();
-        }
+//        if(request.sagaId() != null) {
+//            throw new OrderBadRequestException();
+//        }
 
         log.info("주문 생성 서비스 유입");
         List<OrderItemCreateInfo> orderItemCreateInfoList = request.itemList()

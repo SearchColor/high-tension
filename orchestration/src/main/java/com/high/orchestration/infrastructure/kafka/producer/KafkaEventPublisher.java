@@ -8,6 +8,7 @@ import com.high.orchestration.application.dto.internal.request.OrderDeleteComman
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.ProcessOrderSuccessCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
+import com.high.orchestration.application.dto.internal.request.StockRestoreCommandRequest;
 import com.high.orchestration.application.port.EventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,7 @@ public class KafkaEventPublisher implements EventPublisher {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-
+    @Override
     public void publishOrderCreateCommand(String topic, OrderCreateCommandRequest orderCreateCommandRequest) {
         send(topic, orderCreateCommandRequest);
         log.info("[KafkaEventPublisher] publicOrderCreateCommand 이벤트 발행 성공");
@@ -47,9 +48,17 @@ public class KafkaEventPublisher implements EventPublisher {
         log.info("[KafkaEventPublisher] publicClearCartCommand 이벤트 발행 성공");
     }
 
+    @Override
     public void publishOrderSuccessProcessingCommand(String topic, ProcessOrderSuccessCommandRequest processOrderSuccessCommandRequest) {
         send(topic, processOrderSuccessCommandRequest);
         log.info("[KafkaEventPublisher] publishOrderSuccessProcessingCommand 이벤트 발행 성공");
+
+    }
+
+    @Override
+    public void publishStockRestoreCommand(String topic, StockRestoreCommandRequest stockRestoreCommandRequest) {
+        send(topic, stockRestoreCommandRequest);
+        log.info("[KafkaEventPublisher] publishStockRestoreCommand 이벤트 발행 성공");
 
     }
 

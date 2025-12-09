@@ -7,6 +7,7 @@ import com.high.orchestration.application.dto.internal.request.OrderDeleteComman
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.ProcessOrderSuccessCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
+import com.high.orchestration.application.dto.internal.request.StockRestoreCommandRequest;
 
 public interface EventPublisher {
 
@@ -24,4 +25,6 @@ public interface EventPublisher {
     void publishOrderDeleteCommand(String topic, OrderDeleteCommandRequest request);
 
     void publishOrderSuccessProcessingCommand(String topic, ProcessOrderSuccessCommandRequest orderRequest);
-    }
+
+    void publishStockRestoreCommand(String topic, StockRestoreCommandRequest stockRequest);
+}
