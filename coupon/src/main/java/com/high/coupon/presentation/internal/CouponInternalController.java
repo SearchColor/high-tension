@@ -27,7 +27,7 @@ public class CouponInternalController {
 
     /**
      * 사용자 별 보유 쿠폰(사용 가능 상태) 조회
-     * GET /api/v1/internal/coupons?userId={userId}
+     * GET /api/v1/internal/coupons
      */
     @GetMapping
     public ApiResponse<List<UserCouponResponse>> getUserCoupons() {
@@ -39,7 +39,7 @@ public class CouponInternalController {
 
     /**
      * 쿠폰 단건 유효성 검증 및 할인 정보
-     * GET /api/v1/internal/coupons/{couponIssueId}/validate?userId={userId}
+     * GET /api/v1/internal/coupons/{couponIssueId}/validate
      */
     @GetMapping("/{couponIssueId}/validate")
     public ApiResponse<CouponValidationResponse> validateCoupon(@PathVariable UUID couponIssueId) {
@@ -51,7 +51,7 @@ public class CouponInternalController {
 
     /**
      * 쿠폰 사용 처리 (상태 변경)
-     * PUT /api/v1/internal/coupons/{couponIssueId}/use?userId={userId}
+     * PUT /api/v1/internal/coupons/{couponIssueId}/use
      */
     @PutMapping("/{couponIssueId}/use")
     public ApiResponse<CouponUseResponse> useCoupon(@PathVariable UUID couponIssueId) {
