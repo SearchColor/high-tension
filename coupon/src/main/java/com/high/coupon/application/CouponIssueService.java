@@ -9,8 +9,7 @@ import com.high.coupon.application.exception.CouponOutOfStockException;
 import com.high.coupon.domain.entity.Coupon;
 import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.exception.CouponAlreadyIssuedException;
-import com.high.coupon.domain.exception.CouponAlreadyUsedException;
-import com.high.coupon.domain.exception.CouponNotValidPeriodException;
+import com.high.coupon.domain.exception.CouponNotOwnedException;
 import com.high.coupon.domain.repository.CouponIssueRepository;
 import com.high.coupon.infrastructure.client.OrderClient;
 import com.high.coupon.infrastructure.client.dto.OrderResponse;
@@ -29,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CouponIssueService {
 
     // todo : 고도화 필요 (발급 파트)
-    // todo : order - feign 통신 필요 (쿠폰 사용, 취소 시 복구)
+    // todo : order - feign 통신
 
     private final CouponService couponService; // 쿠폰 조회용
     private final CouponIssueRepository couponIssueRepository;
@@ -82,28 +81,18 @@ public class CouponIssueService {
                 .toList();
     }
 
+
     // 쿠폰 단건 유효성 검증용
     public CouponValidationResponse validateCoupon(UUID couponIssueId, UUID userId) {
 
-        // 1. 조회
-        CouponIssue couponIssue = couponIssueRepository.findByIdAndUserId(couponIssueId, userId)
+        CouponIssue couponIssue = couponIssueRepository.findById(couponIssueId)
                 .orElseThrow(CouponIssueNotFoundException::new);
 
-        // 2. 사용 여부
-        if (Boolean.TRUE.equals(couponIssue.getIsUsed())) {
-            log.warn("[INTERNAL] Coupon-Issue-Service - 검증 실패: 이미 사용된 쿠폰 "
-                    + "- couponIssueId={}, usedAt={}", couponIssueId, couponIssue.getUsedAt());
-            throw new CouponAlreadyUsedException();
+        if (!couponIssue.getUserId().equals(userId)) {
+            throw new CouponNotOwnedException();
         }
 
-        // 3. 유효 기간
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(couponIssue.getValidStartAt()) || now.isAfter(couponIssue.getValidEndAt())) {
-            log.warn("[INTERNAL] Coupon-Issue-Service - 검증 실패: 유효기간 불일치 "
-                    + "- couponIssueId={}, validEndAt={}, now={}", couponIssueId, couponIssue.getValidEndAt(), now);
-            throw new CouponNotValidPeriodException();
-        }
-
+        couponIssue.validateUsable(userId, LocalDateTime.now());
         return CouponValidationResponse.from(couponIssue);
     }
 
@@ -112,7 +101,9 @@ public class CouponIssueService {
     @Transactional
     public CouponUseResponse useCoupon(UUID couponIssueId, UUID userId){
 
-        CouponIssue couponIssue = getCouponIssue(couponIssueId);
+        CouponIssue couponIssue = couponIssueRepository.findByIdAndUserId(couponIssueId, userId)
+                .orElseThrow(CouponNotOwnedException::new);
+
         couponIssue.useCoupon(userId, LocalDateTime.now());
         log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 사용처리 : couponIssueId={}, userId={}", couponIssueId, userId);
         return CouponUseResponse.from(couponIssue);
@@ -121,23 +112,13 @@ public class CouponIssueService {
     // 쿠폰 복원 처리 (주문/결제 취소)
     @Transactional
     public CouponUseResponse restoreCoupon(UUID couponIssueId) {
-        CouponIssue couponIssue = getCouponIssue(couponIssueId);
 
-        LocalDateTime now = LocalDateTime.now();
-        couponIssue.restoreCoupon(now);
-
-        log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 복원 프로세스 종료 : couponIssueId={}", couponIssueId);
-
-        return CouponUseResponse.from(couponIssue);
-    }
-
-
-    /** -----------------------
-     * 쿠폰 발급 이력 ID 조회 메서드
-     */
-    private CouponIssue getCouponIssue(UUID couponIssueId) {
-        return couponIssueRepository.findById(couponIssueId)
+        CouponIssue couponIssue = couponIssueRepository.findById(couponIssueId)
                 .orElseThrow(CouponIssueNotFoundException::new);
+
+        couponIssue.restoreCoupon(LocalDateTime.now());
+        log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 복원 프로세스 종료 : couponIssueId={}", couponIssueId);
+        return CouponUseResponse.from(couponIssue);
     }
 
 
