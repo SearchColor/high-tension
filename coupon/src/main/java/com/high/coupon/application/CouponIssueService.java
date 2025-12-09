@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,26 +26,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CouponIssueService {
 
-    // todo : 권한 검증 필요 + 주석 정리 + 고도화 필요 (발급 파트)
+    // todo : 고도화 필요 (발급 파트)
+    // todo : order - feign 통신 필요 (쿠폰 사용, 취소 시 복구)
 
     private final CouponService couponService; // 쿠폰 조회용
     private final CouponIssueRepository couponIssueRepository;
 
-    // todo : 테스트용 제거 필요
-    private final AuditorAware<UUID> auditorAware;
-
     /**
      * 쿠폰 발급
      */
-    // + UUID userId 파라미터 추가 필요
     @Transactional
-    public CouponIssueResponse issueCoupon(UUID couponId) {
+    public CouponIssueResponse issueCoupon(UUID couponId, UUID userId) {
+
+        log.info("User {} is issued a coupon", userId);
 
         Coupon coupon = couponService.getCouponById(couponId);
-
-        // 발급자 ID 임시
-        UUID userId = auditorAware.getCurrentAuditor()
-                .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
 
         if (couponIssueRepository.existsByCouponIdAndUserId(couponId, userId)) {
             throw new CouponAlreadyIssuedException();
@@ -116,7 +110,6 @@ public class CouponIssueService {
     public CouponUseResponse useCoupon(UUID couponIssueId, UUID userId){
 
         CouponIssue couponIssue = getCouponIssue(couponIssueId);
-
         couponIssue.useCoupon(userId, LocalDateTime.now());
         log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 사용처리 : couponIssueId={}, userId={}", couponIssueId, userId);
         return CouponUseResponse.from(couponIssue);
