@@ -48,6 +48,9 @@ dependencies {
 	// Redis Reactive dependencies
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
 
+	// .env 파일 로드 (User Service와 동일)
+	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
+
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

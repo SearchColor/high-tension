@@ -97,8 +97,8 @@ public class UserAuthService {
 
     @Transactional
     public void logout(String accessToken, String userId) {
-        // Access Token 검증 및 userId 추출은 Controller/Filter 레벨에서 선행되었다고 가정
-        // 하지만 안전을 위해 여기서도 검증 가능. 일단은 인자로 받은 userId 사용.
+        // Access Token 검증 및 userId 추출은 Controller/Filter 레벨에서 선행 검증됨.
+        // 인자로 받은 userId 사용.
 
         UUID userUuid = UUID.fromString(userId);
 

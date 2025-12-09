@@ -7,8 +7,8 @@ services:
     container_name: msa-mysql
     restart: always
     environment:
-      # 비밀번호 설정 (필수)
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      # Config Server의 user-service.yml과 동일한 비밀번호 사용
+      MYSQL_ROOT_PASSWORD: admin1234
     ports:
       # 호스트:컨테이너 포트 매핑
       - "3306:3306"
@@ -98,6 +98,9 @@ services:
       - "8888:8888"
     networks:
       - msa-network
+    environment:
+      # Config Server가 user-service.yml의 ${JWT_SECRET} placeholder를 치환하기 위해 필요
+      JWT_SECRET: ${JWT_SECRET}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
       interval: 30s
@@ -168,21 +171,28 @@ services:
         condition: service_started
       redis:
         condition: service_started
+      config-server:
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
     networks:
       - msa-network
     environment:
-      # Config Server에서 기본 설정 가져오지만, 환경변수로 오버라이드
+      # Docker 프로파일 활성화
+      SPRING_PROFILES_ACTIVE: docker
+      # Config Server 직접 연결 (부트스트랩 단계에서 적용)
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED: "false"
+      # MySQL Docker 컨테이너 호스트 오버라이드
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/user_service?serverTimezone=UTC&characterEncoding=UTF-8
-      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      # Redis Docker 환경 오버라이드
       SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET}
       REDIS_HOST: redis
+      # Eureka Docker 환경 오버라이드
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: user-service
+      # JWT Secret
+      JWT_SECRET: ${JWT_SECRET}
 
 # 볼륨 정의 (데이터 영속성 확보)
 volumes:

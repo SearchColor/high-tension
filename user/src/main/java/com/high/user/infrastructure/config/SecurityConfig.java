@@ -1,6 +1,6 @@
 package com.high.user.infrastructure.config;
 
-import com.high.user.infrastructure.security.HeaderAuthenticationFilter;
+import com.library.security.filter.HeaderAuthenticationFilter;
 import com.high.user.infrastructure.security.JwtAuthenticationEntryPoint;
 import com.high.user.infrastructure.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
