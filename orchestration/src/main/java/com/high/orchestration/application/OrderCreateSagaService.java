@@ -1,9 +1,12 @@
 package com.high.orchestration.application;
 
-import com.high.orchestration.application.dto.internal.request.ClearCartCommandRequest;
+import com.high.orchestration.application.dto.internal.request.CouponUseCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderCreateCommandRequest;
+import com.high.orchestration.application.dto.internal.request.OrderDeleteCommandRequest;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.StockDeductionCommandRequest;
+import com.high.orchestration.application.dto.internal.request.StockRestoreCommandRequest;
+import com.high.orchestration.application.dto.internal.response.OrderCreateFailCommandResponse;
 import com.high.orchestration.application.dto.request.OrderCreateRequest;
 import com.high.orchestration.application.exception.FailedToInitializationException;
 import com.high.orchestration.application.exception.FailedToStartSagaException;
@@ -12,6 +15,7 @@ import com.high.orchestration.application.port.EventPublisher;
 import com.high.orchestration.domain.entity.SagaState;
 import com.high.orchestration.domain.repository.SagaStateRepository;
 import com.high.orchestration.domain.vo.CurrentStep;
+import com.high.orchestration.domain.vo.SagaStatus;
 import com.high.orchestration.domain.vo.SagaType;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -53,12 +57,12 @@ public class OrderCreateSagaService {
 
 
     @Transactional
-    public void startOrderCreateStage(OrderCreateRequest orderCreateRequest, UUID ordererId) {
+    public void startOrderCreateStage(OrderCreateRequest orderCreateRequest, UUID userId) {
 
         //주문 사가 레코드 생성
         UUID sagaId = UUID.randomUUID();
 
-        OrderCreateCommandRequest orderCreateCommandRequest = OrderCreateCommandRequest.from(null, sagaId, ordererId, orderCreateRequest);
+        OrderCreateCommandRequest orderCreateCommandRequest = OrderCreateCommandRequest.from(null, sagaId, userId, orderCreateRequest);
 
         SagaState sagaState = initSagaState(
             sagaId,
@@ -68,8 +72,8 @@ public class OrderCreateSagaService {
             orderCreateCommandRequest.toString()
         );
 
-        log.info("[SagaService - startOrderCreateStage] - Saga Started : sagaId={}",
-            sagaId);
+        log.info("[SagaService - startOrderCreateStage] - Saga Started : sagaId={}, userId= {}",
+            sagaId, orderCreateCommandRequest.ordererId());
 
         try {
             publisher.publishOrderCreateCommand("order-create-request", orderCreateCommandRequest);
@@ -83,9 +87,9 @@ public class OrderCreateSagaService {
     }
 
     @Transactional
-    public void handlerOrderCreateSuccess(StockDeductionCommandRequest request) {
+    public void handlerOrderCreateSuccess(StockDeductionCommandRequest stockRequest, CouponUseCommandRequest commandRequest) {
         log.info("[OrderCreateSagaService] handlerOrderCreateSuccess - 주문생성완료 후 handler 유입 성공");
-        UUID sagaId = request.sagaId();
+        UUID sagaId = stockRequest.sagaId();
         SagaState sagaState = getSagaState(sagaId);
         try {
 
@@ -93,15 +97,32 @@ public class OrderCreateSagaService {
                 return;
             }
 
-            updateAndSaveSagaState(sagaState, CurrentStep.ORDER_CREATE_STOCK, request.toString());
-
-            publisher.publishStockDeductionCommand("stock-deduction-request", request);
+            updateAndSaveSagaState(sagaState, CurrentStep.ORDER_CREATE_STOCK, stockRequest.toString());
+            sagaState.updateOrderId(stockRequest.orderId());
+            publisher.publishCouponUseCommand("coupon-use-request", commandRequest);
+            publisher.publishStockDeductionCommand("stock-deduction-request", stockRequest);
             log.info("[OrderCreateSagaService] handlerOrderCreateSuccess : 재고차감 명령 발행 성공 ");
+
 
         } catch (Exception e) {
             log.error("[OrderCreateSagaService] handlerOrderCreateSuccess : 주문 생성 handler처리 실패");
             recordSagaError(sagaState, e);
 
+        }
+    }
+
+    @Transactional
+    public void handleOrderCreateFailed(OrderCreateFailCommandResponse request) {
+        UUID sagaId = request.sagaId();
+        SagaState sagaState = getSagaState(sagaId);
+
+        try {
+            sagaState.fail("주문 생성 실패: " + request.reason());
+            sagaStateRepository.save(sagaState);
+            log.error("[OrderCreateSagaService] handlerOrderCreateFailed 유입 - 실패상태 업데이트 :  sagaId={}, reason={}",
+                sagaId, request.reason());
+        } catch (Exception e) {
+            log.error("[OrderCreateSagaService] handlerOrderCreateFailed 유입 - 주문 생성 실패 처리 중 오류: sagaId={}", sagaId, e);
         }
     }
 
@@ -127,11 +148,74 @@ public class OrderCreateSagaService {
         }
     }
 
+    @Transactional
+    public void handlerStockDeductionFailed(UUID sagaId, String errorMessage) {
+        log.info("[OrderCreateSagaService] handlerStockDeductionFailed - 재고차감 실패 후 handler 유입 성공");
+        log.info("[OrderCreateSagaService] handlerStockDeductionFailed - sagaId : {}", sagaId);
+        SagaState sagaState = getSagaState(sagaId);
+
+        try {
+            sagaState.fail("재고 차감 실패: " + errorMessage);
+            sagaStateRepository.save(sagaState);
+            log.info("[OrderCreateSagaService] handlerStockDeductionFailed 유입 - 실패상태 업데이트 :  sagaId={}, reason={}",
+                sagaId, errorMessage);
+
+        } catch (Exception e) {
+            log.error("[OrderCreateSagaService] handlerStockDeductionFailed 유입 - 재고 차감 실패 처리 중 오류: sagaId={}", sagaId, e);
+
+        }
+    }
+
+
+    @Transactional
+    public void stockDeductionFailedCompensation(OrderDeleteCommandRequest request) {
+        log.info("[OrderCreateSagaService] stockDeductionFailedCompensation - 재고차감 실패 후 보상 트랜잭션 handler 유입 성공");
+
+        UUID sagaId = request.sagaId();
+        SagaState sagaState = getSagaState(sagaId);
+
+        publisher.publishOrderDeleteCommand("order-delete-request", request);
+
+        try {
+            sagaState.updateSagaStatus(SagaStatus.COMPENSATING);
+            sagaStateRepository.save(sagaState);
+            log.info("[OrderCreateSagaService] stockDeductionFailedCompensation - saga 상태 'COMPENSATING' 업데이트 완료");
+        } catch (Exception e) {
+            log.error("[OrderCreateSagaService] stockDeductionFailedCompensation 유입 - 재고 차감실패 보상트랜잭션 처리 중 오류: sagaId={}", sagaId, e);
+
+        }
+    }
+
+    @Transactional
+    public void PaymentCreateFailedCompensation(OrderDeleteCommandRequest orderRequest,
+        StockRestoreCommandRequest stockRequest) {
+        log.info("[OrderCreateSagaService] PaymentCreateFailedCompensation - 결제 생성 실패 후 보상 트랜잭션 handler 유입 성공");
+
+        UUID sagaId = orderRequest.sagaId();
+        SagaState sagaState = getSagaState(sagaId);
+
+        //TODO:보상 트랜잭션 멱득성 체크 (상태값...추가해야 겠다...-> COMPENSATION_STOCK ..)
+        //if (!sagaState..isStockRestored()) ... 확인 메서드도 추가..
+
+        try {
+            publisher.publishStockRestoreCommand("stock-restore-request", stockRequest);
+            publisher.publishOrderDeleteCommand("order-delete-request", orderRequest);
+            sagaState.updateSagaStatus(SagaStatus.COMPENSATING);
+            sagaStateRepository.save(sagaState);
+            log.info("[OrderCreateSagaService] PaymentCreateFailedCompensation - saga 상태 'COMPENSATING' 업데이트 완료");
+
+        } catch (Exception e) {
+            log.error("[OrderCreateSagaService] PaymentCreateFailedCompensation 유입 - 결제 생성 실패 보상트랜잭션 처리 중 오류: sagaId={}", sagaId, e);
+
+        }
+
+    }
+
+
     //이 메서드는 수정될 예정
     @Transactional
-    public void handlerPaymentCreateSuccess(ClearCartCommandRequest request) {
+    public void handlerPaymentCreateSuccess(UUID sagaId, UUID orderId) {
         log.info("[OrderCreateSagaService] handlerPaymentCreateSuccess - 결제생성 완료 후 handler 유입 성공");
-        UUID sagaId = request.sagaId();
         SagaState sagaState = getSagaState(sagaId);
 
         try {
@@ -139,15 +223,8 @@ public class OrderCreateSagaService {
                 return;
             }
 
-            updateAndSaveSagaState(sagaState, null, request.toString());
+            updateAndSaveSagaState(sagaState, null, orderId.toString());
 
-            publisher.publishClearCartCommand("cart-clear-request", request);
-
-            //TODO: 종료 시점과 종료 처리 고민중...
-            sagaState.updateCurrentStep(CurrentStep.ORDER_CREATE_COMPLETE);
-            sagaStateRepository.save(sagaState);
-
-            log.info("[OrderCreateSagaService] handlerPaymentCreateSuccess : 장바구니 비우기 명령 성공 - Saga 끝");
 
         } catch (Exception e) {
             log.error("[OrderCreateSagaService] handlerPaymentCreateSuccess : 결제 요청 handler처리 실패");
@@ -155,6 +232,43 @@ public class OrderCreateSagaService {
 
         }
     }
+
+    @Transactional
+    public void handlerPaymentCreateFailed(UUID sagaId, String errorMessage) {
+
+        log.info("[OrderCreateSagaService] handlerPaymentCreateFailed - 결제생성 실패 후 handler 유입 성공");
+        SagaState sagaState = getSagaState(sagaId);
+
+        try {
+            sagaState.fail("결제 생성 실패: " + errorMessage);
+            sagaStateRepository.save(sagaState);
+            log.info("[OrderCreateSagaService] handlerPaymentCreateFailed 유입 - 실패상태 업데이트 :  sagaId={}, reason={}",
+                sagaId, errorMessage);
+
+        } catch (Exception e) {
+            log.error("[OrderCreateSagaService] handlerPaymentCreateFailed 유입 - 결제 생성 실패 처리 중 오류: sagaId={}", sagaId, e);
+
+        }
+
+    }
+
+    @Transactional
+    public void endOrderCreateSaga(UUID sagaId) {
+        SagaState sagaState = getSagaState(sagaId);
+        try {
+            if (checkIdempotency(sagaState, CurrentStep.ORDER_CREATE_COMPLETE)) {
+                return;
+            }
+
+            updateAndSaveSagaState(sagaState, CurrentStep.ORDER_CREATE_COMPLETE, sagaId.toString());
+            sagaStateRepository.save(sagaState);
+        } catch (Exception e) {
+            log.error("[OrderCreateSagaService] endOrderCreateSaga : saga 완료 처리 실패");
+            recordSagaError(sagaState, e);
+        }
+    }
+
+
 
     public SagaState getSagaState(UUID sagaId) {
         return sagaStateRepository.findById(sagaId).orElseThrow(SagaStateNotFoundException::new);
@@ -173,8 +287,8 @@ public class OrderCreateSagaService {
         sagaState.updateSagaState(null, nextStep, payload);
         SagaState updatedState = sagaStateRepository.save(sagaState);
 
-        log.info("[OrderCreateSagaService] saga 상태 업데이트 - sagaId={}, orderId={}, step={}",
-            updatedState.getSagaId(), updatedState.getOrderId(), nextStep);
+        log.info("[OrderCreateSagaService] saga 상태 업데이트 - sagaId={}, step={}",
+            updatedState.getSagaId(), nextStep);
 
     }
 
@@ -182,4 +296,5 @@ public class OrderCreateSagaService {
         sagaState.recordError(e.getMessage());
         sagaStateRepository.save(sagaState);
     }
+
 }

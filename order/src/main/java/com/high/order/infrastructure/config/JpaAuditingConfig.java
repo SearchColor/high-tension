@@ -1,45 +1,37 @@
 package com.high.order.infrastructure.config;
 
-import jakarta.servlet.http.HttpServletRequest;
+import com.library.security.util.SecurityContextUtil;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
+@Slf4j
 @Configuration
 @EnableJpaAuditing(auditorAwareRef = "auditorProvider")
 public class JpaAuditingConfig {
+
     @Bean
     public AuditorAware<UUID> auditorProvider() {
         return () -> {
-            try {
-                ServletRequestAttributes attributes =
-                    (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-
-                if (attributes == null) {
-                    return Optional.empty();
-                }
-
-                HttpServletRequest request = attributes.getRequest();
-                String userId = request.getHeader("X-User-Id");
-
-                if (userId == null || userId.isBlank()) {
-                    return Optional.empty();
-                }
-
-                try {
-                    return Optional.of(UUID.fromString(userId));
-                } catch (IllegalArgumentException e) {
-                    return Optional.empty();
-                }
-
-            } catch (Exception ex) {
-                return Optional.empty();
+            // 1. Kafka 메시지 기반 (ThreadLocal)
+            UUID messageUserId = MessageContext.getUserId();
+            if (messageUserId != null) {
+                return Optional.of(messageUserId);
             }
+
+            // 2. HTTP 기반(SecurityContext)
+            String userIdString = SecurityContextUtil.getCurrentUserIdAsString();
+            if (userIdString != null && !userIdString.isBlank()) {
+                try {
+                    return Optional.of(UUID.fromString(userIdString));
+                } catch (IllegalArgumentException ignored) {}
+            }
+
+            return Optional.empty();
         };
     }
 
