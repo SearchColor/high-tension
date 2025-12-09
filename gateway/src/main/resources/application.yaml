@@ -72,7 +72,7 @@ spring:
             - id: coupon-service
               uri: lb://coupon-service
               predicates:
-                - Path=/api/v1/coupons/**
+                - Path=/api/v1/coupons/**, /api/v1/internal/coupons/**
 
             - id: coupon-docs
               uri: lb://coupon-service
