@@ -9,7 +9,7 @@ import com.high.payment.domain.model.Payment;
 public record CreatePaymentResponse (
 	UUID paymentId,
 	UUID orderId,
-	UUID userId,
+	String userId,
 	BigDecimal amount,
 	String status
 ) {

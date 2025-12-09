@@ -2,6 +2,7 @@ package com.high.user.infrastructure.security;
 
 import com.high.user.application.service.RefreshTokenService;
 import com.high.user.domain.service.TokenProvider;
+import com.library.security.UserPrincipal;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -81,8 +82,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         UUID userId = tokenProvider.getUserId(token);
         String role = tokenProvider.getRole(token);
 
+        UserPrincipal principal = new UserPrincipal(userId, role);
         SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
 
-        return new UsernamePasswordAuthenticationToken(userId, null, Collections.singletonList(authority));
+        return new UsernamePasswordAuthenticationToken(principal, null, Collections.singletonList(authority));
     }
 }
