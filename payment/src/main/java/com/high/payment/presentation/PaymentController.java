@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.high.payment.application.dto.CreatePaymentRequest;
 import com.high.payment.application.dto.CreatePaymentResponse;
 import com.high.payment.application.dto.IamportWebhookDto;
+import com.high.payment.application.dto.PaymentDetailResponse;
 import com.high.payment.application.service.PaymentService;
 
 import lombok.RequiredArgsConstructor;
@@ -79,6 +80,14 @@ public class PaymentController {
 				 response.paymentId(), response.orderId(), response.amount());
 
 		// 3. 200 OK 응답 반환
+		return ResponseEntity.ok(response);
+	}
+
+	@GetMapping("/order/{orderId}")
+	public ResponseEntity<PaymentDetailResponse> getPaymentByOrderId(@PathVariable UUID orderId) {
+
+		PaymentDetailResponse response = paymentService.getPaymentByOrderId(orderId);
+
 		return ResponseEntity.ok(response);
 	}
 
