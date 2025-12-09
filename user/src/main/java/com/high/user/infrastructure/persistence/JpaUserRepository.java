@@ -1,6 +1,8 @@
 package com.high.user.infrastructure.persistence;
 
 import com.high.user.domain.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -21,4 +23,7 @@ public interface JpaUserRepository extends JpaRepository<User, UUID> {
 
     // Check email existence
     boolean existsByEmail(String email);
+
+    // Search by email (partial match)
+    Page<User> findByEmailContainingAndDeletedAtIsNull(String email, Pageable pageable);
 }
