@@ -40,11 +40,12 @@ public class KafkaConfig {
 	public ConsumerFactory<String, String> consumerFactory() {
 		Map<String, Object> properties = new HashMap<>();
 		properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-		properties.put(ConsumerConfig.GROUP_ID_CONFIG, "consumerGroupId");
+		properties.put(ConsumerConfig.GROUP_ID_CONFIG, "product-service-group");
 		properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 		properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-		// properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-		// properties.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+
+		properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+		properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
 		return new DefaultKafkaConsumerFactory<>(properties);
 	}

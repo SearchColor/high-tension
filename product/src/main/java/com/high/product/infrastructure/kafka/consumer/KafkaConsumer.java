@@ -36,7 +36,7 @@ public class KafkaConsumer {
 	private static final String TOPIC_SUCCESS = "stock-reduce-success";
 	private static final String TOPIC_FAILURE = "stock-reduce-failure";
 
-	@KafkaListener(topics = "stock-reduce-request", groupId = "product-stock-consumer")
+	@KafkaListener(topics = "stock-deduction-success", groupId = "product-stock-consumer")
 	public void onMessage(String message) {
 		log.info("[Listener] received: {}", message);
 		StockReduceRequest req;

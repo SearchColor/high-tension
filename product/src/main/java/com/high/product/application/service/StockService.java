@@ -130,11 +130,14 @@ public class StockService {
 
 	// 일반 상품 재고 차감
 	@Transactional
-	public void reduceStock(UUID productId, int quantity) {
+	public StockResponse reduceStock(UUID productId, int quantity) {
 		Product_Stock stock = stockRepository.findByProductIdForUpdate(productId)
 			.orElseThrow(() -> new ProductException(ProductErrorCode.PRODUCT_NOT_FOUND));
 		stock.reduce(quantity);
-		stockRepository.save(stock);
+		Product_Stock savedStock = stockRepository.save(stock);
+
+		return StockResponse.from(savedStock);
+
 	}
 
 	// 일반 상품 재고 복원
