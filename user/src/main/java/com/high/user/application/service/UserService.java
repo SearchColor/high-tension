@@ -140,7 +140,7 @@ public class UserService {
         }
 
         // Soft Delete
-        user.softDelete(userId.toString());
+        user.softDelete(userId);
 
         // Refresh Token 삭제
         refreshTokenService.deleteByUserId(userId.toString());
