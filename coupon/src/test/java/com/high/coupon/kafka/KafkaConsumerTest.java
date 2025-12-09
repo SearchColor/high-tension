@@ -40,15 +40,17 @@ public class KafkaConsumerTest {
     // === 공통 필드 (모든 테스트에서 재사용) ===
     UUID orderId;
     UUID sagaId;
+    UUID userId;
     String jsonMessage;
 
     @BeforeEach
     void setUp() throws Exception {
         orderId = UUID.randomUUID();
         sagaId = UUID.randomUUID();
+        userId = UUID.randomUUID();
 
         CouponUseRequestMessage request =
-                new CouponUseRequestMessage(sagaId, orderId);
+                new CouponUseRequestMessage(sagaId, orderId, userId);
 
         jsonMessage = objectMapper.writeValueAsString(request);
     }

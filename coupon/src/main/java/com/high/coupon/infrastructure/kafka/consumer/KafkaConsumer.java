@@ -46,7 +46,7 @@ public class KafkaConsumer {
             couponIssueService.useCouponByOrderId(dto.orderId());
 
             // 처리 성공 시 알림
-            log.info("[SAGA COUPON CONSUMER] 처리 성공 orderId={}, sagaId={}", dto.orderId(), dto.sagaId());
+            log.info("[SAGA COUPON CONSUMER] 처리 성공 orderId={}, sagaId={}, userId={}", dto.orderId(), dto.sagaId(), dto.userId());
 
         } catch (Exception e) {
             log.error("[SAGA COUPON CONSUMER] 처리 실패 - 메시지 건너뜀. 내용: {}, 에러: {}", message, e.getMessage()); // todo: KafkaConfig DLQ 도입 필요

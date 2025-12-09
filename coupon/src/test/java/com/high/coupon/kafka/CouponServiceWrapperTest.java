@@ -2,6 +2,7 @@ package com.high.coupon.kafka;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,9 +41,9 @@ public class CouponServiceWrapperTest {
     @Test
     void testUseCouponByOrderId() {
 
-        UUID orderId = UUID.randomUUID(); // kafka에게 받은 orderId
-        UUID couponIssueId = UUID.randomUUID(); // order 정보
-        UUID userId = UUID.randomUUID(); // order 정보
+        UUID orderId = UUID.randomUUID();
+        UUID couponIssueId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
 
         // OrderClient Res
         OrderResponse mockOrder = new OrderResponse(
@@ -55,17 +56,19 @@ public class CouponServiceWrapperTest {
         when(orderClient.getOrder(orderId))
                 .thenReturn(ApiResponse.success(mockOrder));
 
-        // CouponIssue
+        // CouponIssue Mock 생성
         CouponIssue issue = mock(CouponIssue.class);
 
-        when(couponIssueRepository.findById(couponIssueId))
+        // 내부 로직 Mocking
+        doNothing().when(issue).useCoupon(any(), any());
+
+        when(couponIssueRepository.findByIdAndUserId(couponIssueId, userId))
                 .thenReturn(Optional.of(issue));
 
-        // 실행 - orderId 기반으로 couponIssueId + userId를 조회해 내부 useCoupon() 호출까지
+        // 실행
         couponIssueService.useCouponByOrderId(orderId);
 
         // 검증
-        // → eq(userId): userId가 정확히 전달
         verify(issue).useCoupon(eq(userId), any());
     }
 }
