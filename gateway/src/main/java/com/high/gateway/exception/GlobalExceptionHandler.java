@@ -59,10 +59,11 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
             code = customException.getBaseErrorCode().getCode();
             message = customException.getBaseErrorCode().getMessage();
         } else {
-            // 기타 예외는 500 처리
-            status = HttpStatus.INTERNAL_SERVER_ERROR;
-            code = 5000;
-            message = "서버 내부 오류가 발생했습니다";
+            // 기타 예외는 InternalServerException으로 래핑
+            InternalServerException internalServerException = new InternalServerException();
+            status = internalServerException.getBaseErrorCode().getStatus();
+            code = internalServerException.getBaseErrorCode().getCode();
+            message = internalServerException.getBaseErrorCode().getMessage();
         }
 
         return writeErrorResponse(exchange, status, code, message, retryAfter);
