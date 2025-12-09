@@ -26,7 +26,7 @@ public class JpaAuditingConfig {
 			}
 
 			try {
-				return Optional.of(UUID.fromString(authentication.getName())); // userId 저장
+				return Optional.of(UUID.randomUUID()); // userId 저장
 			} catch (IllegalArgumentException e) {
 				return Optional.empty();
 			}
