@@ -1,0 +1,94 @@
+User Service Integrated APIs Test Result (v2)
+Test Date: 2025-12-10 05:35:29
+========================================
+
+\033[1;33m[Setup] MASTER 계정 생성\033[0m
+MASTER 계정은 Factory Method로만 생성 가능합니다.
+다음 SQL을 실행하세요:
+
+-- MySQL에서 실행
+INSERT INTO user_service.p_users (user_id, email, password, name, role, is_active, created_at, created_by)
+VALUES (
+  UNHEX(REPLACE(UUID(), '-', '')),
+  'master_20251210_053529@example.com',
+  '$2a$10$YOUR_BCRYPT_HASHED_PASSWORD',  -- bcrypt hash of 'Master1234@'
+  'MasterUser20251210_053529',
+  'MASTER',
+  1,
+  NOW(),
+  UNHEX(REPLACE('00000000-0000-0000-0000-000000000000', '-', ''))
+);
+
+또는 기존 MASTER 계정 사용 (이메일/비밀번호 입력)
+
+\033[0;34m[Test 1] 일반 사용자 회원가입\033[0m
+\033[0;32m✓ 회원가입 성공\033[0m
+User ID: ea2a19c1-31e4-4e73-81fe-74be0122317f
+Email: testuser_20251210_053529@example.com
+
+\033[0;34m[Test 2] 로그인 및 토큰 획득\033[0m
+\033[0;32m✓ 로그인 성공\033[0m
+Access Token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiO...
+Refresh Token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiO...
+
+\033[0;34m[Test 3] Token 재발급 (Refresh Token Rotation)\033[0m
+\033[0;32m✓ Token 재발급 성공\033[0m
+New Access Token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiO...
+New Refresh Token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiO...
+\033[0;32m✓ Refresh Token Rotation 확인됨\033[0m
+
+\033[0;34m[Test 4] 기존 RT로 재발급 시도 (토큰 탈취 감지)\033[0m
+\033[0;32m✓ 무효화된 RT 거부됨 (에러코드: 2202)\033[0m
+
+\033[0;34m[Test 5] MASTER 로그인\033[0m
+\033[0;32m✓ MASTER 로그인 성공\033[0m
+Master Token: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiO...
+
+\033[0;34m[Test 6] 사용자 검색 (MASTER 권한)\033[0m
+\033[0;32m✓ 사용자 검색 성공\033[0m
+검색 결과: 3건
+Response: {"success":true,"data":{"content":[{"userId":"ea2a19c1-31e4-4e73-81fe-74be0122317f","email":"testuser_20251210_053529@example.com","name":"TestUser20251210_053529","role":"USER","isActive":true,"lastLoginAt":"2025-12-09T20:35:54.99146","createdAt":"2025-12-09T20:35:53.497279"},{"userId":"ecee2078-0bbc-4be7-8dba-90b721111af9","email":"testuser_20251210_040953@example.com","name":"TestUser20251210_040953","role":"USER","isActive":true,"lastLoginAt":"2025-12-09T20:08:30.633862","createdAt":"2025-12-09T19:10:44.723747"},{"userId":"2fb48cd9-c91c-453c-a599-8dec3315acf9","email":"testuser_20251210_023912@example.com","name":"TestUser20251210_023912","role":"USER","isActive":true,"lastLoginAt":"2025-12-09T17:39:38.985943","createdAt":"2025-12-09T17:39:38.087581"}],"pageable":{"pageNumber":0,"pageSize":20,"sort":[{"direction":"DESC","property":"createdAt","ignoreCase":false,"nullHandling":"NATIVE","descending":true,"ascending":false}],"offset":0,"paged":true,"unpaged":false},"last":true,"totalElements":3,"totalPages":1,"size":20,"number":0,"sort":[{"direction":"DESC","property":"createdAt","ignoreCase":false,"nullHandling":"NATIVE","descending":true,"ascending":false}],"first":true,"numberOfElements":3,"empty":false}}
+
+\033[0;34m[Test 7] 권한 변경 (USER → SELLER)\033[0m
+\033[0;32m✓ 권한 변경 성공 (USER → SELLER)\033[0m
+
+\033[0;34m[Test 8] MASTER 권한으로 변경 시도 (거부 확인)\033[0m
+\033[0;32m✓ MASTER 권한 변경 차단됨 (에러코드: 2300)\033[0m
+
+\033[0;34m[Test 9] 일반 사용자로 관리자 API 접근 시도 (403 확인)\033[0m
+\033[0;32m✓ 403 Forbidden 응답 확인됨\033[0m
+
+\033[0;34m[Test 10] 내 쿠폰 조회 (Coupon Service 연동)\033[0m
+\033[0;32m✓ 내 쿠폰 조회 성공\033[0m
+쿠폰 개수: 0개
+Response: {"success":true,"data":[]}
+
+\033[0;34m[Test 11] Coupon Service 장애 시 에러 처리\033[0m
+\033[0;32m✓ 이미 테스트 완료\033[0m
+  Coupon Service Down 시: 2500 에러 반환
+  (FeignErrorDecoder: 5xx → CouponServiceException)
+  (명시적 에러 전달이 올바른 설계)
+
+========================================
+Test Summary
+========================================
+\033[0;32m✓ test10\033[0m
+\033[0;32m✓ test11\033[0m
+\033[0;32m✓ test9\033[0m
+\033[0;32m✓ test8\033[0m
+\033[0;32m✓ test3\033[0m
+\033[0;32m✓ test2\033[0m
+\033[0;32m✓ test1\033[0m
+\033[0;32m✓ test7\033[0m
+\033[0;32m✓ test6\033[0m
+\033[0;32m✓ test5\033[0m
+\033[0;32m✓ test4\033[0m
+
+성공: 11
+실패: 0
+부분 성공: 0
+수동 테스트: 0
+
+\033[0;32m🎉 모든 자동 테스트 성공{NC}
+
+결과 파일: /c/Users/gy990/OneDrive/GYP/14.Master_Java/02.workspace/high-tension/user/scripts/integrated-apis-test-result-20251210_053529.txt
