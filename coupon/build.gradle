@@ -34,7 +34,7 @@ dependencies {
     // common
     implementation 'com.github.sharedeffort:common-module:v1.1.9'
     implementation 'com.github.sharedeffort:common-jpa:v1.0.3'
-    implementation 'com.github.sharedeffort:common-security:v1.0.0'
+    implementation 'com.github.sharedeffort:common-security:v1.1.0'
 
     // spring cloud
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
