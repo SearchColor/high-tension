@@ -7,11 +7,13 @@ import com.high.coupon.application.dto.response.CouponDetailResponse;
 import com.high.coupon.application.dto.response.CouponListResponse;
 import com.library.jpa.response.PageResponse;
 import com.library.module.response.ApiResponse;
+import com.library.security.util.SecurityContextUtil;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,20 +29,24 @@ public class CouponController {
 
     private final CouponService couponService;
 
-    // todo 권한 필요
 
-    // 쿠폰 생성
+    // 쿠폰 생성 (관리자)
+    @PreAuthorize("hasRole('MASTER')")
     @PostMapping
     public ResponseEntity<ApiResponse<CouponCreateResponse>> createCoupon(
             @RequestBody @Valid CouponCreateRequest request){
-        var response = couponService.createCoupon(request);
+
+        UUID userId = SecurityContextUtil.getCurrentUserId();
+        var response = couponService.createCoupon(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
     // 발행 쿠폰 상세 조회 (관리자)
+    @PreAuthorize("hasRole('MASTER')")
     @GetMapping("/{couponId}")
     public ResponseEntity<ApiResponse<CouponDetailResponse>> getCouponById(
             @PathVariable("couponId") UUID couponId) {
+
         var response = couponService.getCouponDetail(couponId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -52,6 +58,7 @@ public class CouponController {
      * @param isAsc 오름차순/내림차순 default createdAt DESC
      * @return 페이징 된 리스트
      */
+    @PreAuthorize("hasRole('MASTER')")
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CouponListResponse>>> getCouponPage(
             @RequestParam(defaultValue = "0") int page,
