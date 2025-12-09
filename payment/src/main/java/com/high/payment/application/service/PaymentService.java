@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import com.high.payment.application.dto.CreatePaymentRequest;
 import com.high.payment.application.dto.CreatePaymentResponse;
+import com.high.payment.application.dto.PaymentDetailResponse;
 
 public interface PaymentService {
 	void processPayment(CreatePaymentRequest event);
@@ -11,6 +12,8 @@ public interface PaymentService {
 	CreatePaymentResponse createPayment(CreatePaymentRequest request);
 
 	CreatePaymentResponse getPayment(UUID paymentId);
+
+	PaymentDetailResponse getPaymentByOrderId(UUID orderId);
 
 	void verifyAndFinalizePayment(String impUid, String merchantUid);
 
