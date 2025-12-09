@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,6 +34,7 @@ public class StockController {
 
 	// 재고 등록 (초기 수량 설정)
 	@PostMapping("/products/stocks")
+	@PreAuthorize("hasAnyRole('SELLER','MASTER')")
 	public ResponseEntity<ApiResponse<StockResponse>> createStock(
 		@RequestBody @Valid StockCreateRequest request) {
 
@@ -45,6 +47,7 @@ public class StockController {
 
 	// ID로 단건 조회
 	@GetMapping("/products/stocks/{productId}")
+	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<StockResponse>> getStockById(@PathVariable UUID productId) {
 		StockResponse response = stockService.getStockById(productId);
 		return ResponseEntity.ok(ApiResponse.success(response));
@@ -52,6 +55,7 @@ public class StockController {
 
 	// 페이징 및 정렬 적용 전체 조회
 	@GetMapping("/products/stocks")
+	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<PageResponse<StockResponse>>> getStocks(
 		@RequestParam(defaultValue = "1") int page,
 		@RequestParam(defaultValue = "10") int size,
@@ -71,6 +75,7 @@ public class StockController {
 
 	// 한정상품 재고 등록
 	@PostMapping("/limited-products/stocks")
+	@PreAuthorize("hasAnyRole('SELLER','MASTER')")
 	public ResponseEntity<ApiResponse<LimitedStockResponse>> createLimitedStock(
 		@RequestBody @Valid LimitedStockCreateRequest request) {
 
@@ -83,6 +88,7 @@ public class StockController {
 
 	// ID로 단건 조회
 	@GetMapping("/limited-products/stocks/{limitedProductId}")
+	@PreAuthorize("hasAnyRole('SELLER','MASTER')")
 	public ResponseEntity<ApiResponse<LimitedStockResponse>> getStockByLimitedProductById(
 		@PathVariable UUID limitedProductId) {
 		LimitedStockResponse response = stockService.getStockByLimitedProductById(limitedProductId);
@@ -91,6 +97,7 @@ public class StockController {
 
 	// 페이징 및 정렬 적용 전체 조회
 	@GetMapping("/limited-products/stocks")
+	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<PageResponse<LimitedStockResponse>>> getAllLimitedStocks(
 		@RequestParam(defaultValue = "1") int page,
 		@RequestParam(defaultValue = "10") int size,

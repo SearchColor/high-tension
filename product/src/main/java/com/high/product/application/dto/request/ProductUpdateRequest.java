@@ -1,5 +1,7 @@
 package com.high.product.application.dto.request;
 
+import java.util.UUID;
+
 import jakarta.validation.constraints.Min;
 
 public record ProductUpdateRequest(
@@ -11,6 +13,6 @@ public record ProductUpdateRequest(
 
 	String category,
 
-	String seller
+	UUID seller
 ) {
 }

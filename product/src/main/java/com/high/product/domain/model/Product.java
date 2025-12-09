@@ -35,10 +35,10 @@ public class Product extends BaseEntity {
 	private String category;
 
 	@Column(nullable = false)
-	private String seller;
+	private UUID seller;
 
 	@Builder
-	public Product(String name, int price, String category, String seller) {
+	public Product(String name, int price, String category, UUID seller) {
 		this.name = name;
 		this.price = price;
 		this.category = category;
@@ -46,7 +46,7 @@ public class Product extends BaseEntity {
 	}
 
 	// 일반상품 생성 정적 메서드
-	public static Product createProduct(String name, Integer price, String category, String seller) {
+	public static Product createProduct(String name, Integer price, String category, UUID seller) {
 		return Product.builder()
 			.name(name)
 			.price(price)
@@ -56,7 +56,7 @@ public class Product extends BaseEntity {
 	}
 
 	// 일반상품 수정
-	public void update(String name, Integer price, String category, String seller) {
+	public void update(String name, Integer price, String category, UUID seller) {
 		this.name = name;
 		this.price = price;
 		this.category = category;

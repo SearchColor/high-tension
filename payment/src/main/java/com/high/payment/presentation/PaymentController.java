@@ -27,8 +27,7 @@ public class PaymentController {
 	private final PaymentService paymentService;
 
 	/**
-	 * [Webhook Endpoint] 아임포트(Iamport)로부터 결제 상태 변경 알림을 수신합니다.
-	 * 이 Webhook을 통해 결제의 최종 상태를 확정하고 정합성을 검증합니다.
+	 * [Webhook Endpoint] 아임포트(Iamport)로부터 결제 상태 변경 알림을 수신
 	 * * @param webhookDto 아임포트가 전송한 Webhook 데이터
 	 */
 	@PostMapping("/iamport/webhook")
@@ -36,19 +35,20 @@ public class PaymentController {
 
 		log.info("Iamport Webhook 수신: MerchantUid={}, Status={}", webhookDto.merchantUid(), webhookDto.status());
 
-		// 1. Webhook 상태에 따라 처리 (paid, cancelled 등)
 		if ("paid".equals(webhookDto.status())) {
 
-			// 2. 서비스 로직 위임 (결제 정보 조회 및 최종 확정 로직)
-			// (TODO: PaymentService에 handleWebhook 이나 verifyPayment 메서드 구현 필요)
-			// paymentService.verifyAndFinalizePayment(webhookDto.impUid(), webhookDto.merchantUid());
+			try {
+				paymentService.verifyAndFinalizePayment(webhookDto.impUid(), webhookDto.merchantUid());
+				log.info("Webhook 처리 성공. Payment 확정 완료.");
+			} catch (Exception e) {
+				log.error(" Webhook 처리 중 오류 발생 (정합성 검증 실패 등): {}", e.getMessage(), e);
+				return ResponseEntity.status(HttpStatus.OK).build();
+			}
 
 		} else if ("failed".equals(webhookDto.status()) || "cancelled".equals(webhookDto.status())) {
-			// 결제 실패/취소 처리 로직
-
+			log.warn("결제 실패 또는 취소 Webhook 수신. MerchantUid={}", webhookDto.merchantUid());
 		}
 
-		// Iamport에게 200 OK 응답을 보내야 재시도를 하지 않습니다.
 		return ResponseEntity.status(HttpStatus.OK).build();
 	}
 
@@ -80,5 +80,13 @@ public class PaymentController {
 
 		// 3. 200 OK 응답 반환
 		return ResponseEntity.ok(response);
+	}
+
+	// 결제 취소 요청
+	@PostMapping("/{orderId}/cancel")
+	public ResponseEntity<Void> cancelPayment(@PathVariable UUID orderId) {
+		// 취소 로직 호출
+		paymentService.cancelPayment(orderId);
+		return ResponseEntity.noContent().build(); // 204 No Content
 	}
 }

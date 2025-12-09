@@ -15,7 +15,7 @@ public record ProductResponse(
 
 	String category,
 
-	String seller,
+	UUID seller,
 
 	LocalDateTime createdAt,
 

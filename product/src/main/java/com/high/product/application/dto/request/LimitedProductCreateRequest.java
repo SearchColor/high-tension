@@ -1,6 +1,7 @@
 package com.high.product.application.dto.request;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -21,8 +22,8 @@ public record LimitedProductCreateRequest(
 	@NotBlank(message = "카테고리는 필수입니다.")
 	String category,
 
-	@NotBlank(message = "판매자는 필수입니다.")
-	String seller,
+	@NotNull(message = "판매자는 필수입니다.")
+	UUID seller,
 
 	@NotNull(message = "할인율은 필수입니다.")
 	@Min(0)

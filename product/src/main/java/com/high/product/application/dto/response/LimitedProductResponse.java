@@ -16,7 +16,7 @@ public record LimitedProductResponse(
 
 	String category,
 
-	String seller,
+	UUID seller,
 
 	int discountRate,
 

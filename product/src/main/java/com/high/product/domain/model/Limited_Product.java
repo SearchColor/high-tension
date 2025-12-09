@@ -38,7 +38,7 @@ public class Limited_Product extends BaseCreateEntity {
 	private String category;
 
 	@Column(nullable = false)
-	private String seller;
+	private UUID seller;
 
 	@Column(name = "discount_rate", nullable = false)
 	private int discountrate;
@@ -49,7 +49,7 @@ public class Limited_Product extends BaseCreateEntity {
 	private LocalDateTime end;
 
 	@Builder
-	public Limited_Product(String name, int price, String category, String seller, int discountRate,
+	public Limited_Product(String name, int price, String category, UUID seller, int discountRate,
 		LocalDateTime end) {
 
 		// 할인율은 0% 미만이 될 수 없음
@@ -66,7 +66,7 @@ public class Limited_Product extends BaseCreateEntity {
 	}
 
 	// 한정상품 생성 정적 메서드
-	public static Limited_Product createProduct(String name, Integer price, String category, String seller,
+	public static Limited_Product createProduct(String name, Integer price, String category, UUID seller,
 		int discountrate, LocalDateTime end) {
 		return Limited_Product.builder()
 			.name(name)

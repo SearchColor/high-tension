@@ -25,7 +25,7 @@ spring:
   # JWT configuration
   security:
     jwt:
-      secret: ${JWT_SECRET:local-dev-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm}
+      secret: ${JWT_SECRET:change-this-secret-key-in-production-must-be-at-least-256-bits-long}
 
   cloud:
     gateway:
