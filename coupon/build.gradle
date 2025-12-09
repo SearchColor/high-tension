@@ -33,11 +33,13 @@ dependencies {
 
     // common
     implementation 'com.github.sharedeffort:common-module:v1.1.9'
-    implementation 'com.github.sharedeffort:common-jpa:v1.0.2'
+    implementation 'com.github.sharedeffort:common-jpa:v1.0.3'
+    implementation 'com.github.sharedeffort:common-security:v1.0.0'
 
     // spring cloud
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 
     // spring boot
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
