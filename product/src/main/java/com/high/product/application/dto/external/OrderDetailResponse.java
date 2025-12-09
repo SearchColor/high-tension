@@ -17,5 +17,6 @@ public record OrderDetailResponse(
 	String deliveryAddress,
 	String detailAddress,
 	String requestMessage,
-	LocalDateTime createdAt
+	LocalDateTime createdAt,
+	List<OrderItemResponse> orderItems
 ) {}
