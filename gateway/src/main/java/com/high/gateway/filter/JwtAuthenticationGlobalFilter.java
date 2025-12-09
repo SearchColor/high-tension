@@ -39,8 +39,7 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
             "/docs/**",
             "/actuator/**",
             "/**/v3/api-docs",
-            "/**/v3/api-docs/**",
-            "/api/v1/internal/**"
+            "/**/v3/api-docs/**"
     );
 
     @Override
