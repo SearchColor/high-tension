@@ -2,9 +2,9 @@ package com.high.order.application;
 
 import static java.util.stream.Collectors.toList;
 
-import com.high.order.application.dto.external.ProductResponse;
 import com.high.order.application.dto.internal.OrderItemCreateInfo;
 import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
+import com.high.order.application.dto.internal.kafka.request.ProcessOrderSuccessCommand;
 import com.high.order.application.dto.internal.kafka.response.OrderSuccessResponse;
 import com.high.order.application.dto.request.OrderItemDeliveryStatusChangeRequest;
 import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
+//오케스트레이션 버전 service
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -60,19 +61,31 @@ public class OrderServiceV2 {
          *  3. couponID 존재여부 검증 (사용가능한지)
          */
 
+        //실패 테스트를 위한 로직
+//        if(request.sagaId() != null) {
+//            throw new OrderBadRequestException();
+//        }
+
         log.info("주문 생성 서비스 유입");
         List<OrderItemCreateInfo> orderItemCreateInfoList = request.itemList()
             .stream()
             .map( itemDto -> {
 
-                ProductResponse response =
-                    productService.getProductById(itemDto.productId()).getBody().data();
+                //TODO: product feignClient통신 임시무력화
+                //ProductResponse response = productService.getProductById(itemDto.productId()).getBody().data();
+
+//                return new OrderItemCreateInfo(
+//                    response.productId(),
+//                    UUID.randomUUID(),
+//                    response.price(),
+//                    itemDto.quantity()
+//                );
 
                 return new OrderItemCreateInfo(
-                    response.productId(),
                     UUID.randomUUID(),
-                    response.price(),
-                    itemDto.quantity()
+                    UUID.randomUUID(),
+                    2000,
+                    30
                 );
             }).toList();
         log.info("상품 feignClient 조회 성공");
@@ -89,7 +102,7 @@ public class OrderServiceV2 {
 
         //TODO: 쿠폰 검증
         Order order = Order.createOrder(
-            customerId,
+            request.ordererId(),
             request.couponId(),
             request.recipient(),
             request.recipientContact(),
@@ -102,8 +115,8 @@ public class OrderServiceV2 {
         log.info("order 담기 성공");
 
         Order savedOrder = orderRepository.save(order);
-
-        return OrderSuccessResponse.of(savedOrder, request.sagaId());
+        OrderSuccessResponse orderSuccessResponse = OrderSuccessResponse.of(savedOrder, request.sagaId());
+        return orderSuccessResponse;
     }
 
 
@@ -215,6 +228,13 @@ public class OrderServiceV2 {
         order.updateStatus(nextStatus);
         orderRepository.save(order);
         return OrderResponse.from(order);
+    }
+
+    public void processOrderSuccess(ProcessOrderSuccessCommand command) {
+        UUID orderId = command.orderId();
+        Order order = getOrderForUser(orderId);
+        order.updateStatus(OrderStatus.SUCCESS);
+        orderRepository.save(order);
     }
 
     public OrderItemIdResponse changeOrderItemStatus(UUID orderId, UUID orderItemId, OrderItemStatusChangeRequest request) {
