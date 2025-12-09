@@ -4,7 +4,9 @@ import com.high.user.application.dto.request.*;
 import com.high.user.application.dto.response.TokenResponse;
 import com.high.user.application.dto.response.UserResponse;
 import com.high.user.application.service.UserAuthService;
+import com.high.user.application.service.UserCouponService;
 import com.high.user.application.service.UserService;
+import com.high.user.infrastructure.client.dto.UserCouponResponse;
 import com.library.module.response.ApiResponse;
 import com.library.security.util.SecurityContextUtil;
 import jakarta.validation.Valid;
@@ -15,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -25,6 +28,7 @@ public class UserController {
 
     private final UserAuthService userAuthService;
     private final UserService userService;
+    private final UserCouponService userCouponService;
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<UserResponse>> signup(
@@ -47,6 +51,16 @@ public class UserController {
 
         return ResponseEntity
                 .ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/reissue")
+    public ResponseEntity<ApiResponse<TokenResponse>> reissueToken(
+            @Valid @RequestBody TokenReissueRequest request) {
+        log.info("Token reissue request received");
+
+        TokenResponse response = userAuthService.reissueToken(request);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
@@ -112,5 +126,21 @@ public class UserController {
         userService.deleteUser(userId, request);
 
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 내 보유 쿠폰 목록 조회
+     * GET /api/v1/users/me/coupons
+     */
+    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
+    @GetMapping("/me/coupons")
+    public ResponseEntity<ApiResponse<List<UserCouponResponse>>> getMyCoupons() {
+        UUID userId = SecurityContextUtil.getCurrentUserId();
+
+        log.info("Get my coupons request received: userId={}", userId);
+
+        List<UserCouponResponse> response = userCouponService.getUserCoupons(userId);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
