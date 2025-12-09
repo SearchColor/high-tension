@@ -8,9 +8,11 @@ import com.high.external.application.service.SlackMessageServiceV1;
 import com.high.external.application.service.SlackRecordServiceV1;
 import com.library.jpa.response.PageResponse;
 import com.library.module.response.ApiResponse;
+import com.library.security.util.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -24,6 +26,7 @@ public class SlackRecordControllerV1 {
     private final SlackMessageServiceV1 messageServiceV1;
 
 
+    @PreAuthorize("hasRole('MASTER')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<SlackRecordDto>> getSlackRecord(
             @PathVariable UUID id
@@ -31,6 +34,7 @@ public class SlackRecordControllerV1 {
         return ResponseEntity.ok(ApiResponse.success(serviceV1.getSlackRecord(id)));
     }
 
+    @PreAuthorize("hasRole('MASTER')")
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<SlackRecordDto>>> getSlackRecordList(
             @RequestParam(value = "page", defaultValue = "1") int page,
@@ -42,16 +46,17 @@ public class SlackRecordControllerV1 {
         return ResponseEntity.ok(ApiResponse.success(PageResponse.fromPage(slackRecordDtoPage)));
     }
 
-
+    @PreAuthorize("hasRole('MASTER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<SlackRecordDeleteDto>> softDeleteSlackRecord(
-            @PathVariable UUID id,
-            @RequestHeader("x-user-id") UUID userId
+            @PathVariable UUID id
             ){
+        UUID userId = SecurityContextUtil.getCurrentUserId();
         SlackRecordDeleteDto response = serviceV1.softDeleteSlackRecord(id, userId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @PreAuthorize("hasRole('MASTER')")
     @PostMapping("/message")
     public ResponseEntity<ApiResponse<String>> sendSlackMessageTest(
             @RequestBody SendSlackMessageRequest request

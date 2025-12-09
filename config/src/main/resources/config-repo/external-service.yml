@@ -32,3 +32,10 @@ management:
   tracing:
     sampling:
       probability: 1.0
+
+logging:
+  level:
+    com.high.user: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
