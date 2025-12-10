@@ -7,15 +7,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.high.product.application.dto.external.OrderDetailResponse;
 import com.high.product.application.dto.external.OrderItemResponse;
+import com.high.product.application.dto.kafka.failure.StockDeductionFailMessage;
+import com.high.product.application.dto.kafka.request.StockDeductionCommandRequest;
+import com.high.product.application.dto.kafka.success.StockDeductionSuccessMessage;
 import com.high.product.application.port.OrderQueryPort;
 import com.high.product.application.port.StockDeductionPublisherPort;
 import com.high.product.domain.model.Product_Stock;
 import com.high.product.domain.repository.StockRepository;
-import com.high.product.infrastructure.client.OrderClient;
-import com.high.product.application.dto.kafka.failure.StockDeductionFailMessage;
-import com.high.product.application.dto.kafka.request.StockDeductionCommandRequest;
-import com.high.product.application.dto.kafka.success.StockDeductionSuccessMessage;
-import com.high.product.infrastructure.kafka.producer.ProductKafkaPublisher;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
