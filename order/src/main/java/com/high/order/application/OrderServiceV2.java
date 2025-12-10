@@ -86,13 +86,13 @@ public class OrderServiceV2 {
                     item.unitPrice()
                 )).toList();
 
-            CouponResponse couponResponse = getCoupon(request.couponId());
+            CouponResponse couponResponse = getCoupon(request.couponIssueId());
             log.info("coupon-service feignClient 통신 성공 - couponIssueId : {}",
                 couponResponse.couponIssueId());
 
             Order order = Order.createOrder(
                 request.ordererId(),
-                request.couponId(),
+                request.couponIssueId(),
                 request.recipient(),
                 request.recipientContact(),
                 request.deliveryAddress(),
@@ -341,7 +341,7 @@ public class OrderServiceV2 {
         return productService.getProductById(productId).data();
     }
 
-    public CouponResponse getCoupon(UUID couponId) {
-        return couponService.validateCoupon(couponId).data();
+    public CouponResponse getCoupon(UUID couponIssueId) {
+        return couponService.validateCoupon(couponIssueId).data();
     }
 }

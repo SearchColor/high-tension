@@ -400,7 +400,7 @@ public class OrderService {
         return productService.getProductById(productId).data();
     }
 
-    public CouponResponse getCoupon(UUID couponId) {
-        return couponService.validateCoupon(couponId).data();
+    public CouponResponse getCoupon(UUID couponIssueId) {
+        return couponService.validateCoupon(couponIssueId).data();
     }
 }

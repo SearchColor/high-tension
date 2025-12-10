@@ -14,7 +14,7 @@ public class OrderCreateAdapter {
 
     public CreateOrderCommand toCreateCommand(OrderCreateRequestMessage message) {
         return new CreateOrderCommand(
-            message.couponId(),
+            message.couponIssueId(),
             message.sagaId(),
             message.orderId(),
             message.ordererId(),
