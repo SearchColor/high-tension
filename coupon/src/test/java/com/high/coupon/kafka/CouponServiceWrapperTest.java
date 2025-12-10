@@ -4,15 +4,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.high.coupon.application.CouponIssueService;
+import com.high.coupon.application.provider.OrderProvider;
 import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.repository.CouponIssueRepository;
-import com.high.coupon.infrastructure.client.OrderClient;
 import com.high.coupon.infrastructure.client.dto.OrderResponse;
-import com.library.module.response.ApiResponse;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class CouponServiceWrapperTest {
 
     @Mock
-    private OrderClient orderClient;
+    private OrderProvider orderProvider;
 
     @Mock
     private CouponIssueRepository couponIssueRepository;
@@ -52,23 +52,21 @@ public class CouponServiceWrapperTest {
                 couponIssueId
         );
 
-        // 성공 가정
-        when(orderClient.getOrder(orderId))
-                .thenReturn(ApiResponse.success(mockOrder));
+        when(orderProvider.getOrder(orderId))
+                .thenReturn(mockOrder);
 
-        // CouponIssue Mock 생성
+        // CouponIssue Mock 생성 및 동작 정의
         CouponIssue issue = mock(CouponIssue.class);
-
-        // 내부 로직 Mocking
-        doNothing().when(issue).useCoupon(any(), any());
+        doNothing().when(issue).useCoupon(any(), any()); // 내부 로직 Mocking
 
         when(couponIssueRepository.findByIdAndUserId(couponIssueId, userId))
                 .thenReturn(Optional.of(issue));
 
-        // 실행
+        // when
         couponIssueService.useCouponByOrderId(orderId);
 
-        // 검증
+        // then
+        verify(orderProvider, times(1)).getOrder(orderId);
         verify(issue).useCoupon(eq(userId), any());
     }
 }
