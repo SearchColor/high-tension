@@ -4,8 +4,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.high.product.infrastructure.kafka.messaging.failure.StockDeductionFailMessage;
-import com.high.product.infrastructure.kafka.messaging.success.StockDeductionSuccessMessage;
+import com.high.product.application.dto.kafka.failure.StockDeductionFailMessage;
+import com.high.product.application.dto.kafka.success.StockDeductionSuccessMessage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -9,11 +9,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
 import com.high.product.application.dto.external.OrderDetailResponse;
@@ -22,9 +20,9 @@ import com.high.product.application.service.StockDeductionService;
 import com.high.product.domain.model.Product_Stock;
 import com.high.product.domain.repository.StockRepository;
 import com.high.product.infrastructure.client.OrderClient;
-import com.high.product.infrastructure.kafka.messaging.failure.StockDeductionFailMessage;
-import com.high.product.infrastructure.kafka.messaging.request.StockDeductionCommandRequest;
-import com.high.product.infrastructure.kafka.messaging.success.StockDeductionSuccessMessage;
+import com.high.product.application.dto.kafka.failure.StockDeductionFailMessage;
+import com.high.product.application.dto.kafka.request.StockDeductionCommandRequest;
+import com.high.product.application.dto.kafka.success.StockDeductionSuccessMessage;
 import com.high.product.infrastructure.kafka.producer.ProductKafkaPublisher;
 import com.library.module.response.ApiResponse;
 

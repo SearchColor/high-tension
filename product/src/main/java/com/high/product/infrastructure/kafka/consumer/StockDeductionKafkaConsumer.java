@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.product.application.service.StockDeductionService;
-import com.high.product.infrastructure.kafka.messaging.request.StockDeductionCommandRequest;
+import com.high.product.application.dto.kafka.request.StockDeductionCommandRequest;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

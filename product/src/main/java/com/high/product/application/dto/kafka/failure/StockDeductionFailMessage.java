@@ -1,4 +1,4 @@
-package com.high.product.infrastructure.kafka.messaging.failure;
+package com.high.product.application.dto.kafka.failure;
 
 import java.util.UUID;
 

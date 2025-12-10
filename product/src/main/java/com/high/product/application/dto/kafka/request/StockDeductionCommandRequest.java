@@ -1,4 +1,4 @@
-package com.high.product.infrastructure.kafka.messaging.request;
+package com.high.product.application.dto.kafka.request;
 
 import java.util.UUID;
 
