@@ -34,7 +34,7 @@ public class KafkaConsumer {
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void consumeCouponRequest(String message, Acknowledgment ack) {
-        log.info("[쿠폰 소비자] 수신 메시지: {}", message);
+        log.info("[SAGA COUPON CONSUMER] 수신 메시지: {}", message);
         CouponUseRequestMessage dto = null;
 
         try {
@@ -42,14 +42,14 @@ public class KafkaConsumer {
             dto = objectMapper.readValue(message, CouponUseRequestMessage.class);
             log.info("파싱 완료 sagaId: {}", dto.sagaId());
 
-            // Application Service 호출 (필요한 필드만 전달)
-            couponIssueService.useCoupon(dto.couponIssueId(), dto.userId());
+            // orderId 기반 wrapper 호출 (service)
+            couponIssueService.useCouponByOrderId(dto.orderId());
 
             // 처리 성공 시 알림
-            log.info("[쿠폰 소비자] 처리 성공 (sagaID: {}, couponIssueID: {})", dto.sagaId(), dto.couponIssueId());
+            log.info("[SAGA COUPON CONSUMER] 처리 성공 orderId={}, sagaId={}, userId={}", dto.orderId(), dto.sagaId(), dto.userId());
 
         } catch (Exception e) {
-            log.error("[쿠폰 소비자] 처리 실패 - 메시지 건너뜀. 내용: {}, 에러: {}", message, e.getMessage()); // todo: KafkaConfig DLQ 도입 필요
+            log.error("[SAGA COUPON CONSUMER] 처리 실패 - 메시지 건너뜀. 내용: {}, 에러: {}", message, e.getMessage()); // todo: KafkaConfig DLQ 도입 필요
 
         } finally {
             // 성공하든 실패하든 무조건 커밋(Ack) 후 다음 메시지를 받을 준비

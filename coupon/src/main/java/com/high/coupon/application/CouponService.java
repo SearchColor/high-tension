@@ -27,11 +27,11 @@ public class CouponService {
 
     private final CouponRepository couponRepository;
 
-    // todo : 권한 검증 필요
-
     // 쿠폰 등록
     @Transactional
-    public CouponCreateResponse createCoupon(CouponCreateRequest request){
+    public CouponCreateResponse createCoupon(CouponCreateRequest request, UUID userId){
+
+        log.info("User {} is creating a coupon (master 권한)", userId);
 
         Coupon coupon = Coupon.createCoupon(
                 request.name(),
