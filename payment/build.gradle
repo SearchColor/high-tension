@@ -54,6 +54,8 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testImplementation 'com.h2database:h2' // H2 In-memory DB for testing
 
+	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
 	// orchestration
 	implementation 'com.high:orchestration:0.0.1-SNAPSHOT'
 }
