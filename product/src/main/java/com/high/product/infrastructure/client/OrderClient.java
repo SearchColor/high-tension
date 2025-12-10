@@ -15,6 +15,6 @@ import com.library.module.response.ApiResponse;
 public interface OrderClient extends OrderQueryPort {
 
 	@GetMapping("/api/v1/orders/{orderId}")
-	ResponseEntity<ApiResponse<OrderDetailResponse>> getOrderdetail(
+	ResponseEntity<ApiResponse<OrderDetailResponse>> getOrderDetail(
 		@PathVariable("orderId") UUID orderId);
 }
