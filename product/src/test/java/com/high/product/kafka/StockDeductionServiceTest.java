@@ -16,16 +16,15 @@ import org.springframework.http.ResponseEntity;
 
 import com.high.product.application.dto.external.OrderDetailResponse;
 import com.high.product.application.dto.external.OrderItemResponse;
-import com.high.product.application.service.StockDeductionService;
-import com.high.product.domain.model.Product_Stock;
-import com.high.product.domain.repository.StockRepository;
-import com.high.product.infrastructure.client.OrderClient;
 import com.high.product.application.dto.kafka.failure.StockDeductionFailMessage;
 import com.high.product.application.dto.kafka.request.StockDeductionCommandRequest;
 import com.high.product.application.dto.kafka.success.StockDeductionSuccessMessage;
-import com.high.product.infrastructure.kafka.producer.ProductKafkaPublisher;
+import com.high.product.application.service.StockDeductionService;
+import com.high.product.application.port.OrderQueryPort;
+import com.high.product.application.port.StockDeductionPublisherPort;
+import com.high.product.domain.model.Product_Stock;
+import com.high.product.domain.repository.StockRepository;
 import com.library.module.response.ApiResponse;
-
 
 class StockDeductionServiceTest {
 
@@ -33,13 +32,13 @@ class StockDeductionServiceTest {
 	private StockDeductionService stockDeductionService;
 
 	@Mock
-	private OrderClient orderClient;
+	private OrderQueryPort orderQueryPort;
 
 	@Mock
 	private StockRepository stockRepository;
 
 	@Mock
-	private ProductKafkaPublisher kafkaPublisher;
+	private StockDeductionPublisherPort publisherPort;
 
 	@BeforeEach
 	void setUp() {
@@ -49,7 +48,6 @@ class StockDeductionServiceTest {
 	@Test
 	@DisplayName("재고 차감 성공")
 	void kafkaRequest_StockDeductionSuccess() {
-		// given
 		UUID sagaId = UUID.randomUUID();
 		UUID orderId = UUID.randomUUID();
 		UUID userId = UUID.randomUUID();
@@ -65,30 +63,19 @@ class StockDeductionServiceTest {
 			null, List.of(orderItem)
 		);
 
-		ApiResponse<OrderDetailResponse> apiResponse =
-			ApiResponse.success(orderDetailResponse);
-
-		when(orderClient.getOrderdetail(orderId)).thenReturn(ResponseEntity.ok(apiResponse));
+		when(orderQueryPort.getOrderDetail(orderId))
+			.thenReturn(ResponseEntity.ok(ApiResponse.success(orderDetailResponse)));
 		when(stockRepository.findById(productId)).thenReturn(Optional.of(new Product_Stock(productId, 10)));
 
-		// when
 		stockDeductionService.handleStockDeduction(request);
 
-
-		// then
-
-		verify(kafkaPublisher).publishStockDeductionSuccess(any(StockDeductionSuccessMessage.class));
-		verify(kafkaPublisher, never()).publishStockDeductionFail(any(StockDeductionFailMessage.class));
-
-		System.out.println("[Test] 재고 차감 성공: sagaId=" + request.sagaId()
-			+ ", orderId=" + request.orderId()
-			+ ", userId=" + request.userId());
+		verify(publisherPort).publishSuccess(any(StockDeductionSuccessMessage.class));
+		verify(publisherPort, never()).publishFail(any(StockDeductionFailMessage.class));
 	}
 
 	@Test
-	@DisplayName("재고 차감 실패")
+	@DisplayName("재고 차감 실패 - 재고 부족")
 	void kafkaRequest_StockDeductionFail_InsufficientStock() {
-		// given
 		UUID sagaId = UUID.randomUUID();
 		UUID orderId = UUID.randomUUID();
 		UUID userId = UUID.randomUUID();
@@ -104,37 +91,30 @@ class StockDeductionServiceTest {
 			null, List.of(orderItem)
 		);
 
-		ApiResponse<OrderDetailResponse> apiResponse =
-			ApiResponse.success(orderDetailResponse, "주문 조회 성공");
-
-		when(orderClient.getOrderdetail(orderId)).thenReturn(ResponseEntity.ok(apiResponse));
+		when(orderQueryPort.getOrderDetail(orderId))
+			.thenReturn(ResponseEntity.ok(ApiResponse.success(orderDetailResponse)));
 		when(stockRepository.findById(productId)).thenReturn(Optional.of(new Product_Stock(productId, 10)));
 
-		// when
 		stockDeductionService.handleStockDeduction(request);
 
-		// then
-		verify(kafkaPublisher).publishStockDeductionFail(any(StockDeductionFailMessage.class));
-		verify(kafkaPublisher, never()).publishStockDeductionSuccess(any(StockDeductionSuccessMessage.class));
+		verify(publisherPort).publishFail(any(StockDeductionFailMessage.class));
+		verify(publisherPort, never()).publishSuccess(any(StockDeductionSuccessMessage.class));
 	}
 
 	@Test
-	@DisplayName("재고 차감 실패2")
+	@DisplayName("재고 차감 실패 - 주문 서비스 호출 실패")
 	void kafkaRequest_StockDeductionFail_OrderClientError() {
-		// given
 		UUID sagaId = UUID.randomUUID();
 		UUID orderId = UUID.randomUUID();
 		UUID userId = UUID.randomUUID();
 
 		StockDeductionCommandRequest request = new StockDeductionCommandRequest(sagaId, orderId, userId);
 
-		when(orderClient.getOrderdetail(orderId)).thenThrow(new RuntimeException("Order Service 호출 실패"));
+		when(orderQueryPort.getOrderDetail(orderId)).thenThrow(new RuntimeException("Order Service 호출 실패"));
 
-		// when
 		stockDeductionService.handleStockDeduction(request);
 
-		// then
-		verify(kafkaPublisher).publishStockDeductionFail(any(StockDeductionFailMessage.class));
-		verify(kafkaPublisher, never()).publishStockDeductionSuccess(any(StockDeductionSuccessMessage.class));
+		verify(publisherPort).publishFail(any(StockDeductionFailMessage.class));
+		verify(publisherPort, never()).publishSuccess(any(StockDeductionSuccessMessage.class));
 	}
 }
