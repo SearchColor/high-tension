@@ -1,5 +1,8 @@
 package com.high.user.domain.entity;
 
+import com.high.user.domain.exception.InvalidEmailFormatException;
+import com.high.user.domain.exception.InvalidNameException;
+import com.high.user.domain.exception.InvalidPasswordException;
 import com.high.user.domain.vo.UserRole;
 import com.library.jpa.common.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -64,7 +67,7 @@ public class User extends BaseEntity {
         validateName(name);
 
         if (encodedPassword == null || encodedPassword.isBlank()) {
-            throw new IllegalArgumentException("Password is required");
+            throw new InvalidPasswordException();
         }
 
         return new User(email, encodedPassword, name, UserRole.USER);
@@ -76,7 +79,7 @@ public class User extends BaseEntity {
         validateName(name);
 
         if (encodedPassword == null || encodedPassword.isBlank()) {
-            throw new IllegalArgumentException("Password is required");
+            throw new InvalidPasswordException();
         }
 
         return new User(email, encodedPassword, name, UserRole.MASTER);
@@ -91,7 +94,7 @@ public class User extends BaseEntity {
     // Business logic: 비밀번호 변경
     public void updatePassword(String encodedPassword) {
         if (encodedPassword == null || encodedPassword.isBlank()) {
-            throw new IllegalArgumentException("Password is required");
+            throw new InvalidPasswordException();
         }
         this.password = encodedPassword;
     }
@@ -105,7 +108,7 @@ public class User extends BaseEntity {
     // Business logic: 전화번호 수정
     public void updatePhoneNumber(String phoneNumber) {
         if (phoneNumber != null && !phoneNumber.matches("^(010)(-?\\d{4})(-?\\d{4})$")) {
-            throw new IllegalArgumentException("전화번호 형식이 올바르지 않습니다");
+            throw new com.high.user.domain.exception.InvalidPhoneNumberException();
         }
         this.phoneNumber = phoneNumber;
     }
@@ -140,7 +143,7 @@ public class User extends BaseEntity {
     }
 
     // Business logic: Soft Delete
-    public void softDelete(String deletedBy) {
+    public void softDelete(UUID deletedBy) {
         super.softDelete(deletedBy);
         this.isActive = false;
     }
@@ -158,20 +161,20 @@ public class User extends BaseEntity {
     // Validation: 이메일 형식 검증
     private static void validateEmail(String email) {
         if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("Email is required");
+            throw new InvalidEmailFormatException();
         }
         if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
-            throw new IllegalArgumentException("Invalid email format");
+            throw new InvalidEmailFormatException();
         }
     }
 
     // Validation: 이름 검증
     private static void validateName(String name) {
         if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Name is required");
+            throw new InvalidNameException();
         }
         if (name.length() > 50) {
-            throw new IllegalArgumentException("Name must be 50 characters or less");
+            throw new InvalidNameException();
         }
     }
 }

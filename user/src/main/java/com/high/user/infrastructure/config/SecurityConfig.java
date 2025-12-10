@@ -1,6 +1,7 @@
 package com.high.user.infrastructure.config;
 
 import com.library.security.filter.HeaderAuthenticationFilter;
+import com.high.user.infrastructure.security.CustomAccessDeniedHandler;
 import com.high.user.infrastructure.security.JwtAuthenticationEntryPoint;
 import com.high.user.infrastructure.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class SecurityConfig {
     private final HeaderAuthenticationFilter headerAuthenticationFilter;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -44,14 +46,19 @@ public class SecurityConfig {
 
                 // 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        // 회원가입, 로그인은 인증 불필요
-                        .requestMatchers("/api/v1/users/signup", "/api/v1/users/login").permitAll()
+                        // 회원가입, 로그인, 토큰 재발급은 인증 불필요
+                        .requestMatchers(
+                                "/api/v1/users/signup",
+                                "/api/v1/users/login",
+                                "/api/v1/users/reissue"
+                        ).permitAll()
                         // 나머지는 인증 필요
                         .anyRequest().authenticated())
 
                 // 예외 처리
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler))
 
                 // 필터 순서: Header (1) → JWT (2) → UsernamePassword
                 .addFilterBefore(headerAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

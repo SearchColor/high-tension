@@ -25,7 +25,10 @@ public enum GatewayErrorCode implements BaseErrorCode {
     FORBIDDEN(9101, HttpStatus.FORBIDDEN, "접근 권한이 없습니다"),
 
     // 92xx: Rate Limiting Errors
-    RATE_LIMIT_EXCEEDED(9200, HttpStatus.TOO_MANY_REQUESTS, "요청 한도를 초과했습니다");
+    RATE_LIMIT_EXCEEDED(9200, HttpStatus.TOO_MANY_REQUESTS, "요청 한도를 초과했습니다"),
+
+    // 95xx: Server Errors
+    INTERNAL_SERVER_ERROR(9500, HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다");
 
     private final int code;
     private final HttpStatus status;

@@ -35,6 +35,7 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
     private static final List<String> EXCLUDED_PATHS = List.of(
             "/api/v1/users/signup",
             "/api/v1/users/login",
+            "/api/v1/users/reissue",
             "/docs",
             "/docs/**",
             "/actuator/**",

@@ -1,6 +1,8 @@
 package com.high.user.domain.repository;
 
 import com.high.user.domain.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -24,4 +26,7 @@ public interface UserRepository {
 
     // Check email existence
     boolean existsByEmail(String email);
+
+    // Search by email (partial match)
+    Page<User> findByEmailContainingAndDeletedAtIsNull(String email, Pageable pageable);
 }

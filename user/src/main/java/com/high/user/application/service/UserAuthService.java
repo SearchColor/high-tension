@@ -2,6 +2,7 @@ package com.high.user.application.service;
 
 import com.high.user.application.dto.request.LoginRequest;
 import com.high.user.application.dto.request.SignupRequest;
+import com.high.user.application.dto.request.TokenReissueRequest;
 import com.high.user.application.dto.response.TokenResponse;
 import com.high.user.application.dto.response.UserResponse;
 import com.high.user.domain.entity.User;
@@ -9,6 +10,8 @@ import com.high.user.domain.exception.DeletedAccountException;
 import com.high.user.domain.exception.DuplicateEmailException;
 import com.high.user.domain.exception.InactiveAccountException;
 import com.high.user.domain.exception.InvalidCredentialsException;
+import com.high.user.domain.exception.InvalidRefreshTokenException;
+import com.high.user.domain.exception.UserNotFoundException;
 import com.high.user.domain.repository.UserRepository;
 import com.high.user.domain.service.TokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -110,5 +113,52 @@ public class UserAuthService {
         refreshTokenService.addToBlacklist(accessToken, remainingTime);
 
         log.info("User logged out successfully: userId={}", userId);
+    }
+
+    /**
+     * Access Token 재발급 (Refresh Token Rotation 적용)
+     *
+     * @param request Refresh Token 포함 요청
+     * @return 새로운 Access Token, Refresh Token
+     */
+    @Transactional
+    public TokenResponse reissueToken(TokenReissueRequest request) {
+        String refreshToken = request.refreshToken();
+
+        // 1. Refresh Token 유효성 검증
+        if (!tokenProvider.validateToken(refreshToken)) {
+            throw new InvalidRefreshTokenException();
+        }
+
+        // 2. Token에서 userId 추출
+        UUID userId = tokenProvider.getUserId(refreshToken);
+
+        // 3. Redis에 저장된 Refresh Token과 일치하는지 확인 (토큰 탈취 감지)
+        String storedRefreshToken = refreshTokenService.getRefreshToken(userId);
+        if (storedRefreshToken == null || !storedRefreshToken.equals(refreshToken)) {
+            throw new InvalidRefreshTokenException();
+        }
+
+        // 4. 사용자 조회 (존재 및 활성화 상태 확인)
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (!user.getIsActive()) {
+            throw new InactiveAccountException();
+        }
+
+        // 5. 새 Access Token, Refresh Token 생성 (Refresh Token Rotation)
+        String newAccessToken = tokenProvider.createAccessToken(userId, user.getRole().name());
+        String newRefreshToken = tokenProvider.createRefreshToken(userId);
+
+        // 6. 기존 Refresh Token 무효화 및 새 Refresh Token 저장
+        refreshTokenService.saveRefreshToken(userId, newRefreshToken);
+
+        log.info("[TokenReissue] User {} reissued access token", userId);
+
+        return TokenResponse.of(
+                newAccessToken,
+                newRefreshToken,
+                tokenProvider.getAccessTokenValidity());
     }
 }
