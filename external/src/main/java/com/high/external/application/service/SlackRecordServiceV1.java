@@ -1,6 +1,5 @@
 package com.high.external.application.service;
 
-import com.high.external.application.dto.response.SlackRecordCreationDto;
 import com.high.external.application.dto.response.SlackRecordDeleteDto;
 import com.high.external.application.dto.response.SlackRecordDto;
 import com.high.external.domain.exception.SlackRecordNotFoundException;
@@ -33,7 +32,6 @@ public class SlackRecordServiceV1 {
     public void createSlackRecord(String recipientId, String message) {
         SlackRecord slackRecord = SlackRecord.create(recipientId, message);
         repository.save(slackRecord);
-        SlackRecordCreationDto.from(slackRecord);
     }
 
 
@@ -74,7 +72,7 @@ public class SlackRecordServiceV1 {
     @Transactional
     public SlackRecordDeleteDto softDeleteSlackRecord(UUID slackRecordId, UUID loginUserId) {
         SlackRecord slackRecord = getRecord(slackRecordId);
-//        slackRecord.softDelete(loginUserId);
+        slackRecord.softDelete(loginUserId);
         return SlackRecordDeleteDto.from(slackRecord);
     }
 
