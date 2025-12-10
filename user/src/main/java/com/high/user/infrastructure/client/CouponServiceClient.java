@@ -12,8 +12,7 @@ import java.util.UUID;
 
 @FeignClient(
         name = "coupon-service",
-        configuration = FeignConfig.class,
-        fallback = CouponServiceClientFallback.class
+        configuration = FeignConfig.class
 )
 public interface CouponServiceClient {
 

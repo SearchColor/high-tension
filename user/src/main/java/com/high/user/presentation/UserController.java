@@ -1,12 +1,12 @@
 package com.high.user.presentation;
 
 import com.high.user.application.dto.request.*;
+import com.high.user.application.dto.response.CouponResponse;
 import com.high.user.application.dto.response.TokenResponse;
 import com.high.user.application.dto.response.UserResponse;
 import com.high.user.application.service.UserAuthService;
 import com.high.user.application.service.UserCouponService;
 import com.high.user.application.service.UserService;
-import com.high.user.infrastructure.client.dto.UserCouponResponse;
 import com.library.module.response.ApiResponse;
 import com.library.security.util.SecurityContextUtil;
 import jakarta.validation.Valid;
@@ -134,12 +134,12 @@ public class UserController {
      */
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @GetMapping("/me/coupons")
-    public ResponseEntity<ApiResponse<List<UserCouponResponse>>> getMyCoupons() {
+    public ResponseEntity<ApiResponse<List<CouponResponse>>> getMyCoupons() {
         UUID userId = SecurityContextUtil.getCurrentUserId();
 
         log.info("Get my coupons request received: userId={}", userId);
 
-        List<UserCouponResponse> response = userCouponService.getUserCoupons(userId);
+        List<CouponResponse> response = userCouponService.getUserCoupons(userId);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }

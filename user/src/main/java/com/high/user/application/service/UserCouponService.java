@@ -1,8 +1,7 @@
 package com.high.user.application.service;
 
-import com.high.user.infrastructure.client.CouponServiceClient;
-import com.high.user.infrastructure.client.dto.UserCouponResponse;
-import com.library.module.response.ApiResponse;
+import com.high.user.application.dto.response.CouponResponse;
+import com.high.user.domain.service.CouponClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,7 +14,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserCouponService {
 
-    private final CouponServiceClient couponServiceClient;
+    private final CouponClient couponClient;
 
     /**
      * 사용자의 보유 쿠폰 목록 조회
@@ -23,15 +22,13 @@ public class UserCouponService {
      * @param userId 사용자 ID
      * @return 보유 쿠폰 목록
      */
-    public List<UserCouponResponse> getUserCoupons(UUID userId) {
+    public List<CouponResponse> getUserCoupons(UUID userId) {
         log.info("Fetching user coupons: userId={}", userId);
 
-        ApiResponse<List<UserCouponResponse>> response = couponServiceClient.getUserCoupons(userId);
+        List<CouponResponse> coupons = couponClient.getUserCoupons(userId);
 
-        log.info("User coupons fetched: userId={}, count={}",
-                userId,
-                response.data() != null ? response.data().size() : 0);
+        log.info("User coupons fetched: userId={}, count={}", userId, coupons.size());
 
-        return response.data();
+        return coupons;
     }
 }
