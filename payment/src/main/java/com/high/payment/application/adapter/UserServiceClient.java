@@ -7,9 +7,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.high.payment.domain.port.out.UserValidationPort;
+
 @FeignClient(name ="user-service", url = "${user-service.url}")
-public interface UserServiceClient {
+public interface UserServiceClient extends UserValidationPort {
 	// 유저 유효성 검증 API 호출을 위한 메서드 정의
-	@GetMapping("/users/validate/{userId}")
+	@Override
+	@GetMapping("/users/{userId}/validate")
 	void validateUser(@PathVariable("userId") UUID userId);
 }

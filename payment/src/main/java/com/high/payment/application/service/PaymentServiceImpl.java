@@ -10,25 +10,23 @@ import org.springframework.util.StringUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
-import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateFailMessage;
-import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateSuccessMessage;
 import com.high.payment.application.adapter.UserServiceClient;
 import com.high.payment.application.dto.CreatePaymentRequest;
 import com.high.payment.application.dto.CreatePaymentResponse;
 import com.high.payment.application.dto.IamportPaymentInfo;
 import com.high.payment.application.dto.PaymentCompletedEvent;
 import com.high.payment.application.dto.PaymentDetailResponse;
-import com.high.payment.application.dto.PaymentEventPublisher;
+import com.high.payment.application.dto.PaymentSagaEventPort;
+import com.high.payment.application.dto.PaymentSagaResultMessage;
 import com.high.payment.application.port.out.IamportClientPort;
 import com.high.payment.domain.model.Payment;
 import com.high.payment.domain.model.PaymentOutbox;
 import com.high.payment.domain.model.PaymentStatus;
 import com.high.payment.domain.port.out.PaymentOutboxRepositoryPort;
 import com.high.payment.domain.port.out.PaymentRepositoryPort;
+import com.high.payment.domain.port.out.UserValidationPort;
 import com.high.payment.exception.PaymentException;
 import com.high.payment.exception.PaymentErrorCode;
-
-import com.high.payment.domain.repository.PaymentRepository; // 사용되지 않을 수 있지만, 임시로 유지
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +42,9 @@ public class PaymentServiceImpl implements PaymentService {
 	private final ObjectMapper objectMapper;
 	private final PaymentRepositoryPort paymentRepositoryPort; // Hexagonal Port 사용
 	private final UserServiceClient userServiceClient;
-	private final PaymentEventPublisher eventPublisher;
+	private final PaymentSagaEventPort eventPublisher;
+	private final UserValidationPort userValidationPort;
+	private final PaymentSagaEventPort paymentSagaEventPort;
 
 	@Override
 	@Transactional // DB 저장과 Outbox 저장을 하나의 트랜잭션으로 묶음
@@ -77,7 +77,7 @@ public class PaymentServiceImpl implements PaymentService {
 			payment.fail();
 			eventType = "payment.failed";
 			log.error("PG 결제 승인 실패: {}", e.getMessage());
-			throw new PaymentException(PaymentErrorCode.PG_CLIENT_ERROR,"PG 결제 승인 실패: " + e.getMessage());
+			throw new PaymentException(PaymentErrorCode.PG_CLIENT_ERROR, "PG 결제 승인 실패: " + e.getMessage());
 		}
 
 		// 5. Payment 저장 (Port 사용으로 통일)
@@ -141,7 +141,8 @@ public class PaymentServiceImpl implements PaymentService {
 		Payment payment = paymentRepositoryPort.findByOrderId(orderId)
 											   .orElseThrow(
 												   () -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND,
-																			  "OrderId " + orderId + "에 해당하는 결제 정보를 찾을 수 없습니다."));
+																			  "OrderId " + orderId
+																				  + "에 해당하는 결제 정보를 찾을 수 없습니다."));
 		// DTO로 변환하여 반환
 		return PaymentDetailResponse.from(payment);
 	}
@@ -169,8 +170,10 @@ public class PaymentServiceImpl implements PaymentService {
 
 		// 2. DB에서 초기 결제 정보 조회 (Order ID 사용)
 		Payment payment = paymentRepositoryPort.findByOrderId(orderId)
-											   .orElseThrow(() -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND,
-																					   "DB에 결제 요청 정보가 없습니다. OrderId: " + orderId));
+											   .orElseThrow(
+												   () -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND,
+																			  "DB에 결제 요청 정보가 없습니다. OrderId: "
+																				  + orderId));
 
 		// 3. PG사에서 실제 결제 정보 조회 (IamportClientPort 사용)
 		IamportPaymentInfo pgInfo = iamportClient.getPaymentInfo(impUid);
@@ -197,7 +200,7 @@ public class PaymentServiceImpl implements PaymentService {
 			paymentRepositoryPort.save(payment);
 
 			throw new PaymentException(PaymentErrorCode.PAYMENT_VERIFICATION_FAILED,
-									  "결제 금액 불일치로 인한 검증 실패.");
+									   "결제 금액 불일치로 인한 검증 실패.");
 		}
 
 		// 5. 결제 완료 상태 확정 및 DB 저장
@@ -229,7 +232,9 @@ public class PaymentServiceImpl implements PaymentService {
 
 		// 1. 결제 조회
 		Payment payment = paymentRepositoryPort.findByOrderId(orderId)
-											   .orElseThrow(() -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND, "결제 정보를 찾을 수 없습니다."));
+											   .orElseThrow(
+												   () -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND,
+																			  "결제 정보를 찾을 수 없습니다."));
 
 		// 2. 이미 취소되었거나 완료되지 않은 건인지 확인
 		if (payment.getStatus() != PaymentStatus.COMPLETED) {
@@ -275,7 +280,7 @@ public class PaymentServiceImpl implements PaymentService {
 
 	@Override
 	@Transactional
-	public void processPaymentSaga(PaymentCreateCommandRequest command){
+	public void processPaymentSaga(PaymentCreateCommandRequest command) {
 
 		// DTO가 Record이므로, command.필드명()이 올바른 접근 방식입니다.
 		UUID sagaId = command.sagaId();
@@ -307,25 +312,29 @@ public class PaymentServiceImpl implements PaymentService {
 			processPayment(tempRequest);
 
 			// 4. 성공 이벤트 발행 (Orchestrator에게 알림)
-			PaymentCreateSuccessMessage successMessage = new PaymentCreateSuccessMessage(
+			PaymentSagaResultMessage successResult = new PaymentSagaResultMessage(
 				sagaId,
 				orderId,
-				userId
+				true,
+				"Payment successful",
+				null
 			);
-			eventPublisher.publishSuccess(successMessage);
+			paymentSagaEventPort.publishPaymentResult(successResult);
 			log.info("[Saga] 결제 성공 이벤트 발행 완료");
 
-		} catch (Exception e) {
-			log.error("[Saga] 결제 처리 중 실패 발생: {}", e.getMessage());
+		} catch (PaymentException pe) {
+			log.error("[Saga] 결제 처리 중 실패 발생: {}", pe.getMessage());
 
 			// 5. 실패 이벤트 발행 (보상 트랜잭션 유도)
-			PaymentCreateFailMessage failMessage = new PaymentCreateFailMessage(
+			PaymentSagaResultMessage failResult = new PaymentSagaResultMessage(
 				sagaId,
 				orderId,
-				e.getMessage(), // 실패 사유
-				null            // 누락된 4번째 인자 (payload, status 등)
+				false,
+				"알 수 없는 오류: " + pe.getMessage(),
+				PaymentErrorCode.PAYMENT_INTERNAL_SERVER_ERROR.getCode()
 			);
-			eventPublisher.publishFail(failMessage);
+			// 💡 단일 메서드 호출로 변경
+			paymentSagaEventPort.publishPaymentResult(failResult);
 		}
 	}
 }

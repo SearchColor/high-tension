@@ -7,7 +7,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateFailMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateSuccessMessage;
-import com.high.payment.application.dto.PaymentEventPublisher;
+import com.high.payment.application.dto.PaymentSagaEventPort;
+import com.high.payment.application.dto.PaymentSagaResultMessage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PaymentEventPublisherImpl implements PaymentEventPublisher {
+public class PaymentEventPublisherImpl implements PaymentSagaEventPort {
 
 	private final KafkaTemplate<String, String> kafkaTemplate;
 	private final ObjectMapper objectMapper;
@@ -23,29 +24,42 @@ public class PaymentEventPublisherImpl implements PaymentEventPublisher {
 	private static final String TOPIC_SUCCESS = "payment-create-success";
 	private static final String TOPIC_FAIL = "payment-create-fail";
 
-	@Override
-	public void publishSuccess(PaymentCreateSuccessMessage message) {
-		try {
-			String json = objectMapper.writeValueAsString(message);
-			// 메시지 키로 SagaId를 사용하여 순서 보장 (선택사항)
-			kafkaTemplate.send(TOPIC_SUCCESS, String.valueOf(message.sagaId()), json);
-			log.info("[Publisher] 결제 성공 이벤트 발행 완료: SagaId={}", message.sagaId());
-		} catch (JsonProcessingException e) {
-			log.error("[Publisher] 성공 메시지 직렬화 실패", e);
-			throw new RuntimeException(e);
-		}
-
-	}
 
 	@Override
-	public void publishFail(PaymentCreateFailMessage message) {
-		try {
-			String json = objectMapper.writeValueAsString(message);
-			kafkaTemplate.send(TOPIC_FAIL, String.valueOf(message.sagaId()), json);
-			log.info("[Publisher] 결제 실패 이벤트 발행 완료: SagaId={}, Reason={}", message.sagaId(), message.reason());
-		} catch (JsonProcessingException e) {
-			log.error("[Publisher] 실패 메시지 직렬화 실패", e);
-			throw new RuntimeException(e);
+	public void publishPaymentResult(PaymentSagaResultMessage result) {
+		if (result.success()) {
+			// 성공: 내부 DTO -> 외부 Kafka DTO 변환
+			PaymentCreateSuccessMessage successMessage = new PaymentCreateSuccessMessage(
+				result.sagaId(),
+				result.orderId()
+			);
+
+			try {
+				String json = objectMapper.writeValueAsString(successMessage);
+				kafkaTemplate.send(TOPIC_SUCCESS, String.valueOf(successMessage.sagaId()), json);
+				log.info("[Publisher] 결제 성공 이벤트 발행 완료: SagaId={}", successMessage.sagaId());
+			} catch (JsonProcessingException e) {
+				log.error("[Publisher] 성공 메시지 직렬화 실패", e);
+				throw new RuntimeException(e);
+			}
+
+		} else {
+			// 실패: 내부 DTO -> 외부 Kafka DTO 변환
+			PaymentCreateFailMessage failMessage = new PaymentCreateFailMessage(
+				result.sagaId(),
+				result.orderId(),
+				result.message(), // 실패 사유
+				result.errorCode() // 오류 코드
+			);
+
+			try {
+				String json = objectMapper.writeValueAsString(failMessage);
+				kafkaTemplate.send(TOPIC_FAIL, String.valueOf(failMessage.sagaId()), json);
+				log.info("[Publisher] 결제 실패 이벤트 발행 완료: SagaId={}, Reason={}", failMessage.sagaId(), failMessage.reason());
+			} catch (JsonProcessingException e) {
+				log.error("[Publisher] 실패 메시지 직렬화 실패", e);
+				throw new RuntimeException(e);
+			}
 		}
 	}
 }
