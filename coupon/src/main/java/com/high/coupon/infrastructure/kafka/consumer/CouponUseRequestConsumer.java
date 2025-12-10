@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class KafkaConsumer {
+public class CouponUseRequestConsumer {
 
     private final CouponIssueService couponIssueService;
     private final ObjectMapper objectMapper;
@@ -25,8 +25,8 @@ public class KafkaConsumer {
     /**
      * 쿠폰 사용 전환 요청 메시지 구독
      * - Infrastructure Layer
-     * - Kafka 토픽: coupon-use-request
-     * - Consumer Group: coupon-service-group
+     * - Kafka 토픽: coupon-use-request (주문서 쌓임)
+     * - Consumer Group: coupon-service-group (배달 기사팀)
      */
     @KafkaListener(
             topics = "coupon-use-request",
@@ -34,26 +34,27 @@ public class KafkaConsumer {
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void consumeCouponRequest(String message, Acknowledgment ack) {
-        log.info("[SAGA COUPON CONSUMER] 수신 메시지: {}", message);
+        log.info("[SAGA COUPON CONSUMER: use req] 수신 메시지: {}", message);
         CouponUseRequestMessage dto = null;
 
         try {
             // JSON → DTO 역직렬화 (UUID 타입)
             dto = objectMapper.readValue(message, CouponUseRequestMessage.class);
-            log.info("파싱 완료 sagaId: {}", dto.sagaId());
+            log.info("[SAGA COUPON CONSUMER: use req] 파싱 완료 sagaId: {}", dto.sagaId());
 
             // orderId 기반 wrapper 호출 (service)
             couponIssueService.useCouponByOrderId(dto.orderId());
 
             // 처리 성공 시 알림
-            log.info("[SAGA COUPON CONSUMER] 처리 성공 orderId={}, sagaId={}, userId={}", dto.orderId(), dto.sagaId(), dto.userId());
+            log.info("[SAGA COUPON CONSUMER: use req] 처리 성공 orderId={}, sagaId={}, userId={}", dto.orderId(), dto.sagaId(), dto.userId());
+            ack.acknowledge(); // 성공 시 커밋
 
         } catch (Exception e) {
-            log.error("[SAGA COUPON CONSUMER] 처리 실패 - 메시지 건너뜀. 내용: {}, 에러: {}", message, e.getMessage()); // todo: KafkaConfig DLQ 도입 필요
 
-        } finally {
-            // 성공하든 실패하든 무조건 커밋(Ack) 후 다음 메시지를 받을 준비
-            ack.acknowledge();
+            // 실패 시
+            log.error("[SAGA COUPON CONSUMER: use req] 처리 실패 내용: {}, 에러: {}", message, e.getMessage()); // todo: KafkaConfig DLQ 도입 필요
+            ack.acknowledge(); // todo 임시 무한루프 방지 로그 남기고 커밋
+
         }
     }
 }
