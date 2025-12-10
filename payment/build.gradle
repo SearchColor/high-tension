@@ -23,6 +23,7 @@ configurations {
 repositories {
 	mavenLocal() // 해당 구문 추가
 	mavenCentral()
+	maven { url 'https://jitpack.io' }
 }
 
 ext {
@@ -52,6 +53,9 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testImplementation 'com.h2database:h2' // H2 In-memory DB for testing
+
+	// orchestration
+	implementation 'com.high:orchestration:0.0.1-SNAPSHOT'
 }
 
 dependencyManagement {
