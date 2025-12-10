@@ -4,11 +4,11 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record ProductResponse(
-    UUID productId,
+    UUID id,
     String name,
     int price,
     String category,
-    String seller,
+    UUID seller,
     LocalDateTime createdAt,
     UUID createdBy,
     LocalDateTime updatedAt,
