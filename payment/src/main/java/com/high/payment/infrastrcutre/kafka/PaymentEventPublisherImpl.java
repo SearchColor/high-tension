@@ -5,10 +5,10 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateFailMessage;
-import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateSuccessMessage;
 import com.high.payment.application.dto.PaymentSagaEventPort;
 import com.high.payment.application.dto.PaymentSagaResultMessage;
+import com.high.payment.infrastrcutre.kafka.dto.PaymentCreateFailMessage;
+import com.high.payment.infrastrcutre.kafka.dto.PaymentCreateSuccessMessage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +31,7 @@ public class PaymentEventPublisherImpl implements PaymentSagaEventPort {
 			// 성공: 내부 DTO -> 외부 Kafka DTO 변환
 			PaymentCreateSuccessMessage successMessage = new PaymentCreateSuccessMessage(
 				result.sagaId(),
+				result.orderId(),
 				result.orderId()
 			);
 
@@ -48,8 +49,8 @@ public class PaymentEventPublisherImpl implements PaymentSagaEventPort {
 			PaymentCreateFailMessage failMessage = new PaymentCreateFailMessage(
 				result.sagaId(),
 				result.orderId(),
-				result.message(), // 실패 사유
-				result.errorCode() // 오류 코드
+				result.message(), // 실패 사유 (String reason)
+				result.userId() // 오류 코드
 			);
 
 			try {

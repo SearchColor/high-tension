@@ -9,12 +9,12 @@ import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
 import com.high.payment.application.adapter.UserServiceClient;
 import com.high.payment.application.dto.CreatePaymentRequest;
 import com.high.payment.application.dto.CreatePaymentResponse;
 import com.high.payment.application.dto.IamportPaymentInfo;
 import com.high.payment.application.dto.PaymentCompletedEvent;
+import com.high.payment.application.dto.PaymentCreateCommandRequest;
 import com.high.payment.application.dto.PaymentDetailResponse;
 import com.high.payment.application.dto.PaymentSagaEventPort;
 import com.high.payment.application.dto.PaymentSagaResultMessage;
@@ -315,6 +315,7 @@ public class PaymentServiceImpl implements PaymentService {
 			PaymentSagaResultMessage successResult = new PaymentSagaResultMessage(
 				sagaId,
 				orderId,
+				userId,
 				true,
 				"Payment successful",
 				null
@@ -329,6 +330,7 @@ public class PaymentServiceImpl implements PaymentService {
 			PaymentSagaResultMessage failResult = new PaymentSagaResultMessage(
 				sagaId,
 				orderId,
+				userId,
 				false,
 				"알 수 없는 오류: " + pe.getMessage(),
 				PaymentErrorCode.PAYMENT_INTERNAL_SERVER_ERROR.getCode()

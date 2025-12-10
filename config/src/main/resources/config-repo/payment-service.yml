@@ -5,15 +5,15 @@ spring:
   application:
     name: payment-service
   datasource:
-    url: jdbc:mysql://mysql:3306/payment_service?serverTimezone=UTC&characterEncoding=UTF-8
-    username: root
-    password: admin1234
+    url: jdbc:mysql://localhost:3306/payment_service?serverTimezone=UTC&characterEncoding=UTF-8
+    username: payment_user
+    password: payment1234!
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         default_schema: payment_service
