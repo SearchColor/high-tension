@@ -37,6 +37,8 @@ dependencies {
     implementation("com.slack.api:bolt-jetty:1.18.0")
     implementation 'com.slack.api:slack-api-client'
 
+    implementation 'com.github.sharedeffort:common-security:v1.1.0'
+
     implementation 'com.github.sharedeffort:common-module:v1.1.9'
     implementation 'com.github.sharedeffort:common-jpa:v1.0.3'
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
