@@ -8,8 +8,8 @@ import java.util.UUID;
  * ObjectMapper (String -> UUID 변환)
  */
 public record CouponUseRequestMessage(
-        UUID couponIssueId, // 쿠폰 발급 ID
-        UUID userId,       // 쿠폰 사용자
-        UUID sagaId
+        UUID sagaId,
+        UUID orderId,
+        UUID userId
 ){
 }

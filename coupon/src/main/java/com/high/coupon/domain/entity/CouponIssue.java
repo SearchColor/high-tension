@@ -80,6 +80,7 @@ public class CouponIssue extends BaseEntity {
                 .build();
     }
 
+
     // 발급 기간 체크 메서드
     private static void validateIssuePeriod(Coupon coupon, LocalDateTime now) {
         if (now.isBefore(coupon.getIssueStartAt()) || now.isAfter(coupon.getIssueEndAt())) {
@@ -87,23 +88,12 @@ public class CouponIssue extends BaseEntity {
         }
     }
 
+
     /**
      * 쿠폰 사용 처리
-     * todo 사용자 인증 처리 정리 필요 (service)
      */
     public void useCoupon(UUID userId, LocalDateTime now){
-        if (Boolean.TRUE.equals(this.isUsed)){
-            throw new CouponAlreadyUsedException();
-        }
-
-        if (!this.userId.equals(userId)){
-            throw new CouponNotOwnedException();
-        }
-
-        if (now.isBefore(validStartAt) || now.isAfter(validEndAt)){
-            throw new CouponNotValidPeriodException();
-        }
-
+        validateUsable(userId, now);
         this.isUsed = true;
         this.usedAt = now;
     }
@@ -131,6 +121,25 @@ public class CouponIssue extends BaseEntity {
 
         this.isUsed = false; // true -> false 복원
         this.usedAt = null;
+    }
+
+
+    /**
+     * 쿠폰이 사용 가능한 상태인지 검증하는 메서드
+     */
+    public void validateUsable(UUID userId, LocalDateTime now) {
+
+        if (!this.userId.equals(userId)) {
+            throw new CouponNotOwnedException();
+        }
+
+        if (Boolean.TRUE.equals(this.isUsed)) {
+            throw new CouponAlreadyUsedException();
+        }
+
+        if (now.isBefore(validStartAt) || now.isAfter(validEndAt)) {
+            throw new CouponNotValidPeriodException();
+        }
     }
 
 }

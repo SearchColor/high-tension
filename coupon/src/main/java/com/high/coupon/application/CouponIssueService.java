@@ -6,18 +6,18 @@ import com.high.coupon.application.dto.response.CouponValidationResponse;
 import com.high.coupon.application.dto.response.UserCouponResponse;
 import com.high.coupon.application.exception.CouponIssueNotFoundException;
 import com.high.coupon.application.exception.CouponOutOfStockException;
+import com.high.coupon.application.provider.OrderProvider;
+import com.high.coupon.application.provider.dto.OrderInfo;
 import com.high.coupon.domain.entity.Coupon;
 import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.exception.CouponAlreadyIssuedException;
-import com.high.coupon.domain.exception.CouponAlreadyUsedException;
-import com.high.coupon.domain.exception.CouponNotValidPeriodException;
+import com.high.coupon.domain.exception.CouponNotOwnedException;
 import com.high.coupon.domain.repository.CouponIssueRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,26 +27,22 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CouponIssueService {
 
-    // todo : 권한 검증 필요 + 주석 정리 + 고도화 필요 (발급 파트)
+    // todo : 고도화 필요 (발급 파트)
+    // todo : order - feign 통신
 
     private final CouponService couponService; // 쿠폰 조회용
     private final CouponIssueRepository couponIssueRepository;
-
-    // todo : 테스트용 제거 필요
-    private final AuditorAware<UUID> auditorAware;
+    private final OrderProvider orderProvider;
 
     /**
      * 쿠폰 발급
      */
-    // + UUID userId 파라미터 추가 필요
     @Transactional
-    public CouponIssueResponse issueCoupon(UUID couponId) {
+    public CouponIssueResponse issueCoupon(UUID couponId, UUID userId) {
+
+        log.info("User {} is issued a coupon", userId);
 
         Coupon coupon = couponService.getCouponById(couponId);
-
-        // 발급자 ID 임시
-        UUID userId = auditorAware.getCurrentAuditor()
-                .orElseThrow(() -> new IllegalStateException("사용자 정보를 찾을 수 없습니다."));
 
         if (couponIssueRepository.existsByCouponIdAndUserId(couponId, userId)) {
             throw new CouponAlreadyIssuedException();
@@ -85,28 +81,18 @@ public class CouponIssueService {
                 .toList();
     }
 
+
     // 쿠폰 단건 유효성 검증용
     public CouponValidationResponse validateCoupon(UUID couponIssueId, UUID userId) {
 
-        // 1. 조회
-        CouponIssue couponIssue = couponIssueRepository.findByIdAndUserId(couponIssueId, userId)
+        CouponIssue couponIssue = couponIssueRepository.findById(couponIssueId)
                 .orElseThrow(CouponIssueNotFoundException::new);
 
-        // 2. 사용 여부
-        if (Boolean.TRUE.equals(couponIssue.getIsUsed())) {
-            log.warn("[INTERNAL] Coupon-Issue-Service - 검증 실패: 이미 사용된 쿠폰 "
-                    + "- couponIssueId={}, usedAt={}", couponIssueId, couponIssue.getUsedAt());
-            throw new CouponAlreadyUsedException();
+        if (!couponIssue.getUserId().equals(userId)) {
+            throw new CouponNotOwnedException();
         }
 
-        // 3. 유효 기간
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(couponIssue.getValidStartAt()) || now.isAfter(couponIssue.getValidEndAt())) {
-            log.warn("[INTERNAL] Coupon-Issue-Service - 검증 실패: 유효기간 불일치 "
-                    + "- couponIssueId={}, validEndAt={}, now={}", couponIssueId, couponIssue.getValidEndAt(), now);
-            throw new CouponNotValidPeriodException();
-        }
-
+        couponIssue.validateUsable(userId, LocalDateTime.now());
         return CouponValidationResponse.from(couponIssue);
     }
 
@@ -115,7 +101,8 @@ public class CouponIssueService {
     @Transactional
     public CouponUseResponse useCoupon(UUID couponIssueId, UUID userId){
 
-        CouponIssue couponIssue = getCouponIssue(couponIssueId);
+        CouponIssue couponIssue = couponIssueRepository.findByIdAndUserId(couponIssueId, userId)
+                .orElseThrow(CouponNotOwnedException::new);
 
         couponIssue.useCoupon(userId, LocalDateTime.now());
         log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 사용처리 : couponIssueId={}, userId={}", couponIssueId, userId);
@@ -125,22 +112,53 @@ public class CouponIssueService {
     // 쿠폰 복원 처리 (주문/결제 취소)
     @Transactional
     public CouponUseResponse restoreCoupon(UUID couponIssueId) {
-        CouponIssue couponIssue = getCouponIssue(couponIssueId);
 
-        LocalDateTime now = LocalDateTime.now();
-        couponIssue.restoreCoupon(now);
+        CouponIssue couponIssue = couponIssueRepository.findById(couponIssueId)
+                .orElseThrow(CouponIssueNotFoundException::new);
 
+        couponIssue.restoreCoupon(LocalDateTime.now());
         log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 복원 프로세스 종료 : couponIssueId={}", couponIssueId);
-
         return CouponUseResponse.from(couponIssue);
     }
 
 
-    /** -----------------------
-     * 쿠폰 발급 이력 ID 조회 메서드
+
+    /**
+     * ========================================================================
+     * >>>>>> saga / kafka 연계용 wrapper 메서드
+     * orderId를 기반으로 couponIssuedId를 조회하고 기존 메서드는 재사용 하도록 분리 설계
+     * =========================================================================
      */
-    private CouponIssue getCouponIssue(UUID couponIssueId) {
-        return couponIssueRepository.findById(couponIssueId)
-                .orElseThrow(CouponIssueNotFoundException::new);
+
+    /**
+     * Kafka 메시지(orderId) 기반 쿠폰 사용 처리
+     */
+    @Transactional
+    public void useCouponByOrderId(UUID orderId){
+
+        OrderInfo order = orderProvider.getOrder(orderId);
+
+        UUID couponIssuedId = order.couponIssueId();
+        UUID userId = order.userId();
+
+        log.info("[SAGA] couponIssueService 사용 요청: orderId={}, couponIssueId={}, userId={}",
+                orderId, couponIssuedId, userId);
+
+        useCoupon(couponIssuedId, userId);
+    }
+
+    /**
+     * Kafka 메시지(orderId) 기반 쿠폰 복원 처리
+     * todo 복원도 오케스트레이션에 포함될 시 추가
+     */
+    @Transactional
+    public void restoreCouponByOrderId(UUID orderId) {
+
+        OrderInfo order = orderProvider.getOrder(orderId);
+        UUID couponIssueId = order.couponIssueId();
+
+        log.info("[SAGA] couponIssueService Coupon 복원 요청: orderId={}, couponIssueId={}", orderId, couponIssueId);
+
+        restoreCoupon(couponIssueId);
     }
 }
