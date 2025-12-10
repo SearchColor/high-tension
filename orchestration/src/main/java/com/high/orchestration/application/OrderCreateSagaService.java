@@ -1,6 +1,5 @@
 package com.high.orchestration.application;
 
-import com.high.orchestration.application.dto.internal.request.CouponUseCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderDeleteCommandRequest;
 import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
@@ -87,7 +86,7 @@ public class OrderCreateSagaService {
     }
 
     @Transactional
-    public void handlerOrderCreateSuccess(StockDeductionCommandRequest stockRequest, CouponUseCommandRequest commandRequest) {
+    public void handlerOrderCreateSuccess(StockDeductionCommandRequest stockRequest) {
         log.info("[OrderCreateSagaService] handlerOrderCreateSuccess - 주문생성완료 후 handler 유입 성공");
         UUID sagaId = stockRequest.sagaId();
         SagaState sagaState = getSagaState(sagaId);
@@ -99,9 +98,6 @@ public class OrderCreateSagaService {
 
             updateAndSaveSagaState(sagaState, CurrentStep.ORDER_CREATE_STOCK, stockRequest.toString());
             sagaState.updateOrderId(stockRequest.orderId());
-            publisher.publishCouponUseCommand("coupon-use-request", commandRequest);
-            publisher.publishStockDeductionCommand("stock-deduction-request", stockRequest);
-            log.info("[OrderCreateSagaService] handlerOrderCreateSuccess : 재고차감 명령 발행 성공 ");
 
 
         } catch (Exception e) {
@@ -139,8 +135,6 @@ public class OrderCreateSagaService {
 
             updateAndSaveSagaState(sagaState, CurrentStep.ORDER_CREATE_PAYMENT, request.toString());
 
-            publisher.publishPaymentCreateCommand("payment-create-request", request);
-            log.info("[OrderCreateSagaService] handlerStockDeductionSuccess : 결제 생성 명령 성공");
 
         } catch (Exception e) {
             log.error("[OrderCreateSagaService] handlerStockDeductionSuccess : 재고 차감 handler처리 실패");
@@ -174,7 +168,6 @@ public class OrderCreateSagaService {
         UUID sagaId = request.sagaId();
         SagaState sagaState = getSagaState(sagaId);
 
-        publisher.publishOrderDeleteCommand("order-delete-request", request);
 
         try {
             sagaState.updateSagaStatus(SagaStatus.COMPENSATING);
@@ -198,11 +191,9 @@ public class OrderCreateSagaService {
         //if (!sagaState..isStockRestored()) ... 확인 메서드도 추가..
 
         try {
-            publisher.publishStockRestoreCommand("stock-restore-request", stockRequest);
-            publisher.publishOrderDeleteCommand("order-delete-request", orderRequest);
             sagaState.updateSagaStatus(SagaStatus.COMPENSATING);
             sagaStateRepository.save(sagaState);
-            log.info("[OrderCreateSagaService] PaymentCreateFailedCompensation - saga 상태 'COMPENSATING' 업데이트 완료");
+            log.info("[OrderCreateSagaService] PaymentCreateFailedCompensation - saga state 'COMPENSATING' 업데이트 완료");
 
         } catch (Exception e) {
             log.error("[OrderCreateSagaService] PaymentCreateFailedCompensation 유입 - 결제 생성 실패 보상트랜잭션 처리 중 오류: sagaId={}", sagaId, e);

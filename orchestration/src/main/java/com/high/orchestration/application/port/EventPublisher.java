@@ -1,6 +1,7 @@
 package com.high.orchestration.application.port;
 
 import com.high.orchestration.application.dto.internal.request.ClearCartCommandRequest;
+import com.high.orchestration.application.dto.internal.request.CouponRestoreCommandRequest;
 import com.high.orchestration.application.dto.internal.request.CouponUseCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderCreateCommandRequest;
 import com.high.orchestration.application.dto.internal.request.OrderDeleteCommandRequest;
@@ -24,7 +25,11 @@ public interface EventPublisher {
 
     void publishOrderDeleteCommand(String topic, OrderDeleteCommandRequest request);
 
-    void publishOrderSuccessProcessingCommand(String topic, ProcessOrderSuccessCommandRequest orderRequest);
+    void publishOrderSuccessProcessingCommand(String topic,
+        ProcessOrderSuccessCommandRequest orderRequest);
 
     void publishStockRestoreCommand(String topic, StockRestoreCommandRequest stockRequest);
+
+    void publishCouponRestoreCommand(String topic, CouponRestoreCommandRequest couponRequest);
+
 }
