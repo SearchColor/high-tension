@@ -8,6 +8,8 @@ import org.springframework.data.domain.Pageable;
 
 import com.high.product.domain.model.Product;
 
+import jakarta.validation.constraints.NotBlank;
+
 public interface ProductRepository {
 
 	Optional<Product> findById(UUID id);

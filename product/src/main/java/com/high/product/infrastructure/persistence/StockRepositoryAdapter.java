@@ -44,4 +44,10 @@ public class StockRepositoryAdapter implements StockRepository {
 		// JpaStockRepository에 정의된 메서드 사용
 		return jpaStockRepository.existsByProductId(productId);
 	}
+
+	// 비관적 락 적용
+	@Override
+	public Optional<Product_Stock> findByProductIdForUpdate(UUID productId) {
+		return jpaStockRepository.findByProductIdForUpdate(productId);
+	}
 }

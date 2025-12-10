@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.high.product.application.dto.request.LimitedStockCreateRequest;
@@ -125,5 +126,26 @@ public class StockService {
 
 		return limitedStockRepository.findAll(pageable)
 			.map(LimitedStockResponse::from);
+	}
+
+	// 일반 상품 재고 차감
+	@Transactional
+	public StockResponse reduceStock(UUID productId, int quantity) {
+		Product_Stock stock = stockRepository.findByProductIdForUpdate(productId)
+			.orElseThrow(() -> new ProductException(ProductErrorCode.PRODUCT_NOT_FOUND));
+		stock.reduce(quantity);
+		Product_Stock savedStock = stockRepository.save(stock);
+
+		return StockResponse.from(savedStock);
+
+	}
+
+	// 일반 상품 재고 복원
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void restoreStock(UUID productId, int quantity) {
+		Product_Stock stock = stockRepository.findByProductIdForUpdate(productId)
+			.orElseThrow(() -> new ProductException(ProductErrorCode.PRODUCT_NOT_FOUND));
+		stock.increase(quantity);
+		stockRepository.save(stock);
 	}
 }

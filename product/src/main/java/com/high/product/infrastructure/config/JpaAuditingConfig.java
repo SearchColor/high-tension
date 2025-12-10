@@ -9,8 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import com.library.security.util.SecurityContextUtil;
 
 @Configuration
 @EnableJpaAuditing(auditorAwareRef = "auditorProvider")
@@ -18,18 +17,6 @@ public class JpaAuditingConfig {
 
 	@Bean
 	public AuditorAware<UUID> auditorProvider() {
-		return () -> {
-			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-			if (authentication == null || !authentication.isAuthenticated()) {
-				return Optional.empty();
-			}
-
-			try {
-				return Optional.of(UUID.fromString(authentication.getName())); // userId 저장
-			} catch (IllegalArgumentException e) {
-				return Optional.empty();
-			}
-		};
+		return SecurityContextUtil::getCurrentUserIdForAuditing;
 	}
 }

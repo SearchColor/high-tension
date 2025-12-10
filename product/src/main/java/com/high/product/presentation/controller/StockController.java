@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.high.product.application.dto.request.LimitedStockCreateRequest;
 import com.high.product.application.dto.request.StockCreateRequest;
+import com.high.product.application.dto.request.StockUpdateRequest;
 import com.high.product.application.dto.response.LimitedStockResponse;
 import com.high.product.application.dto.response.StockResponse;
 import com.high.product.application.service.StockService;
@@ -46,7 +47,7 @@ public class StockController {
 	}
 
 	// ID로 단건 조회
-	@GetMapping("/products/stocks/{productId}")
+	// @GetMapping("/products/stocks/{productId}")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<StockResponse>> getStockById(@PathVariable UUID productId) {
 		StockResponse response = stockService.getStockById(productId);
@@ -114,4 +115,19 @@ public class StockController {
 
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
+
+	// 일반상품 재고 차감
+	@PostMapping("/products/stocks/reduce")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<ApiResponse<StockResponse>> stockReduce(
+		@RequestBody StockUpdateRequest request
+	) {
+
+		StockResponse response = stockService.reduceStock(request.productId(), request.quantity());
+		return new ResponseEntity<>(
+			ApiResponse.success(response, "일반 상품 재고가 성공적으로 차감되었습니다."),
+			HttpStatus.CREATED
+		);
+	}
+
 }
