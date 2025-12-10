@@ -23,4 +23,4 @@ kafka:
     group-id: cart-service-group
 
   topic:
-    clear-cart: cart.clear.request
+    clear-cart: cart-clear-request
