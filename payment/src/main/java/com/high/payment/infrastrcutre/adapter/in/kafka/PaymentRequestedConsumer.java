@@ -17,7 +17,7 @@ public class PaymentRequestedConsumer {
 	private final PaymentService paymentService;
 	private final ObjectMapper objectMapper;
 
-	@KafkaListener(topics = "order.requested", groupId = "payment-group")
+	@KafkaListener(topics = "payment-create-request", groupId = "payment-group")
 	public void consume(ConsumerRecord<String, String> record) {
 		try {
 			log.info("Kafka Message Received: {}", record.value());

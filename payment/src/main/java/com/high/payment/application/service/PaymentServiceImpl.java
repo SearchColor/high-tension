@@ -1,5 +1,6 @@
 package com.high.payment.application.service;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -8,17 +9,24 @@ import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.high.orchestration.application.dto.internal.request.PaymentCreateCommandRequest;
+import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateFailMessage;
+import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateSuccessMessage;
+import com.high.payment.application.adapter.UserServiceClient;
 import com.high.payment.application.dto.CreatePaymentRequest;
 import com.high.payment.application.dto.CreatePaymentResponse;
 import com.high.payment.application.dto.IamportPaymentInfo;
 import com.high.payment.application.dto.PaymentCompletedEvent;
 import com.high.payment.application.dto.PaymentDetailResponse;
+import com.high.payment.application.dto.PaymentEventPublisher;
 import com.high.payment.application.port.out.IamportClientPort;
 import com.high.payment.domain.model.Payment;
 import com.high.payment.domain.model.PaymentOutbox;
 import com.high.payment.domain.model.PaymentStatus;
 import com.high.payment.domain.port.out.PaymentOutboxRepositoryPort;
 import com.high.payment.domain.port.out.PaymentRepositoryPort;
+import com.high.payment.exception.PaymentException;
+import com.high.payment.exception.PaymentErrorCode;
 
 import com.high.payment.domain.repository.PaymentRepository; // 사용되지 않을 수 있지만, 임시로 유지
 
@@ -35,6 +43,8 @@ public class PaymentServiceImpl implements PaymentService {
 	private final IamportClientPort iamportClient;
 	private final ObjectMapper objectMapper;
 	private final PaymentRepositoryPort paymentRepositoryPort; // Hexagonal Port 사용
+	private final UserServiceClient userServiceClient;
+	private final PaymentEventPublisher eventPublisher;
 
 	@Override
 	@Transactional // DB 저장과 Outbox 저장을 하나의 트랜잭션으로 묶음
@@ -67,6 +77,7 @@ public class PaymentServiceImpl implements PaymentService {
 			payment.fail();
 			eventType = "payment.failed";
 			log.error("PG 결제 승인 실패: {}", e.getMessage());
+			throw new PaymentException(PaymentErrorCode.PG_CLIENT_ERROR,"PG 결제 승인 실패: " + e.getMessage());
 		}
 
 		// 5. Payment 저장 (Port 사용으로 통일)
@@ -88,7 +99,7 @@ public class PaymentServiceImpl implements PaymentService {
 			outboxRepository.save(outbox);
 
 		} catch (JsonProcessingException e) {
-			throw new RuntimeException("Outbox JSON 변환 에러", e);
+			throw new PaymentException(PaymentErrorCode.PAYMENT_BAD_REQUEST, "Outbox JSON 변환 에러");
 		}
 
 	}
@@ -109,7 +120,6 @@ public class PaymentServiceImpl implements PaymentService {
 		Payment savedPayment = paymentRepositoryPort.save(payment);
 
 		// 3. Outbox에 이벤트 저장 (나중에 Kafka로 발행됨)
-		// paymentOutboxRepositoryPort.save(createPaymentRequestedEvent(savedPayment)); // 주석 처리 유지
 
 		// 4. 응답 DTO 반환
 		return CreatePaymentResponse.from(savedPayment);
@@ -120,8 +130,8 @@ public class PaymentServiceImpl implements PaymentService {
 	public CreatePaymentResponse getPayment(UUID paymentId) {
 		Payment payment = paymentRepositoryPort.findById(paymentId)
 											   .orElseThrow(
-												   () -> new RuntimeException("결제 정보를 찾을 수 없습니다. ID: " + paymentId));
-
+												   () -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND,
+																			  "결제 정보를 찾을 수 없습니다. ID: " + paymentId));
 		return CreatePaymentResponse.from(payment);
 	}
 
@@ -129,8 +139,9 @@ public class PaymentServiceImpl implements PaymentService {
 	@Transactional(readOnly = true)
 	public PaymentDetailResponse getPaymentByOrderId(UUID orderId) {
 		Payment payment = paymentRepositoryPort.findByOrderId(orderId)
-										   .orElseThrow(() -> new RuntimeException("OrderId " + orderId + "에 해당하는 결제 정보를 찾을 수 없습니다."));
-
+											   .orElseThrow(
+												   () -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND,
+																			  "OrderId " + orderId + "에 해당하는 결제 정보를 찾을 수 없습니다."));
 		// DTO로 변환하여 반환
 		return PaymentDetailResponse.from(payment);
 	}
@@ -142,7 +153,7 @@ public class PaymentServiceImpl implements PaymentService {
 		//  1. MerchantUid 필수 값 체크 및 UUID 변환 (오류 발생 방지 로직)
 		if (!StringUtils.hasText(merchantUid)) { // StringUtils.hasText(String)는 null 또는 공백을 체크합니다.
 			log.error("MerchantUid가 누락되었습니다. Webhook 데이터 오류.");
-			throw new IllegalArgumentException("MerchantUid가 누락되었습니다.");
+			throw new PaymentException(PaymentErrorCode.PAYMENT_BAD_REQUEST, "MerchantUid가 누락되었습니다.");
 		}
 
 		UUID orderId;
@@ -151,14 +162,15 @@ public class PaymentServiceImpl implements PaymentService {
 			orderId = UUID.fromString(merchantUid);
 		} catch (IllegalArgumentException e) {
 			log.error("MerchantUid 형식이 유효한 UUID가 아닙니다: {}", merchantUid);
-			throw new IllegalArgumentException("유효하지 않은 MerchantUid 형식입니다.", e);
+			throw new PaymentException(PaymentErrorCode.PAYMENT_BAD_REQUEST, "유효하지 않은 MerchantUid 형식입니다.");
 		}
 
 		log.info(" [Service] 결제 검증 시작: ImpUid={}, OrderId={}", impUid, orderId);
 
 		// 2. DB에서 초기 결제 정보 조회 (Order ID 사용)
 		Payment payment = paymentRepositoryPort.findByOrderId(orderId)
-											   .orElseThrow(() -> new RuntimeException("DB에 결제 요청 정보가 없습니다. OrderId: " + orderId));
+											   .orElseThrow(() -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND,
+																					   "DB에 결제 요청 정보가 없습니다. OrderId: " + orderId));
 
 		// 3. PG사에서 실제 결제 정보 조회 (IamportClientPort 사용)
 		IamportPaymentInfo pgInfo = iamportClient.getPaymentInfo(impUid);
@@ -168,7 +180,8 @@ public class PaymentServiceImpl implements PaymentService {
 			log.error(" PG사로부터 유효한 PG TID를 받지 못했습니다. ImpUid={}", impUid);
 			payment.fail();
 			paymentRepositoryPort.save(payment);
-			throw new RuntimeException("PG사 정보 조회 실패: 유효한 거래번호(PG TID)가 누락되었습니다.");
+			throw new PaymentException(PaymentErrorCode.PG_CLIENT_ERROR,
+									   "PG사 정보 조회 실패: 유효한 거래번호(PG TID)가 누락되었습니다.");
 		}
 
 		// 4. 결제 검증 (금액 일치 여부 확인)
@@ -183,7 +196,8 @@ public class PaymentServiceImpl implements PaymentService {
 			payment.fail();
 			paymentRepositoryPort.save(payment);
 
-			throw new RuntimeException("결제 금액 불일치로 인한 검증 실패.");
+			throw new PaymentException(PaymentErrorCode.PAYMENT_VERIFICATION_FAILED,
+									  "결제 금액 불일치로 인한 검증 실패.");
 		}
 
 		// 5. 결제 완료 상태 확정 및 DB 저장
@@ -203,7 +217,7 @@ public class PaymentServiceImpl implements PaymentService {
 			log.info("Outbox 저장 완료. 결제 완료 이벤트 발행 예정.");
 
 		} catch (JsonProcessingException e) {
-			throw new RuntimeException("Outbox JSON 변환 에러", e);
+			throw new PaymentException(PaymentErrorCode.PAYMENT_BAD_REQUEST, "Outbox JSON 변환 에러");
 		}
 	}
 
@@ -215,16 +229,16 @@ public class PaymentServiceImpl implements PaymentService {
 
 		// 1. 결제 조회
 		Payment payment = paymentRepositoryPort.findByOrderId(orderId)
-											   .orElseThrow(() -> new RuntimeException("결제 정보를 찾을 수 없습니다."));
+											   .orElseThrow(() -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND, "결제 정보를 찾을 수 없습니다."));
 
 		// 2. 이미 취소되었거나 완료되지 않은 건인지 확인
 		if (payment.getStatus() != PaymentStatus.COMPLETED) {
-			throw new RuntimeException("취소할 수 없는 상태입니다.");
+			throw new PaymentException(PaymentErrorCode.PAYMENT_CANCELLATION_NOT_ALLOWED, "취소할 수 없는 상태입니다.");
 		}
 
 		if (!StringUtils.hasText(payment.getPgTid())) {
 			log.error("PG TID 누락, 환불에 필요한 PG TID가 없습니다. OrderId={}", orderId);
-			throw new RuntimeException("PG사에 환불 요청할 거래 번호(PG TID)가 누락되었습니다.");
+			throw new PaymentException(PaymentErrorCode.PAYMENT_BAD_REQUEST, "PG사에 환불 요청할 거래 번호(PG TID)가 누락되었습니다.");
 		}
 
 		// 3. PG사 환불 요청 (Mock)
@@ -232,7 +246,7 @@ public class PaymentServiceImpl implements PaymentService {
 			iamportClient.cancelPayment(payment.getPgTid(), payment.getAmount(), "고객 요청 취소");
 			log.info("[Service] PG사 취소 요청 성공");
 		} catch (Exception e) {
-			throw new RuntimeException("PG사 환불 실패: " + e.getMessage());
+			throw new PaymentException(PaymentErrorCode.PG_CLIENT_ERROR, "PG사 환불 실패: " + e.getMessage());
 		}
 
 		// 4. DB 상태 변경 (CANCELED)
@@ -242,7 +256,6 @@ public class PaymentServiceImpl implements PaymentService {
 		// 5. Outbox 이벤트 저장 (payment.canceled)
 		try {
 			// 이벤트 페이로드 생성
-			// Payment 객체 자체를 Payload로 사용하거나, 별도 DTO 생성
 			String payload = objectMapper.writeValueAsString(payment);
 
 			// Outbox 생성 (인자 3개: aggregateId, eventType, payload)
@@ -256,7 +269,63 @@ public class PaymentServiceImpl implements PaymentService {
 			log.info("[Outbox] 취소 이벤트 저장 완료.");
 
 		} catch (JsonProcessingException e) {
-			throw new RuntimeException("JSON 변환 실패", e);
+			throw new PaymentException(PaymentErrorCode.PAYMENT_BAD_REQUEST, "JSON 변환 실패");
+		}
+	}
+
+	@Override
+	@Transactional
+	public void processPaymentSaga(PaymentCreateCommandRequest command){
+
+		// DTO가 Record이므로, command.필드명()이 올바른 접근 방식입니다.
+		UUID sagaId = command.sagaId();
+		UUID orderId = command.orderId();
+		UUID userId = command.userId();
+
+		log.info("[Saga] 결제 요청 수신: SagaId={}, OrderId={}, UserId={}", sagaId, orderId, userId);
+
+		try {
+			// 1. 유저 검증 (UserServiceClient는 UUID를 받도록 수정됨)
+			try {
+				userServiceClient.validateUser(userId);
+				log.info("[Saga] 유저 검증 성공: UserId={}", userId);
+			} catch (Exception e) {
+				throw new RuntimeException("유저 유효성 검증 실패: " + e.getMessage());
+			}
+
+			// 2. [중요] DTO 필드 누락으로 인한 임시 데이터 생성
+			log.warn("[Saga] 주의: DTO에 결제금액 정보가 없어 '0원'으로 임시 처리합니다.");
+
+			CreatePaymentRequest tempRequest = new CreatePaymentRequest(
+				orderId,
+				userId.toString(),     // Payment 도메인은 String userId를 사용함
+				BigDecimal.ZERO,       // 임시 값: 0원
+				"SAGA_TEST_CARD"       // 임시 값: 테스트용 결제수단
+			);
+
+			// 3. 기존 결제 로직 재사용
+			processPayment(tempRequest);
+
+			// 4. 성공 이벤트 발행 (Orchestrator에게 알림)
+			PaymentCreateSuccessMessage successMessage = new PaymentCreateSuccessMessage(
+				sagaId,
+				orderId,
+				userId
+			);
+			eventPublisher.publishSuccess(successMessage);
+			log.info("[Saga] 결제 성공 이벤트 발행 완료");
+
+		} catch (Exception e) {
+			log.error("[Saga] 결제 처리 중 실패 발생: {}", e.getMessage());
+
+			// 5. 실패 이벤트 발행 (보상 트랜잭션 유도)
+			PaymentCreateFailMessage failMessage = new PaymentCreateFailMessage(
+				sagaId,
+				orderId,
+				e.getMessage(), // 실패 사유
+				null            // 누락된 4번째 인자 (payload, status 등)
+			);
+			eventPublisher.publishFail(failMessage);
 		}
 	}
 }
