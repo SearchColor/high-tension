@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class CouponIssueService {
 
     // todo : 고도화 필요 (발급 파트)
-    // todo : order - feign 통신
 
     private final CouponService couponService; // 쿠폰 조회용
     private final CouponIssueRepository couponIssueRepository;
