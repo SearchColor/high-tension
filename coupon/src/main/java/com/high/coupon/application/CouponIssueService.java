@@ -7,12 +7,12 @@ import com.high.coupon.application.dto.response.UserCouponResponse;
 import com.high.coupon.application.exception.CouponIssueNotFoundException;
 import com.high.coupon.application.exception.CouponOutOfStockException;
 import com.high.coupon.application.provider.OrderProvider;
+import com.high.coupon.application.provider.dto.OrderInfo;
 import com.high.coupon.domain.entity.Coupon;
 import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.exception.CouponAlreadyIssuedException;
 import com.high.coupon.domain.exception.CouponNotOwnedException;
 import com.high.coupon.domain.repository.CouponIssueRepository;
-import com.high.coupon.infrastructure.client.dto.OrderResponse;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -136,7 +136,7 @@ public class CouponIssueService {
     @Transactional
     public void useCouponByOrderId(UUID orderId){
 
-        OrderResponse order = orderProvider.getOrder(orderId);
+        OrderInfo order = orderProvider.getOrder(orderId);
 
         UUID couponIssuedId = order.couponIssueId();
         UUID userId = order.userId();
@@ -154,7 +154,7 @@ public class CouponIssueService {
     @Transactional
     public void restoreCouponByOrderId(UUID orderId) {
 
-        OrderResponse order = orderProvider.getOrder(orderId);
+        OrderInfo order = orderProvider.getOrder(orderId);
         UUID couponIssueId = order.couponIssueId();
 
         log.info("[SAGA] couponIssueService Coupon 복원 요청: orderId={}, couponIssueId={}", orderId, couponIssueId);

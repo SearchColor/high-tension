@@ -10,9 +10,9 @@ import static org.mockito.Mockito.when;
 
 import com.high.coupon.application.CouponIssueService;
 import com.high.coupon.application.provider.OrderProvider;
+import com.high.coupon.application.provider.dto.OrderInfo;
 import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.repository.CouponIssueRepository;
-import com.high.coupon.infrastructure.client.dto.OrderResponse;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -45,15 +45,14 @@ public class CouponServiceWrapperTest {
         UUID couponIssueId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
 
-        // OrderClient Res
-        OrderResponse mockOrder = new OrderResponse(
+        OrderInfo mockOrderInfo = new OrderInfo(
                 orderId,
                 userId,
                 couponIssueId
         );
 
         when(orderProvider.getOrder(orderId))
-                .thenReturn(mockOrder);
+                .thenReturn(mockOrderInfo);
 
         // CouponIssue Mock 생성 및 동작 정의
         CouponIssue issue = mock(CouponIssue.class);
