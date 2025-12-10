@@ -25,8 +25,8 @@ public class CouponUseRequestConsumer {
     /**
      * 쿠폰 사용 전환 요청 메시지 구독
      * - Infrastructure Layer
-     * - Kafka 토픽: coupon-use-request (주문서 쌓임)
-     * - Consumer Group: coupon-service-group (배달 기사팀)
+     * - Kafka 토픽: coupon-use-request
+     * - Consumer Group: coupon-service-group
      */
     @KafkaListener(
             topics = "coupon-use-request",
