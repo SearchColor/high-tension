@@ -19,11 +19,15 @@ public class SecurityConfig {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
 			.csrf(AbstractHttpConfigurer::disable)
-			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 미사용
+			.sessionManagement(session ->
+				session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
+				// 공개 엔드포인트 (필요 시 추가)
+				.requestMatchers("/api/v1/health").permitAll()
 				.anyRequest().authenticated()
 			);
 
+		// Gateway 헤더 인증 필터
 		http.addFilterBefore(
 			new HeaderAuthenticationFilter(),
 			UsernamePasswordAuthenticationFilter.class
@@ -32,6 +36,5 @@ public class SecurityConfig {
 		return http.build();
 	}
 }
-
 
 

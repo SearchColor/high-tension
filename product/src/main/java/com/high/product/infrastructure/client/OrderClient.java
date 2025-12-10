@@ -17,5 +17,4 @@ public interface OrderClient extends OrderQueryPort {
 	@GetMapping("/api/v1/orders/{orderId}")
 	ResponseEntity<ApiResponse<OrderDetailResponse>> getOrderdetail(
 		@PathVariable("orderId") UUID orderId);
-
 }
