@@ -194,7 +194,44 @@ services:
       # JWT Secret
       JWT_SECRET: ${JWT_SECRET}
 
-  # 9. Coupon Service (쿠폰 관리)
+  # 9. Product Service (상품 관리)
+  product-service:
+    image: gradle:8.5-jdk17
+    container_name: msa-product
+    working_dir: /app
+    volumes:
+      - ./product:/app
+      - gradle-cache:/root/.gradle
+    command: gradle bootRun --no-daemon
+    ports:
+      - "8200:8200"
+    depends_on:
+      mysql:
+        condition: service_started
+      redis:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - msa-network
+    environment:
+      # Docker 프로파일 활성화
+      SPRING_PROFILES_ACTIVE: docker
+      # Config Server 직접 연결
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED: "false"
+      # MySQL Docker 컨테이너 호스트 오버라이드
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/product_service?serverTimezone=UTC&characterEncoding=UTF-8
+      # Redis Docker 환경 오버라이드
+      SPRING_DATA_REDIS_HOST: redis
+      REDIS_HOST: redis
+      # Eureka Docker 환경 오버라이드
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: product-service
+
+  # 10. Coupon Service (쿠폰 관리)
   coupon-service:
     image: gradle:8.5-jdk17
     container_name: msa-coupon

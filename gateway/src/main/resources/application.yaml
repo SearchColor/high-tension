@@ -55,6 +55,8 @@ spring:
               uri: lb://user-service
               predicates:
                 - Path=/users/v3/api-docs
+              filters:
+                - StripPrefix=1
 
             # 2. Product Service (8200)
             - id: product-service
@@ -66,6 +68,8 @@ spring:
               uri: lb://product-service
               predicates:
                 - Path=/products/v3/api-docs
+              filters:
+                - StripPrefix=1
 
             # 3. Cart Service (8700)
             - id: cart-service
@@ -77,6 +81,8 @@ spring:
               uri: lb://cart-service
               predicates:
                 - Path=/carts/v3/api-docs
+              filters:
+                - StripPrefix=1
 
             # 4. Coupon Service (8600)
             - id: coupon-internal-service
@@ -93,6 +99,8 @@ spring:
               uri: lb://coupon-service
               predicates:
                 - Path=/coupons/v3/api-docs
+              filters:
+                - StripPrefix=1
 
             # 5. Order Service (8400)
             - id: order-service
@@ -104,6 +112,8 @@ spring:
               uri: lb://order-service
               predicates:
                 - Path=/orders/v3/api-docs
+              filters:
+                - StripPrefix=1
 
             # 6. Payment Service (8300)
             - id: payment-service
@@ -115,6 +125,8 @@ spring:
               uri: lb://payment-service
               predicates:
                 - Path=/payments/v3/api-docs
+              filters:
+                - StripPrefix=1
 
             # 7. Orchestration Service (8900)
             - id: orchestration-service
@@ -126,6 +138,8 @@ spring:
               uri: lb://orchestration-service
               predicates:
                 - Path=/orchestrations/v3/api-docs
+              filters:
+                - StripPrefix=1
 
             # 8. External Service (8500)
             - id: external-service
@@ -137,6 +151,8 @@ spring:
               uri: lb://external-service
               predicates:
                 - Path=/externals/v3/api-docs
+              filters:
+                - StripPrefix=1
 
 springdoc:
   swagger-ui:

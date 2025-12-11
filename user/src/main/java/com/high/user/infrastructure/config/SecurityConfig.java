@@ -50,7 +50,10 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/users/signup",
                                 "/api/v1/users/login",
-                                "/api/v1/users/reissue"
+                                "/api/v1/users/reissue",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
                         ).permitAll()
                         // 나머지는 인증 필요
                         .anyRequest().authenticated())
