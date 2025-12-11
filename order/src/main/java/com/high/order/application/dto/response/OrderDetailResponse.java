@@ -9,7 +9,7 @@ import java.util.UUID;
 public record OrderDetailResponse(
     UUID orderId,
     UUID userId,
-    UUID couponId,
+    UUID couponIssueId,
     Integer totalAmount,
     Integer discountAmount,
     Integer paidAmount,
@@ -27,7 +27,7 @@ public record OrderDetailResponse(
         return new OrderDetailResponse(
             order.getOrderId(),
             order.getCustomerId(),
-            order.getCouponId(),
+            order.getCouponIssueId(),
             order.getTotalPrice(),
             order.getDiscountAmount(),
             order.getPaidAmount(),
@@ -48,7 +48,7 @@ public record OrderDetailResponse(
         return new OrderDetailResponse(
             order.getOrderId(),
             order.getCustomerId(),
-            order.getCouponId(),
+            order.getCouponIssueId(),
             order.getTotalPrice(),
             order.getDiscountAmount(),
             order.getPaidAmount(),

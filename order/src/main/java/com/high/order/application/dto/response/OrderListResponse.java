@@ -7,7 +7,7 @@ import java.util.UUID;
 public record OrderListResponse(
     UUID orderId,
     UUID userId,
-    UUID couponId,
+    UUID couponIssueId,
     Integer totalAmount,
     Integer discountAmount,
     Integer paidAmount,
@@ -24,7 +24,7 @@ public record OrderListResponse(
         return new OrderListResponse(
             order.getOrderId(),
             order.getCustomerId(),
-            order.getCouponId(),
+            order.getCouponIssueId(),
             order.getTotalPrice(),
             order.getDiscountAmount(),
             order.getPaidAmount(),

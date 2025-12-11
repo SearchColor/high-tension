@@ -48,6 +48,9 @@ dependencies {
     implementation 'com.github.sharedeffort:common-jpa:v1.0.2'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'com.github.sharedeffort:common-security:v1.0.0'
+//    implementation 'io.github.openfeign:feign-jackson:12.3' //feignClient 직렬화 오류시 필요
+//    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310' //feignClient 직렬화 오류시 필요
+
 }
 
 dependencyManagement {

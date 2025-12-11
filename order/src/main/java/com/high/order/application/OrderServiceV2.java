@@ -2,6 +2,8 @@ package com.high.order.application;
 
 import static java.util.stream.Collectors.toList;
 
+import com.high.order.application.dto.external.CouponResponse;
+import com.high.order.application.dto.external.ProductResponse;
 import com.high.order.application.dto.internal.OrderItemCreateInfo;
 import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
 import com.high.order.application.dto.internal.kafka.request.ProcessOrderSuccessCommand;
@@ -16,6 +18,7 @@ import com.high.order.application.dto.response.OrderListResponse;
 import com.high.order.application.dto.response.OrderResponse;
 import com.high.order.application.exception.OrderBadRequestException;
 import com.high.order.application.exception.OrderNotFoundException;
+import com.high.order.application.service.CouponService;
 import com.high.order.application.service.ProductService;
 import com.high.order.domain.entity.Order;
 import com.high.order.domain.entity.OrderItem;
@@ -25,7 +28,6 @@ import com.high.order.domain.repository.OrderRepository;
 import com.high.order.domain.vo.OrderItemStatus;
 import com.high.order.domain.vo.OrderStatus;
 import jakarta.validation.Valid;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -42,83 +44,79 @@ public class OrderServiceV2 {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final ProductService productService;
+    private final CouponService couponService;
 
-    //FeignClient 통신 전 임시데이터
-    UUID customerId =  UUID.randomUUID(); //유저
-    //UUID producerId = UUID.randomUUID(); //product
-    //Integer unitPrice = 1000; //product
-    BigDecimal discountRate = null; //new BigDecimal("10");
 
 
 
     @Transactional
     public OrderSuccessResponse createOrder(CreateOrderCommand request) {
+        try {
+            log.info("[OrderServiceV2] createOrder : 주문 생성 서비스 시작 - sagaId: {}", request.sagaId());
 
-        /**
-         * TODO:
-         *  1. 로그인한 사용자 권한 검증
-         *  2. productID 존재여부 검증 (OK)
-         *  3. couponID 존재여부 검증 (사용가능한지)
-         */
 
-        //실패 테스트를 위한 로직
+            //실패 테스트를 위한 로직
 //        if(request.sagaId() != null) {
 //            throw new OrderBadRequestException();
 //        }
 
-        log.info("주문 생성 서비스 유입");
-        List<OrderItemCreateInfo> orderItemCreateInfoList = request.itemList()
-            .stream()
-            .map( itemDto -> {
+            log.info("주문 생성 서비스 유입");
+            List<OrderItemCreateInfo> orderItemCreateInfoList = request.itemList()
+                .stream()
+                .map(itemDto -> {
 
-                //TODO: product feignClient통신 임시무력화
-                //ProductResponse response = productService.getProductById(itemDto.productId()).getBody().data();
+                    ProductResponse productResponse = getProduct(itemDto.productId());
 
-//                return new OrderItemCreateInfo(
-//                    response.productId(),
-//                    UUID.randomUUID(),
-//                    response.price(),
-//                    itemDto.quantity()
-//                );
+                    log.info("product-service 응답 성공 productId={}, price={}, seller={}",
+                        productResponse.id(), productResponse.price(), productResponse.seller());
+                    return new OrderItemCreateInfo(
+                        productResponse.id(),
+                        productResponse.seller(),
+                        productResponse.price(),
+                        itemDto.quantity()
+                    );
 
-                return new OrderItemCreateInfo(
-                    UUID.randomUUID(),
-                    UUID.randomUUID(),
-                    2000,
-                    30
-                );
-            }).toList();
-        log.info("상품 feignClient 조회 성공");
+                }).toList();
 
-        List<OrderItem> itemList = orderItemCreateInfoList.stream()
-            .map(item -> OrderItem.create(
-                item.productId(),
-                UUID.randomUUID(), //TODO: 임시
-                item.quantity(),
-                item.unitPrice()
-            )).toList();
+            List<OrderItem> itemList = orderItemCreateInfoList.stream()
+                .map(item -> OrderItem.create(
+                    item.productId(),
+                    item.producerId(),
+                    item.quantity(),
+                    item.unitPrice()
+                )).toList();
 
-        log.info("itemList 담기 성공");
+            CouponResponse couponResponse = getCoupon(request.couponIssueId());
+            log.info("coupon-service feignClient 통신 성공 - couponIssueId : {}",
+                couponResponse.couponIssueId());
 
-        //TODO: 쿠폰 검증
-        Order order = Order.createOrder(
-            request.ordererId(),
-            request.couponId(),
-            request.recipient(),
-            request.recipientContact(),
-            request.deliveryAddress(),
-            request.detailAddress(),
-            request.requestMessage(),
-            itemList,
-            discountRate
-        );
-        log.info("order 담기 성공");
+            Order order = Order.createOrder(
+                request.ordererId(),
+                request.couponIssueId(),
+                request.recipient(),
+                request.recipientContact(),
+                request.deliveryAddress(),
+                request.detailAddress(),
+                request.requestMessage(),
+                itemList,
+                couponResponse.discountRate()
+            );
+            log.info("order 담기 성공");
 
-        Order savedOrder = orderRepository.save(order);
-        OrderSuccessResponse orderSuccessResponse = OrderSuccessResponse.of(savedOrder, request.sagaId());
-        return orderSuccessResponse;
+            Order savedOrder = orderRepository.save(order);
+            return OrderSuccessResponse.of(savedOrder, request.sagaId());
+        } catch (Exception e) {
+
+            log.error("[OrderServiceV2] createOrder 내부 예외 발생: {}", e.getMessage(), e);
+
+            if (e instanceof java.lang.reflect.UndeclaredThrowableException ute) {
+                log.error("UndeclaredThrowableException 내부 원인: {}",
+                    ute.getUndeclaredThrowable());
+            }
+
+            throw e;
+        }
     }
-
 
 
     public OrderDetailResponse getOrderDetail(UUID orderId) {
@@ -144,7 +142,7 @@ public class OrderServiceV2 {
 
 
     @Transactional
-    public void deleteOrder(UUID orderId) {
+    public void deleteOrder(UUID orderId, UUID userId) {
         //TODO: 삭제 권한 확인
 
         Order order = getOrderForAdmin(orderId);
@@ -153,7 +151,7 @@ public class OrderServiceV2 {
             throw new OrderNotFoundException();
         }
         //삭제자 임시
-        order.softDelete(UUID.randomUUID());
+        order.softDelete(userId);
     }
 
     @Transactional
@@ -295,17 +293,14 @@ public class OrderServiceV2 {
 
 
     public Order getOrderForUser(UUID orderId) {
-        log.info("주문 조회 실패");
         return orderRepository.findByOrderIdAndDeletedAtIsNull(orderId).orElseThrow(OrderNotFoundException::new);
     }
 
     public Order getOrderForAdmin(UUID orderId) {
-        log.info("관리자 주문 조회 실패");
         return orderRepository.findById(orderId).orElseThrow(OrderNotFoundException::new);
     }
 
     public OrderItem getOrderItemForUser(UUID orderItemId) {
-        log.info("주문 아이템 조회 실패");
         return orderItemRepository.findByOrderItemIdAndDeletedAtIsNull(orderItemId).orElseThrow(OrderItemNotFoundExeption::new);
     }
 
@@ -337,5 +332,13 @@ public class OrderServiceV2 {
         orderRepository.save(order);
 
         return OrderResponse.from(order);
+    }
+
+    public ProductResponse getProduct (UUID productId) {
+        return productService.getProductById(productId).data();
+    }
+
+    public CouponResponse getCoupon(UUID couponIssueId) {
+        return couponService.validateCoupon(couponIssueId).data();
     }
 }
