@@ -56,53 +56,57 @@ public class OrderService {
     public OrderResponse createOrder(OrderCreateRequest request, UUID userId, String userRole) {
 
         //TODO: 유저 검증(유저 조회)
+        try {
+            log.info("주문 생성 시작 ");
+            List<OrderItemCreateInfo> orderItemCreateInfoList = request.itemList()
+                .stream()
+                .map(itemDto -> {
 
-        log.info("주문 생성 시작 ");
-        List<OrderItemCreateInfo> orderItemCreateInfoList = request.itemList()
-            .stream()
-            .map( itemDto -> {
+                    ProductResponse productResponse = getProduct(itemDto.productId());
+                    log.info("판매자 ID: {}", productResponse.seller());
+                    return new OrderItemCreateInfo(
+                        productResponse.id(),
+                        productResponse.seller(),
+                        productResponse.price(),
+                        itemDto.quantity()
+                    );
 
-                ProductResponse productResponse = getProduct(itemDto.productId());
-                log.info("판매자 ID: {}", productResponse.seller());
-                return new OrderItemCreateInfo(
-                    productResponse.id(),
-                    productResponse.seller(),
-                    productResponse.price(),
-                    itemDto.quantity()
-                );
+                }).toList();
+            log.info("product-service feignClient 통신성공 ");
 
-            }).toList();
-        log.info("product-service feignClient 통신성공 ");
+            List<OrderItem> itemList = orderItemCreateInfoList.stream()
+                .map(item -> OrderItem.create(
+                    item.productId(),
+                    item.producerId(),
+                    item.quantity(),
+                    item.unitPrice()
+                )).toList();
 
-        List<OrderItem> itemList = orderItemCreateInfoList.stream()
-            .map(item -> OrderItem.create(
-                item.productId(),
-                item.producerId(),
-                item.quantity(),
-                item.unitPrice()
-            )).toList();
+            log.info("itemList 담기 성공");
+            log.info("couponId: {}", request.couponId());
+            CouponResponse couponResponse = getCoupon(request.couponId());
+            log.info("coupon-service feignClient 통신 성공 - couponIssueId : {}",
+                couponResponse.couponIssueId());
 
-        log.info("itemList 담기 성공");
+            Order order = Order.createOrder(
+                userId,
+                request.couponId(),
+                request.recipient(),
+                request.recipientContact(),
+                request.deliveryAddress(),
+                request.detailAddress(),
+                request.requestMessage(),
+                itemList,
+                couponResponse.discountRate()
+            );
+            log.info("order 담기 성공");
 
-        CouponResponse couponResponse = getCoupon(request.couponId());
-        log.info("coupon-service feignClient 통신 성공 - couponIssueId : {}", couponResponse.couponIssueId());
+            Order savedOrder = orderRepository.save(order);
 
-        Order order = Order.createOrder(
-            userId,
-            request.couponId(),
-            request.recipient(),
-            request.recipientContact(),
-            request.deliveryAddress(),
-            request.detailAddress(),
-            request.requestMessage(),
-            itemList,
-            couponResponse.discountRate()
-        );
-        log.info("order 담기 성공");
-
-        Order savedOrder = orderRepository.save(order);
-
-        return OrderResponse.from(savedOrder);
+            return OrderResponse.from(savedOrder);
+        } catch (Exception e) {
+            throw e;
+        }
     }
 
 
