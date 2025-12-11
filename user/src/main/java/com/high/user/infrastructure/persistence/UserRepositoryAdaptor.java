@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -49,5 +50,10 @@ public class UserRepositoryAdaptor implements UserRepository {
     @Override
     public Page<User> findByEmailContainingAndDeletedAtIsNull(String email, Pageable pageable) {
         return jpaUserRepository.findByEmailContainingAndDeletedAtIsNull(email, pageable);
+    }
+
+    @Override
+    public List<User> findByUserIdInAndDeletedAtIsNull(List<UUID> userIds) {
+        return jpaUserRepository.findByUserIdInAndDeletedAtIsNull(userIds);
     }
 }

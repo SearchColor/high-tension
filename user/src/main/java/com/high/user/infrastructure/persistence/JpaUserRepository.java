@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,4 +27,7 @@ public interface JpaUserRepository extends JpaRepository<User, UUID> {
 
     // Search by email (partial match)
     Page<User> findByEmailContainingAndDeletedAtIsNull(String email, Pageable pageable);
+
+    // Find by IDs (Batch query for Internal API)
+    List<User> findByUserIdInAndDeletedAtIsNull(List<UUID> userIds);
 }
