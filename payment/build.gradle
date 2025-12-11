@@ -44,8 +44,8 @@ dependencies {
 	implementation 'org.springframework.kafka:spring-kafka' // Kafka 의존성
 
 	// Common Modules (Library)
-	implementation 'com.library:common-module:1.1.0'
-	implementation 'com.library:common-jpa:1.0.1'
+	implementation 'com.github.sharedeffort:common-module:v1.1.9'
+	implementation 'com.github.sharedeffort:common-jpa:v1.0.3'
 
 	// Tools
 	compileOnly 'org.projectlombok:lombok'
