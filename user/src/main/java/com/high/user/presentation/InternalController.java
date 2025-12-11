@@ -25,7 +25,7 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/internal/users")
-@PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
+@PreAuthorize("hasAnyRole('MASTER')")
 public class InternalController {
 
     private final InternalUserService internalUserService;
