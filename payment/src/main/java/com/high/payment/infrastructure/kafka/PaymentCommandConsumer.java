@@ -1,8 +1,9 @@
-package com.high.payment.infrastrcutre.kafka;
+package com.high.payment.infrastructure.kafka;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.payment.application.dto.PaymentCreateCommandRequest;
 import com.high.payment.application.service.PaymentService;
 
@@ -14,18 +15,19 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PaymentCommandConsumer {
 	private final PaymentService paymentService;
+	private final ObjectMapper objectMapper;
 
 	@KafkaListener(topics = "payment-create-request", groupId = "payment-service-saga-group")
-	public void handlePaymentCommand(PaymentCreateCommandRequest request) {
-		log.info("[SAGA] 결제 Command 수신. SagaId={}, OrderId={}",
-				 request.sagaId(), request.orderId());
+	public void handlePaymentCommand(String message) {
 
 		try {
+			PaymentCreateCommandRequest request =
+				objectMapper.readValue(message, PaymentCreateCommandRequest.class);
 			paymentService.processPaymentSaga(request);
 
 
 		} catch (Exception e) {
-			log.error("[SAGA] 결제 처리 중 알 수 없는 오류 발생. SagaId: {}", request.sagaId(), e);
+			log.error(e.getMessage());
 		}
 	}
 }

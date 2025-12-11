@@ -1,4 +1,4 @@
-package com.high.payment.infrastrcutre.kafka;
+package com.high.payment.infrastructure.kafka;
 
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -7,8 +7,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.payment.application.dto.PaymentSagaEventPort;
 import com.high.payment.application.dto.PaymentSagaResultMessage;
-import com.high.payment.infrastrcutre.kafka.dto.PaymentCreateFailMessage;
-import com.high.payment.infrastrcutre.kafka.dto.PaymentCreateSuccessMessage;
+import com.high.payment.infrastructure.kafka.dto.PaymentCreateFailMessage;
+import com.high.payment.infrastructure.kafka.dto.PaymentCreateSuccessMessage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

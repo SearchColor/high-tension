@@ -1,4 +1,4 @@
-package com.high.payment.infrastrcutre.adapter.out.kafka;
+package com.high.payment.infrastructure.adapter.out.kafka;
 
 import org.springframework.stereotype.Component;
 
