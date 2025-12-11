@@ -3,6 +3,8 @@ package com.high.user.infrastructure.persistence;
 import com.high.user.domain.entity.User;
 import com.high.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -42,5 +44,10 @@ public class UserRepositoryAdaptor implements UserRepository {
     @Override
     public boolean existsByEmail(String email) {
         return jpaUserRepository.existsByEmail(email);
+    }
+
+    @Override
+    public Page<User> findByEmailContainingAndDeletedAtIsNull(String email, Pageable pageable) {
+        return jpaUserRepository.findByEmailContainingAndDeletedAtIsNull(email, pageable);
     }
 }

@@ -20,8 +20,9 @@ public enum PaymentErrorCode implements BaseErrorCode {
 	PAYMENT_CANCELLATION_NOT_ALLOWED(5004, HttpStatus.BAD_REQUEST, "결제 취소가 허용되지 않는 상태입니다."),
 
 	// PG 연동 Exception
-	PG_CLIENT_ERROR(5005, HttpStatus.SERVICE_UNAVAILABLE, "PG사 연동 중 오류가 발생했습니다.")
-	;
+	PG_CLIENT_ERROR(5005, HttpStatus.SERVICE_UNAVAILABLE, "PG사 연동 중 오류가 발생했습니다."),
+
+	PAYMENT_INTERNAL_SERVER_ERROR(5006, HttpStatus.INTERNAL_SERVER_ERROR, "결제 서비스 내부 오류가 발생했습니다.");
 
 	private final int code;
 	private final HttpStatus status;

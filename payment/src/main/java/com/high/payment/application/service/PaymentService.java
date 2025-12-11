@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import com.high.payment.application.dto.CreatePaymentRequest;
 import com.high.payment.application.dto.CreatePaymentResponse;
+import com.high.payment.application.dto.PaymentCreateCommandRequest;
 import com.high.payment.application.dto.PaymentDetailResponse;
 
 public interface PaymentService {
@@ -18,4 +19,6 @@ public interface PaymentService {
 	void verifyAndFinalizePayment(String impUid, String merchantUid);
 
 	void cancelPayment(UUID orderId);
+
+	void processPaymentSaga(PaymentCreateCommandRequest sagaCommand);
 }

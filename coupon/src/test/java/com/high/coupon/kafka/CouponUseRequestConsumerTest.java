@@ -9,7 +9,7 @@ import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.coupon.application.CouponIssueService;
-import com.high.coupon.infrastructure.kafka.consumer.KafkaConsumer;
+import com.high.coupon.infrastructure.kafka.consumer.CouponUseRequestConsumer;
 import com.high.coupon.infrastructure.kafka.dto.CouponUseRequestMessage;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +26,7 @@ import org.springframework.kafka.support.Acknowledgment;
  * todo 임시 test: KafkaConsumer 작동 단위 테스트
  */
 @ExtendWith(MockitoExtension.class)
-public class KafkaConsumerTest {
+public class CouponUseRequestConsumerTest {
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -35,7 +35,7 @@ public class KafkaConsumerTest {
     private CouponIssueService couponIssueService;
 
     @InjectMocks
-    private KafkaConsumer kafkaConsumer;
+    private CouponUseRequestConsumer couponUseRequestConsumer;
 
     // === 공통 필드 (모든 테스트에서 재사용) ===
     UUID orderId;
@@ -62,7 +62,7 @@ public class KafkaConsumerTest {
         Acknowledgment ack = mock(Acknowledgment.class);
 
         // when
-        kafkaConsumer.consumeCouponRequest(jsonMessage, ack);
+        couponUseRequestConsumer.consumeCouponRequest(jsonMessage, ack);
 
         // then
         verify(couponIssueService, times(1)).useCouponByOrderId(orderId);
@@ -79,7 +79,7 @@ public class KafkaConsumerTest {
         doThrow(new RuntimeException("=== DB 연결 오류")).when(couponIssueService).useCouponByOrderId(any());
 
         // when
-        kafkaConsumer.consumeCouponRequest(jsonMessage, ack);
+        couponUseRequestConsumer.consumeCouponRequest(jsonMessage, ack);
 
         // then
         verify(couponIssueService, times(1)).useCouponByOrderId(orderId);
@@ -94,7 +94,7 @@ public class KafkaConsumerTest {
         Acknowledgment ack = mock(Acknowledgment.class);
 
         // when
-        kafkaConsumer.consumeCouponRequest(invalidJson, ack);
+        couponUseRequestConsumer.consumeCouponRequest(invalidJson, ack);
 
         // then
         // 파싱 오류 - 서비스 로직 실행 X

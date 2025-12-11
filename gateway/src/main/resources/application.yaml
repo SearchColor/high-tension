@@ -36,6 +36,11 @@ spring:
         webflux:
           routes:
             # 1. User Service (8100) - Authentication base
+            - id: user-admin-service
+              uri: lb://user-service
+              predicates:
+                - Path=/api/v1/master/**
+
             - id: user-service
               uri: lb://user-service
               predicates:
