@@ -41,6 +41,11 @@ spring:
               predicates:
                 - Path=/api/v1/master/**
 
+            - id: user-internal-service
+              uri: lb://user-service
+              predicates:
+                - Path=/api/v1/internal/users/**
+
             - id: user-service
               uri: lb://user-service
               predicates:
