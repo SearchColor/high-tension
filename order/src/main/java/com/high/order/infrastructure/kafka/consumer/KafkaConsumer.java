@@ -109,7 +109,7 @@ public class KafkaConsumer {
 
         try {
             log.info("[KafkaConsumer] handleOrderDeleteRequest : 주문 삭제 로직 실행");
-            orderService.deleteOrder(command.orderId());
+            orderService.deleteOrder(command.orderId(), orderDeleteRequestMessage.userId());
             String resultMessage = command.orderId() + " 삭제 완료 처리";
             OrderDeleteResponse response = OrderDeleteResponse.of(command.sagaId(), command.orderId(), resultMessage);
 

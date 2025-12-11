@@ -36,7 +36,8 @@ public class OrderCreateAdapter {
     public DeleteOrderCommand toDeleteCommand(OrderDeleteRequestMessage message) {
         return new DeleteOrderCommand(
             message.sagaId(),
-            message.orderId()
+            message.orderId(),
+            message.userId()
         );
     }
 

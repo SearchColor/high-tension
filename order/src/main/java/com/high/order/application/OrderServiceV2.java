@@ -142,7 +142,7 @@ public class OrderServiceV2 {
 
 
     @Transactional
-    public void deleteOrder(UUID orderId) {
+    public void deleteOrder(UUID orderId, UUID userId) {
         //TODO: 삭제 권한 확인
 
         Order order = getOrderForAdmin(orderId);
@@ -151,7 +151,7 @@ public class OrderServiceV2 {
             throw new OrderNotFoundException();
         }
         //삭제자 임시
-        order.softDelete(UUID.randomUUID());
+        order.softDelete(userId);
     }
 
     @Transactional
@@ -293,17 +293,14 @@ public class OrderServiceV2 {
 
 
     public Order getOrderForUser(UUID orderId) {
-        log.info("주문 조회 실패");
         return orderRepository.findByOrderIdAndDeletedAtIsNull(orderId).orElseThrow(OrderNotFoundException::new);
     }
 
     public Order getOrderForAdmin(UUID orderId) {
-        log.info("관리자 주문 조회 실패");
         return orderRepository.findById(orderId).orElseThrow(OrderNotFoundException::new);
     }
 
     public OrderItem getOrderItemForUser(UUID orderItemId) {
-        log.info("주문 아이템 조회 실패");
         return orderItemRepository.findByOrderItemIdAndDeletedAtIsNull(orderItemId).orElseThrow(OrderItemNotFoundExeption::new);
     }
 
