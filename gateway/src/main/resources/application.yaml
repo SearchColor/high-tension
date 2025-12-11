@@ -41,6 +41,11 @@ spring:
               predicates:
                 - Path=/api/v1/master/**
 
+            - id: user-internal-service
+              uri: lb://user-service
+              predicates:
+                - Path=/api/v1/internal/users/**
+
             - id: user-service
               uri: lb://user-service
               predicates:
@@ -74,10 +79,15 @@ spring:
                 - Path=/carts/v3/api-docs
 
             # 4. Coupon Service (8600)
+            - id: coupon-internal-service
+              uri: lb://coupon-service
+              predicates:
+                - Path=/api/v1/internal/coupons/**
+
             - id: coupon-service
               uri: lb://coupon-service
               predicates:
-                - Path=/api/v1/coupons/**, /api/v1/internal/coupons/**
+                - Path=/api/v1/coupons/**
 
             - id: coupon-docs
               uri: lb://coupon-service
