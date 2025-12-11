@@ -32,13 +32,13 @@ public class PaymentEventPublisherImpl implements PaymentSagaEventPort {
 			PaymentCreateSuccessMessage successMessage = new PaymentCreateSuccessMessage(
 				result.sagaId(),
 				result.orderId(),
-				result.orderId()
+				result.userId()
 			);
 
 			try {
 				String json = objectMapper.writeValueAsString(successMessage);
 				kafkaTemplate.send(TOPIC_SUCCESS, String.valueOf(successMessage.sagaId()), json);
-				log.info("[Publisher] 결제 성공 이벤트 발행 완료: SagaId={}", successMessage.sagaId());
+				log.info("[Publisher] 결제 성공 이벤트 발행 완료: SagaId={}, orderId={}, userId={}", successMessage.sagaId(), successMessage.orderId(), successMessage.userId());
 			} catch (JsonProcessingException e) {
 				log.error("[Publisher] 성공 메시지 직렬화 실패", e);
 				throw new RuntimeException(e);
@@ -49,16 +49,17 @@ public class PaymentEventPublisherImpl implements PaymentSagaEventPort {
 			PaymentCreateFailMessage failMessage = new PaymentCreateFailMessage(
 				result.sagaId(),
 				result.orderId(),
-				result.message(), // 실패 사유 (String reason)
-				result.userId() // 오류 코드
+				result.message(),
+				result.userId()
 			);
 
 			try {
 				String json = objectMapper.writeValueAsString(failMessage);
-				kafkaTemplate.send(TOPIC_FAIL, String.valueOf(failMessage.sagaId()), json);
-				log.info("[Publisher] 결제 실패 이벤트 발행 완료: SagaId={}, Reason={}", failMessage.sagaId(), failMessage.reason());
+				kafkaTemplate.send(TOPIC_FAIL, failMessage.sagaId().toString(), json);
+				log.info("[Publisher] 결제 실패 이벤트 발행 완료: sagaId={}, orderId={}, userId={}, message={}",
+						 failMessage.sagaId(), failMessage.orderId(), failMessage.userId(), failMessage.message());
 			} catch (JsonProcessingException e) {
-				log.error("[Publisher] 실패 메시지 직렬화 실패", e);
+				log.error("[Publisher] 결제 실패 메시지 직렬화 실패", e);
 				throw new RuntimeException(e);
 			}
 		}
