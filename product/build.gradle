@@ -39,7 +39,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
-    implementation 'com.github.sharedeffort:common-module:v1.1.9'
+    implementation 'com.github.sharedeffort:common-module:v1.2.0'
     implementation 'com.github.sharedeffort:common-jpa:v1.0.2'
     implementation 'com.github.sharedeffort:common-security:v1.1.0'
 
