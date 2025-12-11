@@ -1,4 +1,4 @@
-package com.high.payment.infrastrcutre.adapter.out.client;
+package com.high.payment.infrastructure.adapter.out.client;
 
 import org.springframework.stereotype.Component;
 

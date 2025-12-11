@@ -1,4 +1,4 @@
-package com.high.payment.infrastrcutre.adapter.out.persistence;
+package com.high.payment.infrastructure.adapter.out.persistence;
 
 import java.util.List;
 
@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import com.high.payment.application.port.out.OutboxPublisherPort;
 import com.high.payment.domain.model.PaymentOutbox;
 import com.high.payment.domain.port.out.PaymentOutboxRepositoryPort;
-import com.high.payment.infrastrcutre.adapter.out.client.KafkaProducerPort;
+import com.high.payment.infrastructure.adapter.out.client.KafkaProducerPort;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

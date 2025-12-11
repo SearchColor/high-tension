@@ -1,4 +1,4 @@
-package com.high.payment.infrastrcutre.kafka.dto;
+package com.high.payment.infrastructure.kafka.dto;
 
 import java.util.UUID;
 

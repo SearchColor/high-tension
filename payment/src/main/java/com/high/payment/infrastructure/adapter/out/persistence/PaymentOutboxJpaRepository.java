@@ -1,4 +1,4 @@
-package com.high.payment.infrastrcutre.adapter.out.persistence;
+package com.high.payment.infrastructure.adapter.out.persistence;
 
 import java.util.List;
 import java.util.UUID;
