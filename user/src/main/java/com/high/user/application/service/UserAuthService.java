@@ -48,6 +48,14 @@ public class UserAuthService {
                 encodedPassword,
                 request.name());
 
+        // 선택 필드 설정
+        if (request.phoneNumber() != null) {
+            user.updatePhoneNumber(request.phoneNumber());
+        }
+        if (request.deliveryAddress() != null || request.detailAddress() != null) {
+            user.updateAddress(request.deliveryAddress(), request.detailAddress());
+        }
+
         // 저장
         User savedUser = userRepository.save(user);
 
