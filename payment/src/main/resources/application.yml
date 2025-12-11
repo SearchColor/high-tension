@@ -1,59 +1,43 @@
+server:
+  port: 8300
+
 spring:
-  # 1. 애플리케이션 및 설정 서버 관련 설정
   application:
     name: payment-service
+
+  # Config Server 사용
   config:
     import: "optional:configserver:"
+
   cloud:
     config:
+      # config-server는 Eureka로 찾지 않고, URL로 직접 접근
       discovery:
-        enabled: false # Config Server 미실행 시 연결 시도 방지
-        service-id: config
+        enabled: false
+      uri: http://localhost:8888
 
-  # 2. DB (MySQL) 설정: spring.datasource
-  datasource:
-    # Docker 컨테이너(msa-mysql)가 3307 포트로 떠 있으므로 해당 포트 사용
-    url: jdbc:mysql://localhost:3307/payment_service?serverTimezone=Asia/Seoul
-    username: root
-    password: admin1234
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
-  # 3. JPA 설정: spring.jpa
-  jpa:
-    hibernate:
-      ddl-auto: update # 테이블 구조 자동 업데이트
-    show-sql: true
-    database-platform: org.hibernate.dialect.MySQLDialect # MySQL 방언 추가
-
-  # 4. Kafka 설정: spring.kafka
-  kafka:
-    bootstrap-servers: localhost:9092 # Kafka Broker 주소
-
-    consumer:
-      group-id: payment-service-group
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      auto-offset-reset: latest
-
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-      acks: all
-
-# 5. 관리 엔드포인트 설정 (spring과 동일 레벨)
 management:
   endpoints:
     web:
       exposure:
-        include: refresh
+        include: health, info, metrics, prometheus, loggers, refresh
+  endpoint:
+    health:
+      show-details: never
+    prometheus:
+      access: read_only
 
-# 6. 유레카(Eureka) 설정 (spring과 동일 레벨)
+# 통합 테스트에서는 Eureka도 같이 띄운다고 가정
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
-    register-with-eureka: false # Eureka 등록 시도 방지
-    fetch-registry: false # 레지스트리 정보 가져오기 시도 방지
+    register-with-eureka: true     # 통합 테스트면 true로 두는 것이 자연스럽습니다
+    fetch-registry: true
   instance:
     instance-id: payment-service
     hostname: localhost
+
+# FeignClient에서 사용하는 user-service URL
+user-service:
+  url: http://localhost:8081
