@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record OrderCreateRequestMessage(
-    UUID couponId,
+    UUID couponIssueId,
     UUID sagaId,
     UUID orderId,
     UUID ordererId,

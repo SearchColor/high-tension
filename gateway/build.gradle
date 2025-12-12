@@ -32,7 +32,7 @@ ext {
 dependencies {
 
 	// Common Libraries
-	implementation 'com.github.sharedeffort:common-module:v1.1.9'
+	implementation 'com.github.sharedeffort:common-module:v1.2.0'
 
     implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.13'
 

@@ -31,7 +31,7 @@ ext {
 
 dependencies {
 	// Common Libraries
-	implementation 'com.github.sharedeffort:common-module:v1.1.9'
+	implementation 'com.github.sharedeffort:common-module:v1.2.0'
 	implementation 'com.github.sharedeffort:common-jpa:v1.0.3'
 	implementation 'com.github.sharedeffort:common-security:v1.1.0'
 
@@ -45,6 +45,9 @@ dependencies {
 	implementation 'org.springframework.cloud:spring-cloud-starter-config'
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+	// Springdoc OpenAPI
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
 
 	// Database
 	runtimeOnly 'com.mysql:mysql-connector-j'

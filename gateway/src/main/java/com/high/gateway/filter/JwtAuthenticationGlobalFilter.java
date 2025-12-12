@@ -33,14 +33,21 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
 
     // 인증 제외 경로
     private static final List<String> EXCLUDED_PATHS = List.of(
+            // User Service - Public API
             "/api/v1/users/signup",
             "/api/v1/users/login",
             "/api/v1/users/reissue",
-            "/docs",
+
+            // Swagger UI & OpenAPI Docs
             "/docs/**",
-            "/actuator/**",
-            "/**/v3/api-docs",
-            "/**/v3/api-docs/**"
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/v3/api-docs/**",
+            "/*/v3/api-docs/**",  // /{service}/v3/api-docs/**
+            "/webjars/**",
+
+            // Monitoring
+            "/actuator/**"
     );
 
     @Override

@@ -128,16 +128,19 @@ public class KafkaConsumer {
 
         try {
             PaymentCreateSuccessMessage message = objectMapper.readValue(paymentCreateSuccessMessage, PaymentCreateSuccessMessage.class);
+
+            log.info("[KafkaConsumer] paymentCreateSuccess - sagsId : {}, userId : {}, orderId : {}",message.sagaId(), message.userId(), message.orderId());
             ClearCartCommandRequest cartRequest = adapter.toClearCartCommand(message);
             ProcessOrderSuccessCommandRequest orderRequest = adapter.toProcessOrderSuccessCommand(message);
 
             orderCreateSagaService.handlerPaymentCreateSuccess(message.sagaId(), message.orderId());
 
             publisher.publishClearCartCommand("cart-clear-request", cartRequest);
-            log.info("[OrderCreateSagaService] handlerPaymentCreateSuccess : 장바구니 비우기 명령 성공");
+            log.info("[OrderCreateSagaService] handlerPaymentCreateSuccess : 장바구니 비우기 명령 성공, sagaId : {}, orderId : {}, userId : {}", cartRequest.sagaId(), cartRequest.orderId(), cartRequest.userId());
 
-            publisher.publishOrderSuccessProcessingCommand("order-process-success", orderRequest);
-            log.info("[OrderCreateSagaService] handlerPaymentCreateSuccess : 주문 성공 상태 변경 명령 성공");
+            //고민중..
+            // publisher.publishOrderSuccessProcessingCommand("order-process-success", orderRequest);
+            //log.info("[OrderCreateSagaService] handlerPaymentCreateSuccess : 주문 성공 상태 변경 명령 성공");
 
             orderCreateSagaService.endOrderCreateSaga(message.sagaId());
 

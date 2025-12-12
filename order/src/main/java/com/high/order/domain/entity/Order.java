@@ -36,7 +36,7 @@ public class Order extends BaseEntity {
 
     private UUID customerId;
 
-    private UUID couponId;
+    private UUID couponIssueId;
 
     private Integer totalPrice;
 
@@ -60,12 +60,12 @@ public class Order extends BaseEntity {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems = new ArrayList<>();
 
-    private Order(UUID customerId, UUID couponId,
+    private Order(UUID customerId, UUID couponIssueId,
         String recipient, String recipientContact,
         String deliveryAddress, String detailAddress,
         String requestMessage) {
         this.customerId = customerId;
-        this.couponId = couponId;
+        this.couponIssueId = couponIssueId;
         this.orderStatus = OrderStatus.CREATED;
         this.recipient = recipient;
         this.recipientContact = recipientContact;
@@ -82,7 +82,7 @@ public class Order extends BaseEntity {
      */
     public static Order createOrder (
         UUID customerId,
-        UUID couponId,
+        UUID couponIssueId,
         String recipient,
         String recipientContact,
         String deliveryAddress,
@@ -94,7 +94,7 @@ public class Order extends BaseEntity {
 
         Order order = new Order(
             customerId,
-            couponId,
+            couponIssueId,
             recipient,
             recipientContact,
             deliveryAddress,
@@ -134,7 +134,7 @@ public class Order extends BaseEntity {
     }
 
     private Integer calculateDiscount(BigDecimal discountPercent) {
-        if ( couponId != null ) {
+        if ( couponIssueId != null ) {
             BigDecimal price = BigDecimal.valueOf(totalPrice);
             BigDecimal discountRate = discountPercent.divide(new BigDecimal("100"), 4,
                 RoundingMode.HALF_UP);

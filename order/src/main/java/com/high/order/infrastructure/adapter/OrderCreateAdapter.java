@@ -14,7 +14,7 @@ public class OrderCreateAdapter {
 
     public CreateOrderCommand toCreateCommand(OrderCreateRequestMessage message) {
         return new CreateOrderCommand(
-            message.couponId(),
+            message.couponIssueId(),
             message.sagaId(),
             message.orderId(),
             message.ordererId(),
@@ -36,7 +36,8 @@ public class OrderCreateAdapter {
     public DeleteOrderCommand toDeleteCommand(OrderDeleteRequestMessage message) {
         return new DeleteOrderCommand(
             message.sagaId(),
-            message.orderId()
+            message.orderId(),
+            message.userId()
         );
     }
 

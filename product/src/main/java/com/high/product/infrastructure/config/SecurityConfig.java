@@ -23,7 +23,11 @@ public class SecurityConfig {
 				session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
 				// 공개 엔드포인트 (필요 시 추가)
-				.requestMatchers("/api/v1/health").permitAll()
+				.requestMatchers(
+						"/api/v1/health",
+						"/v3/api-docs/**",
+						"/swagger-ui/**",
+						"/swagger-ui.html").permitAll()
 				.anyRequest().authenticated()
 			);
 

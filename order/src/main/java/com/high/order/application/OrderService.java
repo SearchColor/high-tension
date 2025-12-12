@@ -2,6 +2,8 @@ package com.high.order.application;
 
 import static java.util.stream.Collectors.toList;
 
+import com.high.order.application.dto.external.CouponResponse;
+import com.high.order.application.dto.external.ProductResponse;
 import com.high.order.application.dto.internal.OrderItemCreateInfo;
 import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.application.dto.request.OrderItemDeliveryStatusChangeRequest;
@@ -54,72 +56,63 @@ public class OrderService {
     public OrderResponse createOrder(OrderCreateRequest request, UUID userId, String userRole) {
 
         //TODO: 유저 검증(유저 조회)
+        try {
+            log.info("주문 생성 시작 ");
+            List<OrderItemCreateInfo> orderItemCreateInfoList = request.itemList()
+                .stream()
+                .map(itemDto -> {
 
-        log.info("주문 생성 시작 ");
-        List<OrderItemCreateInfo> orderItemCreateInfoList = request.itemList()
-            .stream()
-            .map( itemDto -> {
+                    ProductResponse productResponse = getProduct(itemDto.productId());
+                    log.info("판매자 ID: {}", productResponse.seller());
+                    return new OrderItemCreateInfo(
+                        productResponse.id(),
+                        productResponse.seller(),
+                        productResponse.price(),
+                        itemDto.quantity()
+                    );
 
-                //TODO: product feignClient통신 임시무력화
-                //ProductResponse response =productService.getProductById(itemDto.productId()).getBody().data();
+                }).toList();
+            log.info("product-service feignClient 통신성공 ");
 
-//                return new OrderItemCreateInfo(
-//                    response.productId(),
-//                    UUID.randomUUID(), //producerId 임시 값
-//                    response.price(),
-//                    itemDto.quantity()
-//                );
+            List<OrderItem> itemList = orderItemCreateInfoList.stream()
+                .map(item -> OrderItem.create(
+                    item.productId(),
+                    item.producerId(),
+                    item.quantity(),
+                    item.unitPrice()
+                )).toList();
 
-                return new OrderItemCreateInfo(
-                    UUID.randomUUID(),
-                    UUID.randomUUID(),
-                    2000,
-                    30
-                );
-            }).toList();
-        log.info("feignClient 통신성공 ");
+            log.info("itemList 담기 성공");
+            log.info("couponId: {}", request.couponId());
+            CouponResponse couponResponse = getCoupon(request.couponId());
+            log.info("coupon-service feignClient 통신 성공 - couponIssueId : {}",
+                couponResponse.couponIssueId());
 
-        List<OrderItem> itemList = orderItemCreateInfoList.stream()
-            .map(item -> OrderItem.create(
-                item.productId(),
-                UUID.randomUUID(),
-                item.quantity(),
-                item.unitPrice()
-            )).toList();
+            Order order = Order.createOrder(
+                userId,
+                request.couponId(),
+                request.recipient(),
+                request.recipientContact(),
+                request.deliveryAddress(),
+                request.detailAddress(),
+                request.requestMessage(),
+                itemList,
+                couponResponse.discountRate()
+            );
+            log.info("order 담기 성공");
 
-        log.info("itemList 담기 성공");
+            Order savedOrder = orderRepository.save(order);
 
-        //TODO: 쿠폰 검증
-
-        Order order = Order.createOrder(
-            userId,
-            request.couponId(),
-            request.recipient(),
-            request.recipientContact(),
-            request.deliveryAddress(),
-            request.detailAddress(),
-            request.requestMessage(),
-            itemList,
-            discountRate
-        );
-        log.info("order 담기 성공");
-
-        Order savedOrder = orderRepository.save(order);
-
-        return OrderResponse.from(savedOrder);
+            return OrderResponse.from(savedOrder);
+        } catch (Exception e) {
+            throw e;
+        }
     }
 
 
 
     @Transactional(readOnly = true)
     public OrderDetailResponse getOrderDetail(UUID orderId, UUID userId, String userRole) {
-        /**
-         * TODO:
-         *   1. 권한에 따른 조회 분기
-         *      ㄱ) master - delete된 데이터도 조회 가능
-         *      ㄴ) seller - orderItem의 producerID가 본인인 데이터 조회 가능 (삭제된 데이터까지 조회가 가능하게)
-         *      ㄷ) user - 자신의 주문만 조회 가능
-         */
 
         if(userRole.equals("MASTER")) {
             Order order = getOrderForAdmin(orderId);
@@ -404,5 +397,14 @@ public class OrderService {
 
     public OrderItem getOrderItemForUser(UUID orderItemId) {
         return orderItemRepository.findByOrderItemIdAndDeletedAtIsNull(orderItemId).orElseThrow(OrderItemNotFoundExeption::new);
+    }
+
+
+    public ProductResponse getProduct (UUID productId) {
+        return productService.getProductById(productId).data();
+    }
+
+    public CouponResponse getCoupon(UUID couponIssueId) {
+        return couponService.validateCoupon(couponIssueId).data();
     }
 }
