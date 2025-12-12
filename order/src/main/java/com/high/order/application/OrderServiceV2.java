@@ -343,7 +343,7 @@ public class OrderServiceV2 {
     }
 
     public ProductResponse getProduct (UUID productId) {
-        return productService.getProductById(productId).data();
+        return productService.getProductByOrderId(productId).data();
     }
 
     public CouponResponse getCoupon(UUID couponIssueId) {

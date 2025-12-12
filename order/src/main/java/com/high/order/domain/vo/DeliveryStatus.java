@@ -19,6 +19,10 @@ public enum DeliveryStatus {
         return this == READY;
     }
 
+    public boolean canTransitionToRefund() {
+        return this == DELIVERED;
+    }
+
     public boolean canTransitionTo(DeliveryStatus nextStatus) {
         return switch (this) {
             case READY -> nextStatus == SHIPPING;
