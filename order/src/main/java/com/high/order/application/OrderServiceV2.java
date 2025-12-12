@@ -28,6 +28,7 @@ import com.high.order.domain.repository.OrderRepository;
 import com.high.order.domain.vo.OrderItemStatus;
 import com.high.order.domain.vo.OrderStatus;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -86,9 +87,16 @@ public class OrderServiceV2 {
                     item.unitPrice()
                 )).toList();
 
-            CouponResponse couponResponse = getCoupon(request.couponIssueId());
-            log.info("coupon-service feignClient 통신 성공 - couponIssueId : {}",
-                couponResponse.couponIssueId());
+            CouponResponse couponResponse = null;
+            if (request.couponIssueId() != null) {
+
+                couponResponse = getCoupon(request.couponIssueId());
+                log.info("coupon-service feignClient 통신 성공 - couponIssueId : {}",
+                    couponResponse.couponIssueId());
+
+            }
+
+            BigDecimal discountRate = request.couponIssueId() == null? null: couponResponse.discountRate();
 
             Order order = Order.createOrder(
                 request.ordererId(),
@@ -99,7 +107,7 @@ public class OrderServiceV2 {
                 request.detailAddress(),
                 request.requestMessage(),
                 itemList,
-                couponResponse.discountRate()
+                discountRate
             );
             log.info("order 담기 성공");
 
