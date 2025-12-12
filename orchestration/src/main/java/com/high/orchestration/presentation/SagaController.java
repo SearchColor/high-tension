@@ -25,7 +25,7 @@ public class SagaController {
     private final OrderCreateSagaService orderCreateSagaService;
 
 
-    @PreAuthorize("hasRole('MASTER')")
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/order")
     public ResponseEntity<ApiResponse<Void>> orderCreate(@Valid @RequestBody OrderCreateRequest orderCreateRequest) {
         UUID userId = SecurityContextUtil.getCurrentUserId();
