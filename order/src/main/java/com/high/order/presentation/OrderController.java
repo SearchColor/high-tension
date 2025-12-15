@@ -1,6 +1,7 @@
 package com.high.order.presentation;
 
 import com.high.order.application.OrderService;
+import com.high.order.application.OrderServiceV2;
 import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.application.dto.request.OrderItemDeliveryStatusChangeRequest;
 import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
@@ -35,7 +36,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/orders")
 public class OrderController {
 
-    private final OrderService orderService;
+    private final OrderService orderServiceV1; //주문 생성 테스트용 (order service의 createOrder만 사용)
+    private final OrderServiceV2 orderService;
+
 
     @PreAuthorize("hasRole('USER')")
     @PostMapping("/product")
@@ -44,7 +47,7 @@ public class OrderController {
         UUID userId = SecurityContextUtil.getCurrentUserId();
         String userRole = SecurityContextUtil.getCurrentUserRole();
         log.info("userId: {}, userRole: {}", userId, userRole);
-        OrderResponse response = orderService.createOrder(productOrderCreateRequest, userId, userRole);
+        OrderResponse response = orderServiceV1.createOrder(productOrderCreateRequest, userId, userRole);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
@@ -95,7 +98,7 @@ public class OrderController {
     }
 
     //주문 정보 변경
-    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
+    @PreAuthorize("hasAnyRole('USER', 'MASTER')")
     @PatchMapping("/{orderId}")
     public ResponseEntity<ApiResponse<OrderResponse>> updateOrder(@PathVariable UUID orderId, @Valid @RequestBody OrderUpdateRequest request) {
         UUID userId = SecurityContextUtil.getCurrentUserId();
@@ -105,7 +108,7 @@ public class OrderController {
     }
 
     //주문 상태 변경
-    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
+    @PreAuthorize("hasRole('MASTER')")
     @PatchMapping("/{orderId}/status")
     public ResponseEntity<ApiResponse<OrderResponse>> changeOrderStatus(@PathVariable UUID orderId, @RequestBody
     OrderStatusChangeRequest request) {
@@ -117,19 +120,19 @@ public class OrderController {
 
     //주문 아이템 환불 상태 변경
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
-    @PatchMapping("/{orderId}/items/{orderItemId}/status")
+    @PatchMapping("/{orderId}/items/{orderItemId}/refund")
     public ResponseEntity<ApiResponse<OrderItemIdResponse>> changeOrderItemStatus(@PathVariable UUID orderId, @PathVariable UUID orderItemId,
                                             @RequestBody @Valid OrderItemStatusChangeRequest request) {
         UUID userId = SecurityContextUtil.getCurrentUserId();
         String userRole = SecurityContextUtil.getCurrentUserRole();
-        OrderItemIdResponse response = orderService.changeOrderItemStatus(orderId, orderItemId, request, userId, userRole);
+        OrderItemIdResponse response = orderService.changeOrderItemStatusForRefund(orderId, orderItemId, request, userId, userRole);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
     //주문 아이템 배송 상태 변경
     @PreAuthorize("hasAnyRole('SELLER', 'MASTER')")
 
-    @PatchMapping("/{orderId}/items/{orderItemId}/delivery-status")
+    @PatchMapping("/{orderId}/items/{orderItemId}/delivery/status")
     public ResponseEntity<ApiResponse<OrderItemIdResponse>> changeOrderItemDeliveryStatus(
                         @PathVariable UUID orderId, @PathVariable UUID orderItemId, @RequestBody @Valid OrderItemDeliveryStatusChangeRequest request) {
         UUID userId = SecurityContextUtil.getCurrentUserId();

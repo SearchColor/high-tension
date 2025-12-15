@@ -3,7 +3,7 @@ package com.high.order.infrastructure.client;
 
 import com.high.order.application.dto.external.CouponResponse;
 import com.high.order.application.service.CouponService;
-import com.high.order.infrastructure.config.FeignConfig;
+import com.high.order.infrastructure.config.feign.FeignConfig;
 import com.library.module.response.ApiResponse;
 import java.util.UUID;
 import org.springframework.cloud.openfeign.FeignClient;
