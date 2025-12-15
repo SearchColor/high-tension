@@ -85,11 +85,84 @@ services:
     networks:
       - msa-network
 
+  # Elasticsearch - 로그 저장 및 검색 엔진
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.18 # 7.x 버전 추천
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    networks:
+      - msa-network
+
+  # Kibana - 시각화 및 대시보드 도구
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.18
+    container_name: kibana
+    ports:
+      - 5601:5601
+    environment:
+      # Elasticsearch와 Kibana의 버전은 일치해야 합니다.
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - msa-network
+
+  # Logstash - 데이터 파이프라인 및 Kafka Consumer
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.18
+    container_name: logstash
+    volumes:
+      # 1단계에서 만든 설정 파일을 컨테이너 내부에 마운트합니다.
+      - ./logstash/config/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    ports:
+      - 5000:5000  # ← 호스트의 5000번 포트로 노출
+      - 9600:9600 # Logstash Monitoring API 포트
+    environment:
+      - "LS_JAVA_OPTS=-Xms512m -Xmx512m"
+    depends_on:
+      - elasticsearch
+      # **** 중요: 사용자 카프카 서비스 이름으로 변경하세요. ****
+      - kafka
+    networks:
+      - msa-network
+
+  # Filebeat - 로그 수집 및 Kafka 전송 (Log Shipper)
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.17.18 # Logstash/ES와 동일 버전 7.17.18 사용
+    container_name: filebeat
+    user: root # 로그 파일 접근 권한 문제 방지를 위해 root로 실행
+    volumes:
+      # 1) Filebeat 설정 파일 마운트
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      # 2) 도커 컨테이너 로그가 저장된 경로를 마운트 (Mac/Linux 기준)
+      #    Filebeat가 이 경로를 통해 모든 컨테이너의 로그를 읽습니다.
+      - ${APP_LOGS_PATH}:/usr/share/filebeat/app_logs:ro
+      # 3) (선택) Docker 소켓 마운트: 메타데이터 추출에 사용될 수 있습니다.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - kafka # Kafka가 먼저 시작되어야 함
+    networks:
+      - msa-network
+
 # 볼륨 정의 (데이터 영속성 확보)
 volumes:
+  esdata:
+    driver: local
   mysql-data:
   redis-data:
   mongo-data:
+
 
 # 네트워크 정의 (컨테이너 간 통신)
 networks:

@@ -1,0 +1,53 @@
+# Filebeat Input 정의: Docker 컨테이너 로그를 읽도록 설정
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /usr/share/filebeat/app_logs/*.log
+
+    # 이미 수집 완료된 오래된 순환 파일 스캔을 방지하여 성능을 높입니다.
+    ignore_older: 24h
+
+    # 🔥 Multiline 설정 추가: 여러 줄 로그를 하나로 합침
+    multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}T'
+    multiline.negate: true
+    multiline.match: after
+    multiline.max_lines: 500
+    multiline.timeout: 5s
+
+    # 로그에 호스트 메타데이터 및 도커 메타데이터 추가
+    processors:
+      - add_host_metadata: ~
+      - add_docker_metadata: ~
+      - add_fields:
+          target: ''
+          fields:
+            app_source: "msa-local"
+      # 컨테이너 ID를 서비스 이름으로 변환
+      - dissect:
+          tokenizer: "%{service_name}.log"
+          field: "log.file.path"
+          target_prefix: ""
+      - drop_fields:
+          fields: ["log.file.path"]
+          ignore_missing: true
+
+# Filebeat Output 정의: Kafka로 전송하도록 설정
+output.kafka:
+  hosts: ["kafka:29092"]
+  topic: 'msa_app_logs'
+  codec.json:
+    pretty: false
+  # 압축 활성화 (네트워크 효율성)
+  compression: gzip
+  # 배치 크기 조정 (성능 향상)
+  bulk_max_size: 2048
+
+# 🔥 로깅 레벨 설정 (디버깅용)
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644
