@@ -1,6 +1,7 @@
 package com.high.order.presentation;
 
 import com.high.order.application.OrderService;
+import com.high.order.application.OrderServiceV2;
 import com.high.order.application.dto.request.OrderCreateRequest;
 import com.high.order.application.dto.request.OrderItemDeliveryStatusChangeRequest;
 import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
@@ -35,7 +36,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/orders")
 public class OrderController {
 
-    private final OrderService orderService;
+    private final OrderService orderServiceV1; //주문 생성 테스트용 (order service의 createOrder만 사용)
+    private final OrderServiceV2 orderService;
+
 
     @PreAuthorize("hasRole('USER')")
     @PostMapping("/product")
@@ -44,7 +47,7 @@ public class OrderController {
         UUID userId = SecurityContextUtil.getCurrentUserId();
         String userRole = SecurityContextUtil.getCurrentUserRole();
         log.info("userId: {}, userRole: {}", userId, userRole);
-        OrderResponse response = orderService.createOrder(productOrderCreateRequest, userId, userRole);
+        OrderResponse response = orderServiceV1.createOrder(productOrderCreateRequest, userId, userRole);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 

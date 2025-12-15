@@ -109,7 +109,7 @@ public class KafkaConsumer {
 
         try {
             log.info("[KafkaConsumer] handleOrderDeleteRequest : 주문 삭제 로직 실행");
-            orderService.deleteOrder(command.orderId(), orderDeleteRequestMessage.userId());
+            orderService.deleteOrder(command.orderId(), orderDeleteRequestMessage.userId(), "USER");
             String resultMessage = command.orderId() + " 삭제 완료 처리";
             OrderDeleteResponse response = OrderDeleteResponse.of(command.sagaId(), command.orderId(), resultMessage);
 
@@ -148,7 +148,7 @@ public class KafkaConsumer {
 
 
         ProcessOrderSuccessCommand command = adapter.toProcessCommand(orderProcessSuccessMessage);
-        orderService.processOrderSuccess(command);
+        //orderService.processOrderSuccess(command);
         log.info("[Kafka Consumer] handleOrderProcessSuccess : 주문 상태를 성공으로 변경 완료");
     }
 
