@@ -127,8 +127,12 @@ public class Order extends BaseEntity {
         this.paidAmount = this.totalPrice - this.discountAmount;
     }
 
-    public void updateTotalPrice(Integer recalculatingPrice) {
-        this.totalPrice = totalPrice - recalculatingPrice;
+    public void updateTotalPrice(Integer recalculatedPrice) {
+        this.totalPrice = recalculatedPrice;
+    }
+
+    public void updatePaidAmount(Integer recalculatedPaidAmount) {
+        this.paidAmount = recalculatedPaidAmount;
     }
 
     private Integer calculateDiscount(BigDecimal discountPercent) {

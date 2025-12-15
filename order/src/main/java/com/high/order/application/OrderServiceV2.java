@@ -310,11 +310,36 @@ public class OrderServiceV2 {
 
         orderRepository.save(order);
 
-        //TODO: 쿠폰적용 금액으로 다시 로직 작성해야함
-        Integer recalculatingPrice =  order.getTotalPrice() - orderItem.getItemTotalPrice();
+        UUID couponIssueId = order.getCouponIssueId();
 
-        order.updateTotalPrice(recalculatingPrice);
+        if(couponIssueId != null) {
+            log.info("쿠폰 ID : {}" , couponIssueId.toString());
+
+            CouponResponse couponResponse = getCoupon(couponIssueId);
+            BigDecimal couponDiscountPercent = couponResponse.discountRate();
+
+            //금액 재계산
+            Integer recalculatingTotalPrice = order.getTotalPrice() - orderItem.getItemTotalPrice();
+
+            Integer recalculatingPaidAmount =
+                order.getPaidAmount() - orderItem.calculateCancelAmounts(couponDiscountPercent);
+
+            log.info("취소 전 최종 금액 : {}, 수정된 최종금액: {}", order.getTotalPrice(),
+                recalculatingTotalPrice);
+            log.info("취소 전 총 결제금액 : {}, 수정 된 결제금액 : {}", order.getPaidAmount(),
+                recalculatingPaidAmount);
+
+            order.updateTotalPrice(recalculatingTotalPrice);
+            order.updatePaidAmount(recalculatingPaidAmount);
+        }
+
+        if(couponIssueId == null) {
+            order.updateTotalPrice(order.getTotalPrice() - orderItem.getItemTotalPrice());
+            order.updatePaidAmount(order.getPaidAmount()-orderItem.getItemTotalPrice());
+        }
+
         orderRepository.save(order);
+
         //TODO: 취소한 상품 재고 복원 요청
         return OrderItemIdResponse.from(orderItem);
     }
