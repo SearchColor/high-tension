@@ -15,6 +15,7 @@ import com.high.order.application.dto.response.OrderDetailResponse;
 import com.high.order.application.dto.response.OrderItemIdResponse;
 import com.high.order.application.dto.response.OrderListResponse;
 import com.high.order.application.dto.response.OrderResponse;
+import com.high.order.application.exception.DeliveryStatusChangeNotAllowedException;
 import com.high.order.application.exception.NoPermissionToChangeOrderItemStatusException;
 import com.high.order.application.exception.OrderBadRequestException;
 import com.high.order.application.exception.OrderItemStatusNotAllowedException;
@@ -407,6 +408,11 @@ public class OrderService {
             log.info("주문이 CREATED 상태이거나 CANCELED면 배송상태 변경 불가");
             throw new OrderBadRequestException();
         }
+
+        if(!orderItem.getDeliveryStatus().canTransitionTo(request.deliveryStatus())) {
+            throw new DeliveryStatusChangeNotAllowedException();
+        }
+
         orderItem.updateDeliveryStatus(request.deliveryStatus());
         orderItemRepository.save(orderItem);
 

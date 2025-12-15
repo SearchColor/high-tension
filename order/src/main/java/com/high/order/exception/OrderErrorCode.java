@@ -13,8 +13,9 @@ public enum OrderErrorCode implements BaseErrorCode {
     BAD_REQUEST(4004, HttpStatus.BAD_REQUEST,"잘못된 요청입니다."),
     ORDER_NOT_FOUND(4000, HttpStatus.NOT_FOUND, "주문이 존재하지 않습니다."),
     NO_PERMISSION_TO_CHANGE_ORDER_ITEM_STATUS(4008, HttpStatus.FORBIDDEN,"주문 아이템 상태 변경 권한이 없습니다."),
-    ORDER_ITEM_STATUS_NOT_ALLOWED(4009, HttpStatus.BAD_REQUEST, "주문 아이템 상태 변경이 불가능합니다."),
+    ORDER_ITEM_STATUS_CHANGE_NOT_ALLOWED(4009, HttpStatus.BAD_REQUEST, "주문 아이템 상태 변경이 불가능합니다."),
     NO_PERMISSION_TO_CANCEL_ORDER(4018, HttpStatus.BAD_REQUEST, "주문을 취소할 수 없습니다."),
+    DELIVERY_STATUS_CHANGE_NOT_ALLOWED(4020, HttpStatus.BAD_REQUEST, "잘못된 배송상태 변경 요청입니다."),
 
 
     //Domain Exception

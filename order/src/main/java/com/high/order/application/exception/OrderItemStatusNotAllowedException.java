@@ -6,6 +6,6 @@ import com.library.module.exception.CustomException;
 public class OrderItemStatusNotAllowedException extends CustomException {
 
     public OrderItemStatusNotAllowedException() {
-        super(OrderErrorCode.ORDER_ITEM_STATUS_NOT_ALLOWED);
+        super(OrderErrorCode.ORDER_ITEM_STATUS_CHANGE_NOT_ALLOWED);
     }
 }
