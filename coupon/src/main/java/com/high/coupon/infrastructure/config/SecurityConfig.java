@@ -1,4 +1,4 @@
-package com.high.coupon.infrastructure.security;
+package com.high.coupon.infrastructure.config;
 
 import com.library.security.filter.HeaderAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
