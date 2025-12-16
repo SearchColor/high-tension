@@ -14,10 +14,13 @@ import com.high.coupon.domain.exception.CouponAlreadyIssuedException;
 import com.high.coupon.domain.exception.CouponNotOwnedException;
 import com.high.coupon.domain.repository.CouponIssueRepository;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,11 +30,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CouponIssueService {
 
-    // todo : 고도화 필요 (발급 파트)
+    // todo : 고도화 진행 중 (발급 파트)
 
-    private final CouponService couponService; // 쿠폰 조회용
+    private final CouponService couponService;
     private final CouponIssueRepository couponIssueRepository;
     private final OrderProvider orderProvider;
+
+    // todo 계층 관계 확인 필요
+    private final StringRedisTemplate redisTemplate;
+    private final RedisScript<Long> issueCouponScript;
 
     /**
      * 쿠폰 발급
@@ -43,25 +50,30 @@ public class CouponIssueService {
 
         Coupon coupon = couponService.getCouponById(couponId);
 
-        if (couponIssueRepository.existsByCouponIdAndUserId(couponId, userId)) {
+        // Redis Lua Script
+        String key = "coupon:" + couponId + ":users";
+
+        Long result = redisTemplate.execute(
+                issueCouponScript,
+                Collections.singletonList(key), // KEYS[1]
+                userId.toString(),            // ARGV[1]
+                String.valueOf(coupon.getTotalQuantity()) // ARGV[2]
+        );
+
+        // 0 성공, -1 실패: 수량 소진, -2 실패: 이미 발급 받음
+        if (Long.valueOf(-2).equals(result)) {
             throw new CouponAlreadyIssuedException();
         }
-
-        /**
-         * todo: 동시성 문제로 고도화 필수 로직 (발급 수량 체크)
-         * 현재는 DB 조회 기반 단순 수량 체크 -> Redis 캐시 기반 + Lock 구현 필요
-         */
-        long issuedCount = couponIssueRepository.countByCouponId(couponId);
-        if (issuedCount >= coupon.getTotalQuantity()) {
+        if (Long.valueOf(-1).equals(result)) {
             throw new CouponOutOfStockException();
         }
 
+        // todo Lua에서 남길 코드들 - 동기, 비동기 전환 필요
         CouponIssue couponIssue = CouponIssue.issueCoupon(coupon, userId, LocalDateTime.now());
         CouponIssue savedCouponIssue = couponIssueRepository.save(couponIssue);
 
         return CouponIssueResponse.from(savedCouponIssue);
     }
-
 
 
 

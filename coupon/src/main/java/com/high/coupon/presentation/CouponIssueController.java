@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -30,5 +31,19 @@ public class CouponIssueController {
         UUID userId = SecurityContextUtil.getCurrentUserId();
         CouponIssueResponse response = couponIssueService.issueCoupon(couponId, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
+    }
+
+
+    /**
+     * todo: 동시성 테스트용 URL
+     */
+    @PostMapping("/{couponId}/issue/test")
+    public ResponseEntity<?> issueCouponForTest(
+            @PathVariable UUID couponId,
+            @RequestParam UUID userId
+    ){
+        CouponIssueResponse response =
+                couponIssueService.issueCoupon(couponId, userId);
+        return ResponseEntity.ok(response);
     }
 }
