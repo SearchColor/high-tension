@@ -13,14 +13,12 @@ import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.exception.CouponAlreadyIssuedException;
 import com.high.coupon.domain.exception.CouponNotOwnedException;
 import com.high.coupon.domain.repository.CouponIssueRepository;
+import com.high.coupon.domain.repository.CouponRedisRepository;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,9 +34,7 @@ public class CouponIssueService {
     private final CouponIssueRepository couponIssueRepository;
     private final OrderProvider orderProvider;
 
-    // todo 계층 관계 확인 필요
-    private final StringRedisTemplate redisTemplate;
-    private final RedisScript<Long> issueCouponScript;
+    private final CouponRedisRepository couponRedisRepository;
 
     /**
      * 쿠폰 발급
@@ -50,14 +46,10 @@ public class CouponIssueService {
 
         Coupon coupon = couponService.getCouponById(couponId);
 
-        // Redis Lua Script
-        String key = "coupon:" + couponId + ":users";
-
-        Long result = redisTemplate.execute(
-                issueCouponScript,
-                Collections.singletonList(key), // KEYS[1]
-                userId.toString(),            // ARGV[1]
-                String.valueOf(coupon.getTotalQuantity()) // ARGV[2]
+        Long result = couponRedisRepository.tryIssueCoupon(
+                couponId,
+                userId,
+                coupon.getTotalQuantity()
         );
 
         // 0 성공, -1 실패: 수량 소진, -2 실패: 이미 발급 받음
