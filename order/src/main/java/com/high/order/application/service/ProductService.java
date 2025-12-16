@@ -7,6 +7,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 public interface ProductService {
 
-    ApiResponse<ProductResponse> getProductById(@PathVariable("productId") UUID productId);
+    ApiResponse<ProductResponse> getProductByOrderId(@PathVariable UUID productId);
 
 }

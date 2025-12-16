@@ -1,4 +1,4 @@
-package com.high.order.infrastructure.config;
+package com.high.order.infrastructure.config.feign;
 
 import com.high.order.infrastructure.context.MessageContext;
 import com.library.security.util.SecurityContextUtil;
