@@ -48,8 +48,8 @@ public class StockDeductionService {
 			}
 
 			// 2. 재고 차감
-			for(var item : orderItems) {
-				Product_Stock stock = stockRepository.findById(item.productId())
+			for (var item : orderItems) {
+				Product_Stock stock = stockRepository.findByProductId(item.productId())
 					.orElseThrow(() -> new IllegalArgumentException("상품 없음: productId=" + item.productId()));
 				stock.reduce(item.quantity());
 			}
@@ -59,11 +59,12 @@ public class StockDeductionService {
 				new StockDeductionSuccessMessage(request.sagaId(), request.orderId(), request.userId())
 			);
 
-			log.info("[StockDeductionService] 재고 차감 성공: sagaId={}, orderId={}", request.sagaId(), request.orderId());
+			log.info("[StockDeductionService] 재고 차감 성공: sagaId={}, orderId={}, userId={}", request.sagaId(),
+				request.orderId(), request.userId());
 
 		} catch (Exception e) {
-			log.error("[StockDeductionService] 재고 차감 실패: sagaId={}, orderId={}, reason={}",
-				request.sagaId(), request.orderId(), e.getMessage());
+			log.error("[StockDeductionService] 재고 차감 실패: sagaId={}, orderId={}, reason={}, userId={}",
+				request.sagaId(), request.orderId(), e.getMessage(), request.userId());
 
 			// 4. 실패 메시지 발행 (Port 통해)
 			publisherPort.publishFail(
