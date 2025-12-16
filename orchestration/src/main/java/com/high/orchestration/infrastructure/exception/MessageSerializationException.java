@@ -5,7 +5,8 @@ import com.library.module.exception.CustomException;
 
 public class MessageSerializationException extends CustomException {
 
-    public MessageSerializationException() {
+    public MessageSerializationException(Throwable cause) {
         super(OrchestrationErrorCode.MESSAGE_SERIALIZATION_EXCEPTION);
+        initCause(cause);
     }
 }

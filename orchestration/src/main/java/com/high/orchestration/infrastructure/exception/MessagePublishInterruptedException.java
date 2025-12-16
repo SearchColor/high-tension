@@ -6,7 +6,8 @@ import com.library.module.exception.CustomException;
 public class MessagePublishInterruptedException extends CustomException
 {
 
-    public MessagePublishInterruptedException() {
+    public MessagePublishInterruptedException(Throwable cause) {
         super(OrchestrationErrorCode.MESSAGE_PUBLISH_INTERRUPTED_EXCEPTION);
+        initCause(cause);
     }
 }

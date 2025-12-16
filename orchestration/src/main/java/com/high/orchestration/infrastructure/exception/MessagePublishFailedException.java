@@ -5,7 +5,8 @@ import com.library.module.exception.CustomException;
 
 public class MessagePublishFailedException extends CustomException {
 
-    public MessagePublishFailedException() {
+    public MessagePublishFailedException(Throwable cause) {
         super(OrchestrationErrorCode.MESSAGE_PUBLISH_FAILED_EXCEPTION);
+        initCause(cause);
     }
 }

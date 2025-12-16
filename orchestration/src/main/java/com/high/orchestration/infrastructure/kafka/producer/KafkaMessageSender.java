@@ -38,17 +38,17 @@ public class KafkaMessageSender {
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new MessagePublishInterruptedException();
+            throw new MessagePublishInterruptedException(e);
 
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
 
             if (cause instanceof KafkaException
                 || cause instanceof org.apache.kafka.common.errors.TimeoutException) {
-                throw new MessagePublishFailedException();
+                throw new MessagePublishFailedException(cause);
             }
 
-            throw new MessageSerializationException();
+            throw new MessageSerializationException(cause);
         }
     }
 
