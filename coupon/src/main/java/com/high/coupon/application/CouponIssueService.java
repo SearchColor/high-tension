@@ -13,7 +13,9 @@ import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.exception.CouponAlreadyIssuedException;
 import com.high.coupon.domain.exception.CouponNotOwnedException;
 import com.high.coupon.domain.repository.CouponIssueRepository;
-import com.high.coupon.domain.repository.CouponRedisRepository;
+import com.high.coupon.domain.repository.redis.CouponRedisRepository;
+import com.high.coupon.infrastructure.kafka.dto.CouponIssueCreateMessage;
+import com.high.coupon.infrastructure.kafka.producer.CouponIssueProducer;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -36,10 +38,14 @@ public class CouponIssueService {
 
     private final CouponRedisRepository couponRedisRepository;
 
+    // todo : DIP 적용 전 임시
+    private final CouponIssueProducer couponIssueProducer;
+
     /**
      * 쿠폰 발급
+     * Redis 검증 -> Kafka 메시지 발송 -> 발급 응답
+     * DB 트랜잭션: ReadOnly (조회만 함)!
      */
-    @Transactional
     public CouponIssueResponse issueCoupon(UUID couponId, UUID userId) {
 
         log.info("User {} is issued a coupon", userId);
@@ -60,13 +66,23 @@ public class CouponIssueService {
             throw new CouponOutOfStockException();
         }
 
-        // todo Lua에서 남길 코드들 - 동기, 비동기 전환 필요
-        CouponIssue couponIssue = CouponIssue.issueCoupon(coupon, userId, LocalDateTime.now());
-        CouponIssue savedCouponIssue = couponIssueRepository.save(couponIssue);
+        // Kafka로 메세지 전송 (비동기 처리)
+        CouponIssueCreateMessage message = new CouponIssueCreateMessage(userId, couponId);
+        couponIssueProducer.send("coupon-issue-request", message);
 
-        return CouponIssueResponse.from(savedCouponIssue);
+        // todo 발급 메세지 -> 실제 발급 지연 가능성 체크 필요
+        return new CouponIssueResponse(true, "쿠폰이 발급되었습니다.");
     }
 
+    // Consumer 호출 메서드
+    @Transactional
+    public void saveCouponIssue(UUID couponId, UUID userId) {
+        Coupon coupon = couponService.getCouponById(couponId);
+        CouponIssue couponIssue = CouponIssue.issueCoupon(coupon, userId, LocalDateTime.now());
+        couponIssueRepository.save(couponIssue);
+
+        log.info("[COUPON ISSUE Consumer] DB 저장 완료: userId={}, couponId={}", userId, couponId);
+    }
 
 
     /**

@@ -6,7 +6,6 @@ import com.library.module.response.ApiResponse;
 import com.library.security.util.SecurityContextUtil;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,20 +29,19 @@ public class CouponIssueController {
     ){
         UUID userId = SecurityContextUtil.getCurrentUserId();
         CouponIssueResponse response = couponIssueService.issueCoupon(couponId, userId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
 
     /**
-     * todo: 동시성 테스트용 URL
+     * todo: 테스트용 URL
      */
     @PostMapping("/{couponId}/issue/test")
-    public ResponseEntity<?> issueCouponForTest(
+    public ResponseEntity<CouponIssueResponse> issueCouponTest(
             @PathVariable UUID couponId,
             @RequestParam UUID userId
     ){
-        CouponIssueResponse response =
-                couponIssueService.issueCoupon(couponId, userId);
+        CouponIssueResponse response = couponIssueService.issueCoupon(couponId, userId);
         return ResponseEntity.ok(response);
     }
 }

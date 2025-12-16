@@ -1,4 +1,4 @@
-package com.high.coupon.domain.repository;
+package com.high.coupon.domain.repository.redis;
 
 import java.util.UUID;
 

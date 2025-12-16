@@ -1,6 +1,6 @@
 package com.high.coupon.infrastructure.persistence.redis;
 
-import com.high.coupon.domain.repository.CouponRedisRepository;
+import com.high.coupon.domain.repository.redis.CouponRedisRepository;
 import java.util.Collections;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
