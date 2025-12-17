@@ -28,7 +28,7 @@ public class CouponIssueController {
             @PathVariable UUID couponId
     ){
         UUID userId = SecurityContextUtil.getCurrentUserId();
-        CouponIssueResponse response = couponIssueService.issueCoupon(couponId, userId);
+        var response = couponIssueService.issueCoupon(couponId, userId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -41,7 +41,7 @@ public class CouponIssueController {
             @PathVariable UUID couponId,
             @RequestParam UUID userId
     ){
-        CouponIssueResponse response = couponIssueService.issueCoupon(couponId, userId);
+        var response = couponIssueService.issueCoupon(couponId, userId);
         return ResponseEntity.ok(response);
     }
 }

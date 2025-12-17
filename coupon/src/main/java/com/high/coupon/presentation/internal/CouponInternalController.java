@@ -23,8 +23,6 @@ public class CouponInternalController {
 
     private final CouponIssueService couponIssueService;
 
-    // todo API 추가 internal 명세서 정리 필요 - param 제거 확인 path 수정
-
     /**
      * 사용자 별 보유 쿠폰(사용 가능 상태) 조회
      * GET /api/v1/internal/coupons
