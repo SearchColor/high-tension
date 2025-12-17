@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.order.application.OrderServiceV2;
 import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
 import com.high.order.application.dto.internal.kafka.request.DeleteOrderCommand;
-import com.high.order.application.dto.internal.kafka.request.ProcessOrderSuccessCommand;
 import com.high.order.application.dto.internal.kafka.response.OrderCreateFailedResponse;
 import com.high.order.application.dto.internal.kafka.response.OrderDeleteResponse;
 import com.high.order.application.dto.internal.kafka.response.OrderSuccessResponse;
@@ -147,8 +146,8 @@ public class KafkaConsumer {
         }
 
 
-        ProcessOrderSuccessCommand command = adapter.toProcessCommand(orderProcessSuccessMessage);
-        orderService.processOrderSuccess(command);
+        //ProcessOrderSuccessCommand command = adapter.toProcessCommand(orderProcessSuccessMessage);
+        //orderService.processOrderSuccess(command);
         log.info("[Kafka Consumer] handleOrderProcessSuccess : 주문 상태를 성공으로 변경 완료");
     }
 
