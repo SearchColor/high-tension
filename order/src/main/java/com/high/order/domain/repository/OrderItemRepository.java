@@ -13,4 +13,6 @@ public interface OrderItemRepository {
         UUID orderItemId);
 
     OrderItem save(OrderItem orderItem);
+
+    Optional<OrderItem> findOrderItemForUser(UUID orderItemId, UUID customerId);
 }

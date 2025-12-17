@@ -77,9 +77,7 @@ public class Order extends BaseEntity {
         this.paidAmount = 0;
     }
 
-    /**
-     * 단일 상품 주문 생성
-     */
+
     public static Order createOrder (
         UUID customerId,
         UUID couponIssueId,
@@ -129,8 +127,12 @@ public class Order extends BaseEntity {
         this.paidAmount = this.totalPrice - this.discountAmount;
     }
 
-    public void updateTotalPrice(Integer recalculatingPrice) {
-        this.totalPrice = totalPrice - recalculatingPrice;
+    public void updateTotalPrice(Integer recalculatedPrice) {
+        this.totalPrice = recalculatedPrice;
+    }
+
+    public void updatePaidAmount(Integer recalculatedPaidAmount) {
+        this.paidAmount = recalculatedPaidAmount;
     }
 
     private Integer calculateDiscount(BigDecimal discountPercent) {
@@ -179,8 +181,6 @@ public class Order extends BaseEntity {
         if(requestMessage != null) this.requestMessage = requestMessage;
     }
 
-
-
     // 전체 취소
     public void cancelOrder() {
         if (!(this.orderStatus == OrderStatus.CREATED || this.orderStatus == OrderStatus.SUCCESS)) {
@@ -206,8 +206,6 @@ public class Order extends BaseEntity {
 
         item.cancel();
     }
-
-
 
     @Override
     public void softDelete(UUID deletedBy) {
