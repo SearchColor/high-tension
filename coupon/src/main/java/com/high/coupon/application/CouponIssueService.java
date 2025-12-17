@@ -6,16 +6,16 @@ import com.high.coupon.application.dto.response.CouponValidationResponse;
 import com.high.coupon.application.dto.response.UserCouponResponse;
 import com.high.coupon.application.exception.CouponIssueNotFoundException;
 import com.high.coupon.application.exception.CouponOutOfStockException;
-import com.high.coupon.application.provider.OrderProvider;
-import com.high.coupon.application.provider.dto.OrderInfo;
+import com.high.coupon.application.port.out.CouponCachePort;
+import com.high.coupon.application.port.out.CouponIssueEventPort;
+import com.high.coupon.application.port.out.OrderPort;
+import com.high.coupon.application.port.out.dto.OrderInfo;
 import com.high.coupon.domain.entity.Coupon;
 import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.exception.CouponAlreadyIssuedException;
 import com.high.coupon.domain.exception.CouponNotOwnedException;
 import com.high.coupon.domain.repository.CouponIssueRepository;
-import com.high.coupon.domain.repository.redis.CouponRedisRepository;
-import com.high.coupon.infrastructure.kafka.dto.CouponIssueCreateMessage;
-import com.high.coupon.infrastructure.kafka.producer.CouponIssueProducer;
+import com.high.coupon.application.port.out.dto.CouponIssueCreateMessage;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -34,12 +34,11 @@ public class CouponIssueService {
 
     private final CouponService couponService;
     private final CouponIssueRepository couponIssueRepository;
-    private final OrderProvider orderProvider;
 
-    private final CouponRedisRepository couponRedisRepository;
+    private final OrderPort orderPort;
+    private final CouponCachePort couponCachePort;
 
-    // todo : DIP 적용 전 임시
-    private final CouponIssueProducer couponIssueProducer;
+    private final CouponIssueEventPort couponIssueEventPort;
 
     /**
      * 쿠폰 발급
@@ -52,7 +51,7 @@ public class CouponIssueService {
 
         Coupon coupon = couponService.getCouponById(couponId);
 
-        Long result = couponRedisRepository.tryIssueCoupon(
+        Long result = couponCachePort.tryIssueCoupon(
                 couponId,
                 userId,
                 coupon.getTotalQuantity()
@@ -67,8 +66,7 @@ public class CouponIssueService {
         }
 
         // Kafka로 메세지 전송 (비동기 처리)
-        CouponIssueCreateMessage message = new CouponIssueCreateMessage(userId, couponId);
-        couponIssueProducer.send("coupon-issue-request", message);
+        couponIssueEventPort.publishIssueRequest(new CouponIssueCreateMessage(userId, couponId));
 
         // todo 발급 메세지 -> 실제 발급 지연 가능성 체크 필요
         return new CouponIssueResponse(true, "쿠폰이 발급되었습니다.");
@@ -155,7 +153,7 @@ public class CouponIssueService {
     @Transactional
     public void useCouponByOrderId(UUID orderId){
 
-        OrderInfo order = orderProvider.getOrder(orderId);
+        OrderInfo order = orderPort.getOrder(orderId);
 
         UUID couponIssuedId = order.couponIssueId();
         UUID userId = order.userId();
@@ -173,7 +171,7 @@ public class CouponIssueService {
     @Transactional
     public void restoreCouponByOrderId(UUID orderId) {
 
-        OrderInfo order = orderProvider.getOrder(orderId);
+        OrderInfo order = orderPort.getOrder(orderId);
         UUID couponIssueId = order.couponIssueId();
 
         log.info("[SAGA] couponIssueService Coupon 복원 요청: orderId={}, couponIssueId={}", orderId, couponIssueId);

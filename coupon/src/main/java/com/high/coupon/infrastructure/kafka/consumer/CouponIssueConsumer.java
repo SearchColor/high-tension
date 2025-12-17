@@ -2,7 +2,7 @@ package com.high.coupon.infrastructure.kafka.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.coupon.application.CouponIssueService;
-import com.high.coupon.infrastructure.kafka.dto.CouponIssueCreateMessage;
+import com.high.coupon.application.port.out.dto.CouponIssueCreateMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -30,22 +30,20 @@ public class CouponIssueConsumer {
             groupId = "coupon-issue-group",
             containerFactory = "kafkaListenerContainerFactory")
     public void consumeCouponIssue(String message, Acknowledgment ack){
+
+        CouponIssueCreateMessage dto;
         try {
-            // 메세지 파싱
-            CouponIssueCreateMessage dto = objectMapper.readValue(message, CouponIssueCreateMessage.class);
-            log.info("[COUPON ISSUE CONSUMER]: userId={}, couponId={}", dto.userId(), dto.couponId());
-
-            // DB 저장
-            couponIssueService.saveCouponIssue(dto.couponId(), dto.userId());
-
-            log.info("[COUPON ISSUE CONSUMER] DB 저장 완료. userId={}, couponId={}", dto.userId(), dto.couponId());
-
-            ack.acknowledge();
-
+            dto = objectMapper.readValue(message, CouponIssueCreateMessage.class);
         } catch (Exception e) {
-            log.error("[COUPON ISSUE CONSUMER] 실패 {}", e.getMessage());
-            ack.acknowledge();
-            // TODO: 실패 시 재시도 로직이나 DLQ(Dead Letter Queue) 처리 필요
+            log.error("[COUPON ISSUE CONSUMER] 메세지 파싱 실패 payload={}", message, e);
+            return; // todo DLQ 필요
+        }
+
+        try {
+            couponIssueService.saveCouponIssue(dto.couponId(), dto.userId());
+            ack.acknowledge(); // 성공 시에만 commit
+        } catch (Exception e) {
+            log.error("[COUPON ISSUE CONSUMER] 쿠폰 발급 실패 → 재시도 대상", e);
         }
     }
 }

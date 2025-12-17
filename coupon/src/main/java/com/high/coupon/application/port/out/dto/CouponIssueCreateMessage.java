@@ -1,4 +1,4 @@
-package com.high.coupon.infrastructure.kafka.dto;
+package com.high.coupon.application.port.out.dto;
 
 import java.util.UUID;
 
