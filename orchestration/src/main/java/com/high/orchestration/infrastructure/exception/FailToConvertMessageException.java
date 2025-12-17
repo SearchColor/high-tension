@@ -5,8 +5,7 @@ import com.library.module.exception.CustomException;
 
 public class FailToConvertMessageException extends CustomException {
 
-    public FailToConvertMessageException(Throwable cause) {
+    public FailToConvertMessageException() {
         super(OrchestrationErrorCode.FAILED_TO_CONVERT_MESSAGE);
-        initCause(cause);
     }
 }
