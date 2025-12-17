@@ -14,7 +14,6 @@ import com.high.order.infrastructure.context.MessageContext;
 import com.high.order.infrastructure.exception.EmptyKafkaMessageException;
 import com.high.order.infrastructure.kafka.dto.response.OrderCreateRequestMessage;
 import com.high.order.infrastructure.kafka.dto.response.OrderDeleteRequestMessage;
-import com.high.order.infrastructure.kafka.dto.response.OrderProcessSuccessMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -108,7 +107,7 @@ public class KafkaConsumer {
 
         try {
             log.info("[KafkaConsumer] handleOrderDeleteRequest : 주문 삭제 로직 실행");
-            orderService.deleteOrder(command.orderId(), orderDeleteRequestMessage.userId());
+            orderService.deleteOrder(command.orderId(), orderDeleteRequestMessage.userId(), "USER");
             String resultMessage = command.orderId() + " 삭제 완료 처리";
             OrderDeleteResponse response = OrderDeleteResponse.of(command.sagaId(), command.orderId(), resultMessage);
 
@@ -127,28 +126,5 @@ public class KafkaConsumer {
 
     }
 
-    @KafkaListener(topics = "order-process-success")
-    public void handleOrderProcessSuccess(String message) {
-        log.info("Kafka Message : {}", message);
-        OrderProcessSuccessMessage orderProcessSuccessMessage = null;
-        objectMapper = new ObjectMapper();
-        try {
-            orderProcessSuccessMessage = objectMapper.readValue(message, OrderProcessSuccessMessage.class);
-            System.out.println(objectMapper.writeValueAsString(orderProcessSuccessMessage));
-
-            if(orderProcessSuccessMessage == null) {
-                log.info("[Kafka Consumer] handleOrderProcessSuccess : 메시지가 비어있음");
-                throw new EmptyKafkaMessageException();
-            }
-
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-
-
-        //ProcessOrderSuccessCommand command = adapter.toProcessCommand(orderProcessSuccessMessage);
-        //orderService.processOrderSuccess(command);
-        log.info("[Kafka Consumer] handleOrderProcessSuccess : 주문 상태를 성공으로 변경 완료");
-    }
 
 }
