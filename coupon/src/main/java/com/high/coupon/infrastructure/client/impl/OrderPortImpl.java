@@ -1,7 +1,7 @@
 package com.high.coupon.infrastructure.client.impl;
 
-import com.high.coupon.application.provider.OrderProvider;
-import com.high.coupon.application.provider.dto.OrderInfo;
+import com.high.coupon.application.port.out.OrderPort;
+import com.high.coupon.application.port.out.dto.OrderInfo;
 import com.high.coupon.infrastructure.client.OrderClient;
 import com.high.coupon.infrastructure.client.dto.OrderResponse;
 import java.util.UUID;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class OrderProviderImpl implements OrderProvider {
+public class OrderPortImpl implements OrderPort {
 
     private final OrderClient orderClient;
 
