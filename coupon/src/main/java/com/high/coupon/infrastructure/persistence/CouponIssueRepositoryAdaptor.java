@@ -15,16 +15,6 @@ public class CouponIssueRepositoryAdaptor implements CouponIssueRepository {
     private final JpaCouponIssueRepository jpaCouponIssueRepository;
 
     @Override
-    public boolean existsByCouponIdAndUserId(UUID couponId, UUID userId) {
-        return jpaCouponIssueRepository.existsByCouponIdAndUserId(couponId, userId);
-    }
-
-    @Override
-    public long countByCouponId(UUID couponId) {
-        return jpaCouponIssueRepository.countByCouponId(couponId);
-    }
-
-    @Override
     public CouponIssue save(CouponIssue couponIssue) {
         return jpaCouponIssueRepository.save(couponIssue);
     }
