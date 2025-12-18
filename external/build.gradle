@@ -31,6 +31,8 @@ ext {
 
 dependencies {
 
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+
     // slack
     implementation("com.slack.api:bolt:1.18.0")
     implementation("com.slack.api:bolt-servlet:1.18.0")

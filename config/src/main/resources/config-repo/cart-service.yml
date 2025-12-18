@@ -24,3 +24,16 @@ kafka:
 
   topic:
     clear-cart: cart-clear-request
+
+logging:
+  level:
+    com.high.cart: INFO
+    org.springframework.security: INFO
+    org.hibernate.SQL: INFO
+    org.hibernate.type.descriptor.sql: TRACE
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB           # 파일 최대 크기
+      max-history: 7                # 7일간 보관
+      total-size-cap: 1GB           # 전체 로그 최대 1GB
+      clean-history-on-start: true  # 시작 시 오래된 로그 정리
