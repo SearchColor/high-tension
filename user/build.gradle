@@ -60,6 +60,10 @@ dependencies {
 	// Redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
+	// WebAuthn (Passkey)
+	implementation 'com.yubico:webauthn-server-core:2.5.2'
+	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.15.2'
+
 	// .env 파일 로드
 	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
 
