@@ -1,4 +1,4 @@
-package com.high.coupon.infrastructure.security;
+package com.high.coupon.infrastructure.config;
 
 import com.library.security.filter.HeaderAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +24,7 @@ public class SecurityConfig {
                                 "/api/v1/internal/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
+                                "/api/v1/coupons/{couponId}/issue/test", // todo 테스트용 매핑 임시
                                 "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
                 );

@@ -24,3 +24,12 @@ eureka:
   instance:
     instance-id: user-service
     hostname: localhost
+
+# WebAuthn Passkey Configuration
+webauthn:
+  relying-party:
+    id: ${WEBAUTHN_RP_ID:localhost}
+    name: ${WEBAUTHN_RP_NAME:High Tension}
+    origins: ${WEBAUTHN_ORIGINS:http://localhost:3000,http://localhost:8000}
+  challenge:
+    ttl-minutes: 5
