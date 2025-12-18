@@ -53,20 +53,25 @@ public class PaymentServiceImpl implements PaymentService {
 
 		String pgTid = null;
 		String eventType = "payment.completed";
-		PaymentStatus initStatus = PaymentStatus.REQUESTED;
+		PaymentStatus initStatus = PaymentStatus.PENDING;
+
+		Integer price = event.paymentPrice();
+		if (price == null || price <= 0) {
+			throw new PaymentException(PaymentErrorCode.PAYMENT_BAD_REQUEST, "paymentPrice는 1 이상이어야 합니다.");
+		}
 
 		// 1. 도메인 객체 생성 (아직 저장 안 함)
 		Payment payment = Payment.builder()
 								 .orderId(event.orderId())
 								 .userId(event.userId())
-								 .amount(event.amount())
+								 .paymentPrice(price)
 								 .paymentMethod(event.paymentMethod())
 								 .status(initStatus)
 								 .build();
 
 		try {
 			// 2. PG사 결제 승인 요청 (외부 연동)
-			pgTid = iamportClient.requestPayment(event.orderId(), event.amount(), event.paymentMethod());
+			pgTid = iamportClient.requestPayment(event.orderId(), BigDecimal.valueOf(price), event.paymentMethod());
 
 			// 3. 성공 시 상태 변경
 			payment.complete(pgTid);
@@ -89,7 +94,7 @@ public class PaymentServiceImpl implements PaymentService {
 				savedPayment.getId(),
 				savedPayment.getOrderId(),
 				savedPayment.getUserId(),
-				savedPayment.getAmount(),
+				savedPayment.getPaymentPrice(),
 				savedPayment.getStatus().name()
 			);
 
@@ -111,8 +116,8 @@ public class PaymentServiceImpl implements PaymentService {
 		Payment payment = Payment.builder()
 								 .orderId(request.orderId())
 								 .userId(request.userId())
-								 .amount(request.amount())
-								 .status(PaymentStatus.REQUESTED) // PaymentStatus enum을 가정
+								 .paymentPrice(request.paymentPrice())
+								 .status(PaymentStatus.PENDING) // PaymentStatus enum을 가정
 								 .paymentMethod(request.paymentMethod())
 								 .build();
 
@@ -188,19 +193,21 @@ public class PaymentServiceImpl implements PaymentService {
 		}
 
 		// 4. 결제 검증 (금액 일치 여부 확인)
-		if (payment.getAmount().compareTo(pgInfo.getAmount()) != 0) {
-			log.error("금액 불일치 탐지! DB: {} vs PG: {}. 위변조 방지 취소 요청.",
-					  payment.getAmount(), pgInfo.getAmount());
+		Integer dbPrice = payment.getPaymentPrice();
+		Integer pgPrice = pgInfo.getPaymentPrice();
 
-			// 4-1. PG사에 결제 취소 요청
-			iamportClient.cancelPayment(impUid, pgInfo.getAmount(), "금액 불일치로 인한 취소");
-
-			// 4-2. DB 상태 FAIL로 변경
+		if (dbPrice == null || pgPrice == null) {
+			iamportClient.cancelPayment(impUid, BigDecimal.valueOf(pgPrice == null ? 0 : pgPrice), "결제 금액 누락으로 인한 취소");
 			payment.fail();
 			paymentRepositoryPort.save(payment);
+			throw new PaymentException(PaymentErrorCode.PAYMENT_VERIFICATION_FAILED, "결제 금액 누락으로 인한 검증 실패.");
+		}
 
-			throw new PaymentException(PaymentErrorCode.PAYMENT_VERIFICATION_FAILED,
-									   "결제 금액 불일치로 인한 검증 실패.");
+		if (!dbPrice.equals(pgPrice)) {
+			iamportClient.cancelPayment(impUid, BigDecimal.valueOf(pgPrice), "금액 불일치로 인한 취소");
+			payment.fail();
+			paymentRepositoryPort.save(payment);
+			throw new PaymentException(PaymentErrorCode.PAYMENT_VERIFICATION_FAILED, "결제 금액 불일치로 인한 검증 실패.");
 		}
 
 		// 5. 결제 완료 상태 확정 및 DB 저장
@@ -211,7 +218,7 @@ public class PaymentServiceImpl implements PaymentService {
 		try {
 			PaymentCompletedEvent outboxPayload = new PaymentCompletedEvent(
 				payment.getId(), payment.getOrderId(), payment.getUserId(),
-				payment.getAmount(), payment.getStatus().name()
+				payment.getPaymentPrice(), payment.getStatus().name()
 			);
 
 			String jsonPayload = objectMapper.writeValueAsString(outboxPayload);
@@ -248,7 +255,11 @@ public class PaymentServiceImpl implements PaymentService {
 
 		// 3. PG사 환불 요청 (Mock)
 		try {
-			iamportClient.cancelPayment(payment.getPgTid(), payment.getAmount(), "고객 요청 취소");
+			iamportClient.cancelPayment(
+				payment.getPgTid(),
+				BigDecimal.valueOf(payment.getPaymentPrice()),
+				"고객 요청 취소"
+			);
 			log.info("[Service] PG사 취소 요청 성공");
 		} catch (Exception e) {
 			throw new PaymentException(PaymentErrorCode.PG_CLIENT_ERROR, "PG사 환불 실패: " + e.getMessage());
@@ -303,8 +314,8 @@ public class PaymentServiceImpl implements PaymentService {
 
 			CreatePaymentRequest tempRequest = new CreatePaymentRequest(
 				orderId,
-				userId.toString(),     // Payment 도메인은 String userId를 사용함
-				BigDecimal.ZERO,       // 임시 값: 0원
+				userId,     // Payment 도메인은 String userId를 사용함
+				0,       // 임시 값: 0원
 				"SAGA_TEST_CARD"       // 임시 값: 테스트용 결제수단
 			);
 
