@@ -47,24 +47,12 @@ public class ApiMonitoringInterceptor implements HandlerInterceptor {
         try {
             long startTime = (Long) request.getAttribute(START_TIME_ATTRIBUTE);
             long duration = System.currentTimeMillis() - startTime;
-            int status = response.getStatus();
 
             // 처리 시간을 MDC에 추가
             MDC.put("duration_ms", String.valueOf(duration));
 
             // HTTP 상태 코드 추가
             MDC.put("http.status_code", String.valueOf(response.getStatus()));
-
-            if (ex != null) {
-                // 이 로그가 찍히는지 확인하세요!
-                // 만약 안 찍힌다면 ExceptionHandler가 예외를 이미 가로채서 처리한 것입니다.
-                log.error("컨트롤러에서 처리되지 않은 예외 발생: ", ex);
-            }
-//            if (ex != null || status >= 400) {
-//                log.error("API Request Failed. Status: {}, Exception: {}", status, (ex != null ? ex.getMessage() : "None"));
-//            } else {
-//                log.info("API Request Processed.");
-//            }
 
             // 최종 로그 출력 (이 로그 라인에 MDC의 모든 필드가 포함되어 JSON으로 출력됩니다.)
             log.info("API Request Processed.");
