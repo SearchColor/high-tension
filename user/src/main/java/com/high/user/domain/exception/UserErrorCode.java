@@ -34,7 +34,19 @@ public enum UserErrorCode implements BaseErrorCode {
     ALREADY_DELETED(2402, HttpStatus.GONE, "이미 탈퇴한 계정입니다"),
 
     // 25xx: External Service Errors
-    COUPON_SERVICE_ERROR(2500, HttpStatus.SERVICE_UNAVAILABLE, "쿠폰 서비스에 문제가 발생했습니다");
+    COUPON_SERVICE_ERROR(2500, HttpStatus.SERVICE_UNAVAILABLE, "쿠폰 서비스에 문제가 발생했습니다"),
+
+    // 26xx: Passkey Errors
+    PASSKEY_NOT_FOUND(2600, HttpStatus.NOT_FOUND, "패스키를 찾을 수 없습니다"),
+    INVALID_CHALLENGE(2601, HttpStatus.BAD_REQUEST, "유효하지 않거나 만료된 Challenge입니다"),
+    WEBAUTHN_VERIFICATION_FAILED(2602, HttpStatus.UNAUTHORIZED, "패스키 인증에 실패했습니다"),
+    PASSKEY_ALREADY_EXISTS(2603, HttpStatus.CONFLICT, "이미 등록된 패스키입니다"),
+    PASSKEY_REGISTRATION_FAILED(2604, HttpStatus.BAD_REQUEST, "패스키 등록에 실패했습니다"),
+    NO_PASSKEY_REGISTERED(2605, HttpStatus.NOT_FOUND, "등록된 패스키가 없습니다"),
+    PASSKEY_SERIALIZATION_FAILED(2606, HttpStatus.INTERNAL_SERVER_ERROR, "패스키 데이터 직렬화에 실패했습니다"),
+    INVALID_CREDENTIAL_FORMAT(2607, HttpStatus.INTERNAL_SERVER_ERROR, "패스키 데이터 형식이 올바르지 않습니다"),
+    INVALID_CHALLENGE_DATA(2608, HttpStatus.BAD_REQUEST, "Challenge 데이터가 유효하지 않습니다"),
+    INVALID_REQUEST_DATA(2609, HttpStatus.BAD_REQUEST, "요청 데이터가 유효하지 않습니다");
 
     private final int code;
     private final HttpStatus status;

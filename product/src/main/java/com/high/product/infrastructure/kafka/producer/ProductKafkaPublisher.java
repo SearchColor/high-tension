@@ -5,7 +5,9 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.product.application.dto.kafka.failure.StockDeductionFailMessage;
+import com.high.product.application.dto.kafka.failure.StockRestoreFailMessage;
 import com.high.product.application.dto.kafka.success.StockDeductionSuccessMessage;
+import com.high.product.application.dto.kafka.success.StockRestoreSuccessMessage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +26,14 @@ public class ProductKafkaPublisher {
 
 	public void publishStockDeductionFail(StockDeductionFailMessage message) {
 		send("stock-deduction-fail", message);
+	}
+
+	public void publishStockRestoreSuccess(StockRestoreSuccessMessage message) {
+		send("stock-restore-success", message);
+	}
+
+	public void publishStockRestoreFail(StockRestoreFailMessage message) {
+		send("stock-restore-fail", message);
 	}
 
 	private void send(String topic, Object message) {

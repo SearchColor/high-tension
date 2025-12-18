@@ -46,6 +46,17 @@ spring:
               predicates:
                 - Path=/api/v1/internal/users/**
 
+            # Passkey Service (명시적 라우팅 - 향후 분리 시 변경 용이)
+            - id: passkey-service
+              uri: lb://user-service
+              predicates:
+                - Path=/api/v1/passkeys/**
+
+            - id: user-test-page
+              uri: lb://user-service
+              predicates:
+                - Path=/passkey-test.html
+
             - id: user-service
               uri: lb://user-service
               predicates:

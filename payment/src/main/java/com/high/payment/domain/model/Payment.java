@@ -19,7 +19,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "payments")
+@Table(name = "p_payments")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -33,10 +33,10 @@ public class Payment {
 	private UUID orderId; // 주문 서비스에서 넘어온 ID
 
 	@Column(name = "user_id", nullable = false, length = 50)
-	private String userId;
+	private UUID userId;
 
-	@Column(name = "payment_amount", nullable = false)
-	private BigDecimal amount;
+	@Column(name = "payment_price", nullable = false)
+	private Integer paymentPrice;
 
 	@Column(name = "payment_method", nullable = false)
 	private String paymentMethod; // 예: CARD, TRANSFER
@@ -47,6 +47,9 @@ public class Payment {
 
 	@Column(name = "pg_tid")
 	private String pgTid; // PG사 거래 ID
+
+	@Column(name= "payment_time")
+	private LocalDateTime paymentTime;
 
 	@Column(name = "created_at")
 	@Builder.Default
@@ -59,6 +62,7 @@ public class Payment {
 	public void complete(String pgTid) {
 		this.status = PaymentStatus.COMPLETED;
 		this.pgTid = pgTid;
+		this.paymentTime = LocalDateTime.now();
 	}
 
 	public void cancel() {
@@ -66,5 +70,6 @@ public class Payment {
 			throw new IllegalStateException("COMPLETED 상태가 아니면 취소할 수 없습니다.");
 		}
 		this.status = PaymentStatus.CANCELED;
+		this.paymentTime = LocalDateTime.now();
 	}
 }

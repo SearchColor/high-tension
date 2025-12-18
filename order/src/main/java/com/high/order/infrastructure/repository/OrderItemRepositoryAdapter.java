@@ -34,4 +34,9 @@ public class OrderItemRepositoryAdapter implements OrderItemRepository {
     public OrderItem save(OrderItem orderItem) {
         return jpaOrderItemRepository.save(orderItem);
     }
+
+    @Override
+    public Optional<OrderItem> findOrderItemForUser(UUID orderItemId, UUID customerId) {
+        return jpaOrderItemRepository.findOrderItemForUser(orderItemId, customerId);
+    }
 }

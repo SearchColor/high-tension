@@ -9,8 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.high.coupon.application.CouponIssueService;
-import com.high.coupon.application.provider.OrderProvider;
-import com.high.coupon.application.provider.dto.OrderInfo;
+import com.high.coupon.application.port.out.OrderPort;
+import com.high.coupon.application.port.out.dto.OrderInfo;
 import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.repository.CouponIssueRepository;
 import java.util.Optional;
@@ -29,7 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class CouponServiceWrapperTest {
 
     @Mock
-    private OrderProvider orderProvider;
+    private OrderPort orderPort;
 
     @Mock
     private CouponIssueRepository couponIssueRepository;
@@ -51,7 +51,7 @@ public class CouponServiceWrapperTest {
                 couponIssueId
         );
 
-        when(orderProvider.getOrder(orderId))
+        when(orderPort.getOrder(orderId))
                 .thenReturn(mockOrderInfo);
 
         // CouponIssue Mock 생성 및 동작 정의
@@ -65,7 +65,7 @@ public class CouponServiceWrapperTest {
         couponIssueService.useCouponByOrderId(orderId);
 
         // then
-        verify(orderProvider, times(1)).getOrder(orderId);
+        verify(orderPort, times(1)).getOrder(orderId);
         verify(issue).useCoupon(eq(userId), any());
     }
 }

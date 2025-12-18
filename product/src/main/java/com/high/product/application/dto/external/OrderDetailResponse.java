@@ -7,7 +7,7 @@ import java.util.UUID;
 public record OrderDetailResponse(
 	UUID orderId,
 	UUID userId,
-	UUID couponId,
+	UUID couponIssueId,
 	Integer totalAmount,
 	Integer discountAmount,
 	Integer paidAmount,
@@ -19,4 +19,5 @@ public record OrderDetailResponse(
 	String requestMessage,
 	LocalDateTime createdAt,
 	List<OrderItemResponse> orderItems
-) {}
+) {
+}

@@ -21,7 +21,7 @@ import com.high.product.application.dto.kafka.request.StockDeductionCommandReque
 import com.high.product.application.dto.kafka.success.StockDeductionSuccessMessage;
 import com.high.product.application.service.StockDeductionService;
 import com.high.product.application.port.OrderQueryPort;
-import com.high.product.application.port.StockDeductionPublisherPort;
+import com.high.product.application.port.StockPublisherPort;
 import com.high.product.domain.model.Product_Stock;
 import com.high.product.domain.repository.StockRepository;
 import com.library.module.response.ApiResponse;
@@ -38,7 +38,7 @@ class StockDeductionServiceTest {
 	private StockRepository stockRepository;
 
 	@Mock
-	private StockDeductionPublisherPort publisherPort;
+	private StockPublisherPort publisherPort;
 
 	@BeforeEach
 	void setUp() {

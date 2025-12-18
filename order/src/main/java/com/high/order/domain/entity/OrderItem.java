@@ -15,6 +15,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -75,6 +77,16 @@ public class OrderItem extends BaseEntity {
     private void calculateAmounts() {
         this.itemTotalPrice = this.quantity * this.unitPrice;
         System.out.println("[Order] 총 금액 계산 완료 : " + this.itemTotalPrice);
+    }
+
+    public int calculateCancelAmounts(BigDecimal discountPercent) {
+        BigDecimal price = BigDecimal.valueOf(itemTotalPrice);
+        BigDecimal discountRate = discountPercent.divide(new BigDecimal("100"), 4,
+            RoundingMode.HALF_UP);
+        BigDecimal discountAmountBd = price.multiply(discountRate);
+        BigDecimal finalPrice = price.subtract(discountAmountBd);
+
+        return finalPrice.setScale(0, RoundingMode.HALF_UP).intValue();
     }
 
     public boolean isCancellable() {

@@ -1,6 +1,5 @@
 package com.high.payment.application.dto;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 import com.high.payment.domain.model.Payment;
@@ -9,8 +8,8 @@ import com.high.payment.domain.model.Payment;
 public record CreatePaymentResponse (
 	UUID paymentId,
 	UUID orderId,
-	String userId,
-	BigDecimal amount,
+	UUID userId,
+	Integer paymentPrice,
 	String status
 ) {
 	public static CreatePaymentResponse from(Payment payment) {
@@ -18,7 +17,7 @@ public record CreatePaymentResponse (
 			payment.getId(),
 			payment.getOrderId(),
 			payment.getUserId(),
-			payment.getAmount(),
+			payment.getPaymentPrice(),
 			payment.getStatus().name()
 		);
 	}
