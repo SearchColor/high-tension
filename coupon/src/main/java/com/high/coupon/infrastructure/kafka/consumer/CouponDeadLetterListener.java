@@ -1,5 +1,5 @@
 //package com.high.coupon.infrastructure.kafka.consumer;
-//
+// todo: 비교를 위한 백업
 //import lombok.extern.slf4j.Slf4j;
 //import org.springframework.kafka.annotation.KafkaListener;
 //import org.springframework.kafka.support.Acknowledgment;
