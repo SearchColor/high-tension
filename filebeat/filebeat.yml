@@ -3,7 +3,7 @@ filebeat.inputs:
   - type: log
     enabled: true
 
-    # 📌 1. JSON 로그 파일 경로 지정 (*-json.log)
+    # JSON 로그 파일 경로 지정 (*-json.log)
     # Logback에서 생성한 JSON 로그 파일만 수집하도록 경로를 수정합니다.
     paths:
       - /usr/share/filebeat/app_logs/*-json.log
@@ -11,7 +11,7 @@ filebeat.inputs:
     # 이미 수집 완료된 오래된 순환 파일 스캔을 방지하여 성능을 높입니다.
     ignore_older: 24h
 
-    # ⭐ 3. JSON 파싱 설정 추가 (Filebeat가 JSON을 구조화된 필드로 파싱하도록 지시)
+    # JSON 파싱 설정 추가 (Filebeat가 JSON을 구조화된 필드로 파싱하도록 지시)
     json.keys_under_root: true # JSON 객체의 필드를 최상위 필드로 매핑
     json.overwrite_keys: true  # Logback이 생성한 @timestamp, service.name 등이 Filebeat 기본 필드 덮어쓰도록 허용
     json.add_error_key: true   # 파싱 오류 발생 시 에러 필드를 추가
@@ -45,7 +45,7 @@ output.kafka:
   # 배치 크기 조정 (성능 향상)
   bulk_max_size: 2048
 
-# 🔥 로깅 레벨 설정 (디버깅용)
+# 로깅 레벨 설정 (디버깅용)
 logging.level: info
 logging.to_files: true
 logging.files:

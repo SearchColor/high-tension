@@ -4,19 +4,6 @@
 
     <springProperty scope="context" name="serviceName" source="spring.application.name"/>
 
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>./logs/${serviceName}.log</file>
-        <encoder>
-            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p --- [%15.15t] %-40.40logger{39} : %m%n</pattern>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>./logs/${serviceName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <maxFileSize>10MB</maxFileSize>
-            <maxHistory>3</maxHistory>
-            <totalSizeCap>500MB</totalSizeCap>
-        </rollingPolicy>
-    </appender>
-
     <appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>./logs/${serviceName}-json.log</file>
 
@@ -36,17 +23,6 @@
             <maxHistory>7</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
-    </appender>
-
-    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <includeMdcKeyName>http.method</includeMdcKeyName>
-            <includeMdcKeyName>url.path</includeMdcKeyName>
-            <includeMdcKeyName>duration_ms</includeMdcKeyName>
-            <includeMdcKeyName>http.status_code</includeMdcKeyName>
-            <includeMdcKeyName>log.type</includeMdcKeyName>
-            <customFields>{"service_name":"${serviceName}"}</customFields>
-        </encoder>
     </appender>
 
     <logger name="org.springframework" level="WARN"/>
