@@ -9,13 +9,13 @@ import com.high.coupon.application.exception.CouponOutOfStockException;
 import com.high.coupon.application.port.out.CouponCachePort;
 import com.high.coupon.application.port.out.CouponIssueEventPort;
 import com.high.coupon.application.port.out.OrderPort;
+import com.high.coupon.application.port.out.dto.CouponIssueCreateMessage;
 import com.high.coupon.application.port.out.dto.OrderInfo;
 import com.high.coupon.domain.entity.Coupon;
 import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.exception.CouponAlreadyIssuedException;
 import com.high.coupon.domain.exception.CouponNotOwnedException;
 import com.high.coupon.domain.repository.CouponIssueRepository;
-import com.high.coupon.application.port.out.dto.CouponIssueCreateMessage;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -29,8 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 public class CouponIssueService {
-
-    // todo : 고도화 진행 중 (발급 파트)
 
     private final CouponService couponService;
     private final CouponIssueRepository couponIssueRepository;
@@ -68,8 +66,7 @@ public class CouponIssueService {
         // Kafka로 메세지 전송 (비동기 처리)
         couponIssueEventPort.publishIssueRequest(new CouponIssueCreateMessage(userId, couponId));
 
-        // todo 발급 메세지 -> 실제 발급 지연 가능성 체크 필요
-        return new CouponIssueResponse(true, "쿠폰이 발급되었습니다.");
+        return new CouponIssueResponse(true, "쿠폰이 발급되었습니다. 지급까지 시간이 소요될 수 있습니다");
     }
 
     // Consumer 호출 메서드

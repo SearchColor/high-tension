@@ -21,9 +21,6 @@ import org.springframework.kafka.listener.ContainerProperties;
 @EnableKafka
 public class KafkaConfig {
 
-    // todo 성공 결과 필요할까? (Producer 유무)
-
-
     /**
      * Kafka ProducerFactory 설정
      */
@@ -32,7 +29,7 @@ public class KafkaConfig {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class); // todo 객체를 JSON String으로 변환해서 보낼 예정
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         return new DefaultKafkaProducerFactory<>(props);
     }
 
@@ -74,14 +71,35 @@ public class KafkaConfig {
      * - ConsumerFactory를 기반으로 동작
      */
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
+    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory(
+            KafkaTemplate<String, String> kafkaTemplate) {
 
         ConcurrentKafkaListenerContainerFactory<String, String> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
 
         // 위에서 만든 consumerFactory 사용
         factory.setConsumerFactory(consumerFactory());
-        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
+
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
+
+//        // Dead Letter Recoverer
+//        // 실패한 메세지는 원본 토픽명.dlt 토픽으로 전송
+//        DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaTemplate);
+//
+//        // 지수 백오프 - 3번 재시도 (= 초기 1초 대기, 2배씩 증가, 최대 10초 대기)
+//        ExponentialBackOffWithMaxRetries backOff = new ExponentialBackOffWithMaxRetries(3);
+//        backOff.setInitialInterval(1000L);
+//        backOff.setMultiplier(2.0);
+//        backOff.setMaxInterval(10000L);
+//
+//        // 에러 핸들러
+//        DefaultErrorHandler errorHandler = new DefaultErrorHandler(recoverer, backOff);
+//
+//        // 재시도 하지 않을 예외 (파싱 오류)
+//        errorHandler.addNotRetryableExceptions(JsonProcessingException.class);
+//        errorHandler.addNotRetryableExceptions(SerializationException.class);
+//
+//        factory.setCommonErrorHandler(errorHandler);
 
         return factory;
     }
