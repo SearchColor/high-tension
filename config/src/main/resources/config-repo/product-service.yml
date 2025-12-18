@@ -25,6 +25,25 @@ spring:
     init:
       mode: always
 
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 3000ms
+
+redisson:
+  mode: single
+  single:
+    address: redis://localhost:6379
+#  mode: cluster # 나중에 K8s로 배포를 한다고 가정하면 필요한 코드
+#  cluster:
+#    nodes:
+#      - redis://redis-0.redis:6379
+#      - redis://redis-1.redis:6379
+#      - redis://redis-2.redis:6379
+  lock:
+    wait-time: 5s
+    lease-time: 15s
+
 management:
   zipkin:
     tracing:
