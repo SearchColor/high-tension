@@ -15,6 +15,7 @@ import com.library.module.response.ApiResponse;
 @FeignClient(name = "order-service", configuration = FeignConfig.class)
 public interface OrderClient extends OrderQueryPort {
 
+	@Override
 	@GetMapping("/api/v1/orders/{orderId}")
 	ResponseEntity<ApiResponse<OrderDetailResponse>> getOrderDetail(
 		@PathVariable("orderId") UUID orderId);

@@ -2,7 +2,7 @@ package com.high.product.infrastructure.kafka;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import java.util.UUID;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -11,33 +11,34 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
-import org.springframework.kafka.core.ConsumerFactory;
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.kafka.core.DefaultKafkaProducerFactory;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.core.*;
 
 @EnableKafka
 @Configuration
 public class KafkaConfig {
 
-	// Producer Factory
 	@Bean
 	public ProducerFactory<String, String> producerFactory() {
 		Map<String, Object> props = new HashMap<>();
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
 		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
 		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+
+		// 멱등성
+		props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+		props.put(ProducerConfig.ACKS_CONFIG, "all");
+		props.put(ProducerConfig.RETRIES_CONFIG, Integer.MAX_VALUE);
+		props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 5);
+
 		return new DefaultKafkaProducerFactory<>(props);
 	}
 
-	// KafkaTemplate
 	@Bean
 	public KafkaTemplate<String, String> kafkaTemplate() {
-		return new KafkaTemplate<>(producerFactory());
+		KafkaTemplate<String, String> template = new KafkaTemplate<>(producerFactory());
+		return template;
 	}
 
-	// Consumer Factory
 	@Bean
 	public ConsumerFactory<String, String> consumerFactory() {
 		Map<String, Object> props = new HashMap<>();
@@ -48,7 +49,6 @@ public class KafkaConfig {
 		return new DefaultKafkaConsumerFactory<>(props);
 	}
 
-	// Listener Container Factory
 	@Bean
 	public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
 		ConcurrentKafkaListenerContainerFactory<String, String> factory =
