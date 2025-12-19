@@ -5,5 +5,6 @@ public enum PaymentStatus {
 	COMPLETED,   // PG에서 결제 승인 완료
 	FAILED,      // 결제 실패
 	CANCELED,
-	REFUNDED     // 환불 완료 (나중에 사용)
+	REFUNDED,     // 환불 완료 (나중에 사용)
+	EXPIRED // 시간 초과
 }
