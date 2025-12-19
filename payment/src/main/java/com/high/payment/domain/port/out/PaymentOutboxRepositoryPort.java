@@ -20,4 +20,6 @@ public interface PaymentOutboxRepositoryPort {
 
 	//  발행된 이벤트들을 삭제합니다.
 	void deleteAll(List<PaymentOutbox> outboxes);
+
+	List<PaymentOutbox> findPending(int batchSize);
 }

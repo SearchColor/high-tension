@@ -29,6 +29,7 @@ import com.high.payment.domain.model.PaymentSaga;
 import com.high.payment.domain.model.PaymentSagaStatus;
 import com.high.payment.exception.PaymentException;
 import com.high.payment.exception.PaymentErrorCode;
+import com.high.payment.infrastructure.kafka.dto.OrderDeleteRequestMessage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -271,18 +272,38 @@ public class PaymentServiceImpl implements PaymentService {
 
 		// 5. Outbox 이벤트 저장 (payment.canceled)
 		try {
-			// 이벤트 페이로드 생성
-			String payload = objectMapper.writeValueAsString(payment);
+			// 1) payment.canceled (결제 도메인 이벤트)
+			String paymentCanceledPayload = objectMapper.writeValueAsString(payment);
 
-			// Outbox 생성 (인자 3개: aggregateId, eventType, payload)
-			PaymentOutbox outbox = PaymentOutbox.create(
+			PaymentOutbox paymentCanceledOutbox = PaymentOutbox.create(
 				payment.getId(),
 				"payment.canceled",
-				payload
+				paymentCanceledPayload
+			);
+			outboxRepository.save(paymentCanceledOutbox);
+
+			// 2) order-delete-request (주문 취소 요청 이벤트)
+			UUID sagaId = UUID.randomUUID();
+
+			OrderDeleteRequestMessage orderDeleteMsg = new OrderDeleteRequestMessage(
+				sagaId,
+				payment.getOrderId(),
+				payment.getUserId()
 			);
 
-			outboxRepository.save(outbox);
-			log.info("[Outbox] 취소 이벤트 저장 완료.");
+			String orderDeletePayload = objectMapper.writeValueAsString(orderDeleteMsg);
+
+			PaymentOutbox orderDeleteOutbox = PaymentOutbox.create(
+				payment.getId(),
+				"order.delete.requested",
+				orderDeletePayload,
+				"order-delete-request",
+				payment.getOrderId().toString()
+			);
+
+			outboxRepository.save(orderDeleteOutbox);
+
+			log.info("[Outbox] 결제취소 이벤트 저장 완료. orderId={}, sagaId={}", payment.getOrderId(), sagaId);
 
 		} catch (JsonProcessingException e) {
 			throw new PaymentException(PaymentErrorCode.PAYMENT_BAD_REQUEST, "JSON 변환 실패");
