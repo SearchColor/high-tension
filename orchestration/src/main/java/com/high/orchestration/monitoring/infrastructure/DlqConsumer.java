@@ -2,6 +2,8 @@ package com.high.orchestration.monitoring.infrastructure;
 
 import com.high.orchestration.monitoring.application.DlqRecordCommand;
 import com.high.orchestration.monitoring.application.DlqRecordService;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -27,21 +29,40 @@ public class DlqConsumer {
         @Header(name = KafkaHeaders.GROUP_ID, required = false)
         String consumerGroup,
 
-        @Header(name = KafkaHeaders.DELIVERY_ATTEMPT, required = false)
-        Integer attempt,
+        @Header(name = "retry_topic-attempts", required = false)
+        byte[] attemptsBytes,
 
-        @Header(name = KafkaHeaders.DLT_EXCEPTION_CAUSE_FQCN, required = false)
-        String exceptionType,
+        @Header(name = "kafka_exception-fqcn", required = false)
+        byte[] exceptionTypeBytes,
 
-        @Header(name = KafkaHeaders.DLT_EXCEPTION_MESSAGE, required = false)
-        String exceptionMessage,
+        @Header(name = "kafka_exception-message", required = false)
+        byte[] exceptionMessageBytes,
 
-        @Header(name = KafkaHeaders.DLT_EXCEPTION_STACKTRACE, required = false)
-        byte[] stackTrace
+        @Header(name = "kafka_exception-stacktrace", required = false)
+        byte[] exceptionStackTraceBytes
     ) {
-        //int safeAttempt = attempt != null ? attempt : 0;
 
-        //log.error("[DLQ] order-create-success 실패 ");
+        Integer attempts = null;
+        String exceptionType = null;
+        String exceptionMessage = null;
+        String exceptionStackTrace = null;
+
+        if (attemptsBytes != null) {
+            attempts = ByteBuffer.wrap(attemptsBytes).getInt();
+        }
+
+        if (exceptionTypeBytes != null) {
+            exceptionType = new String(exceptionTypeBytes, StandardCharsets.UTF_8);
+        }
+
+        if (exceptionMessageBytes != null) {
+            exceptionMessage = new String(exceptionMessageBytes, StandardCharsets.UTF_8);
+        }
+
+        if (exceptionStackTraceBytes != null) {
+            exceptionStackTrace = new String(exceptionMessageBytes, StandardCharsets.UTF_8);
+        }
+
 
         log.error(
             "[DLQ] topic={}, partition={}, offset={}, exceptionType={}, message={}, attempt={}",
@@ -50,17 +71,17 @@ public class DlqConsumer {
             record.offset(),
             exceptionType,
             exceptionMessage,
-            attempt
+            attempts
         );
 
         try {
             DlqRecordCommand command = DlqRecordCommand.from(
                 record,
                 consumerGroup,
-                attempt,
+                attempts,
                 exceptionType,
                 exceptionMessage,
-                stackTrace
+                exceptionStackTrace
             );
 
 

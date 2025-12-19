@@ -1,6 +1,5 @@
 package com.high.orchestration.monitoring.application;
 
-import java.nio.charset.StandardCharsets;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 public record DlqRecordCommand(
@@ -26,7 +25,7 @@ public record DlqRecordCommand(
         Integer deliveryAttempt,
         String exceptionType,
         String exceptionMessage,
-        byte[] stackTraceBytes
+        String stackTraceBytes
     ) {
         return new DlqRecordCommand(
             extractOriginalTopic(record.topic()),
@@ -38,9 +37,7 @@ public record DlqRecordCommand(
             record.value(),
             exceptionType,
             exceptionMessage,
-            stackTraceBytes != null
-            ? new String(stackTraceBytes, StandardCharsets.UTF_8)
-                : null,
+            stackTraceBytes,
             deliveryAttempt != null? deliveryAttempt : 1
             );
     }
