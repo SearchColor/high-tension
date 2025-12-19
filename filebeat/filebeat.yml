@@ -1,0 +1,55 @@
+# Filebeat Input 정의: Docker 컨테이너 로그를 읽도록 설정
+filebeat.inputs:
+  - type: log
+    enabled: true
+
+    # JSON 로그 파일 경로 지정 (*-json.log)
+    # Logback에서 생성한 JSON 로그 파일만 수집하도록 경로를 수정합니다.
+    paths:
+      - /usr/share/filebeat/app_logs/*-json.log
+
+    # 이미 수집 완료된 오래된 순환 파일 스캔을 방지하여 성능을 높입니다.
+    ignore_older: 24h
+
+    # JSON 파싱 설정 추가 (Filebeat가 JSON을 구조화된 필드로 파싱하도록 지시)
+    json.keys_under_root: true # JSON 객체의 필드를 최상위 필드로 매핑
+    json.overwrite_keys: true  # Logback이 생성한 @timestamp, service.name 등이 Filebeat 기본 필드 덮어쓰도록 허용
+    json.add_error_key: true   # 파싱 오류 발생 시 에러 필드를 추가
+
+    # 로그에 호스트 메타데이터 및 도커 메타데이터 추가
+    processors:
+      - add_host_metadata: ~
+      - add_docker_metadata: ~
+      - add_fields:
+          target: ''
+          fields:
+            app_source: "msa-local"
+
+      # 파일명에서 서비스 이름을 추출하는 로직 수정 (확장자에 -json 포함)
+      - dissect:
+          tokenizer: "%{service_name}-json.log" # tokenizer를 파일 이름에 맞게 수정
+          field: "log.file.path"
+          target_prefix: ""
+      - drop_fields:
+          fields: ["log.file.path"]
+          ignore_missing: true
+
+# Filebeat Output 정의: Kafka로 전송하도록 설정
+output.kafka:
+  hosts: ["kafka:29092"]
+  topic: 'msa_app_logs'
+  codec.json:
+    pretty: false
+  # 압축 활성화 (네트워크 효율성)
+  compression: gzip
+  # 배치 크기 조정 (성능 향상)
+  bulk_max_size: 2048
+
+# 로깅 레벨 설정 (디버깅용)
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644

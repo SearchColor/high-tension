@@ -53,3 +53,28 @@ VALUES (
            NULL,
            NULL
        );
+
+
+
+-- [개발 테스트용 쿠폰 1장]
+INSERT INTO p_coupon (
+    id, name, description, discount_rate, total_quantity,
+    created_at, updated_at, deleted_at, issue_start_at, issue_end_at, valid_until,
+    created_by, updated_by, deleted_by
+)
+VALUES (
+           UNHEX(REPLACE(UUID(),'-','')), -- id
+           '테스트용 쿠폰',              -- name
+           '2025년 연말까지 사용 가능한 30% 할인 쿠폰 [전상품 적용]', -- description
+           30.00,                         -- discount_rate
+           1,                           -- total_quantity
+           NOW(),                         -- created_at
+           NULL,                          -- updated_at
+           NULL,                          -- deleted_at
+           NOW(),                         -- issue_start_at
+           '2025-12-31 23:59:59',         -- issue_end_at
+           '2025-12-31 23:59:59',         -- valid_until
+           UNHEX(REPLACE(UUID(),'-','')), -- created_by (랜덤)
+           NULL,                          -- updated_by
+           NULL                           -- deleted_by
+       );
