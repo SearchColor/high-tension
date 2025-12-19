@@ -1,5 +1,6 @@
 package com.high.orchestration.infrastructure.kafka.consumer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.orchestration.application.OrderCreateSagaService;
 import com.high.orchestration.application.dto.internal.request.ClearCartCommandRequest;
@@ -20,9 +21,13 @@ import com.high.orchestration.infrastructure.kafka.dto.response.PaymentCreateSuc
 import com.high.orchestration.infrastructure.kafka.dto.response.StockDeductionFailMessage;
 import com.high.orchestration.infrastructure.kafka.dto.response.StockDeductionSuccessMessage;
 import com.high.orchestration.infrastructure.kafka.producer.KafkaEventPublisher;
+import com.high.orchestration.monitoring.application.DlqRetryFailureHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.RetryableTopic;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,66 +39,122 @@ public class KafkaConsumer {
         private final ObjectMapper objectMapper;
         private final OrderCreateAdapter adapter;
         private final KafkaEventPublisher publisher;
+        private final DlqRetryFailureHandler dlqRetryFailureHandler;
 
-    @KafkaListener(topics = "order-create-success")
-    public void orderCreateSuccess(String orderCreateSuccessMessage) {
-        log.info("[KafkaConsumer] orderCreateSuccess : orderCreateSuccessMessage: {}", orderCreateSuccessMessage);
+    @RetryableTopic(
+        attempts = "3",
+        backoff = @Backoff(
+            delay = 1000,
+            multiplier = 2.0 //지수 적용
+        ),
+        dltTopicSuffix = "-dlq"
+    )
+    @KafkaListener(topics = "order-create-success", groupId = "orchestration-consumer-group")
+    public void orderCreateSuccess(String orderCreateSuccessMessage,
+        @Header(name = "from-dlq", required = false) Boolean fromDlq,
+        @Header(name = "dlq-id", required = false) String dlqId
+    ) throws JsonProcessingException {
+        OrderCreateSuccessMessage message = null;
+        log.info(
+            "[KafkaConsumer] orderCreateSuccess - fromDlq={}, payload={}",
+            fromDlq, orderCreateSuccessMessage
+        );
 
         try {
-            OrderCreateSuccessMessage message = objectMapper.readValue(orderCreateSuccessMessage, OrderCreateSuccessMessage.class);
-            StockDeductionCommandRequest stockRequest = adapter.toStockDeductionCommand(message);
-            CouponUseCommandRequest couponRequest = adapter.toCouponUseCommandRequest(message);
-            orderCreateSagaService.handlerOrderCreateSuccess(stockRequest);
 
+            message = objectMapper.readValue(orderCreateSuccessMessage,
+                OrderCreateSuccessMessage.class);
+
+//        } catch (Exception e) {
+//            log.error("[KafkaConsumer] 메시지 파싱 실패", e);
+//
+//            return;
+//        }
+        StockDeductionCommandRequest stockRequest = null;
+        CouponUseCommandRequest couponRequest = null;
+
+//        try {
+            stockRequest = adapter.toStockDeductionCommand(message);
+            couponRequest = adapter.toCouponUseCommandRequest(message);
+
+            orderCreateSagaService.handlerOrderCreateSuccess(stockRequest);
+//        } catch (Exception e) {
+//            log.warn(
+//                "[KafkaConsumer] 비즈니스 실패 - Kafka 재시도 안함",
+//                e
+//            );
+//            return;
+//        }
+//        try {
             publisher.publishCouponUseCommand("coupon-use-request", couponRequest);
             publisher.publishStockDeductionCommand("stock-deduction-request", stockRequest);
             log.info("[KafkaConsumer] orderCreateSuccess : 재고차감 명령 발행 성공 ");
 
+        }
 
-            log.info("ID: {}", message.userId());
-            log.info("ID : {}, ID: {}", stockRequest.userId(), couponRequest.userId());
-        } catch (Exception e) {
-            log.error("[KafkaConsumer] orderCreateSuccess : 메시지 파싱 실패 : {}", orderCreateSuccessMessage, e);
+        catch (Exception e) {
+            log.error("[KafkaConsumer] orderCreateSuccess 실패", e);
+
+            //DLQ에서 온 메시지가 실패하면 즉시 영구 실패 처리
+            if (Boolean.TRUE.equals(fromDlq) && dlqId != null) {
+                log.error(
+                    "[KafkaConsumer] DLQ에서 유입된 재시도 메시지 실패 - 영구 실패 처리 - dlqId={}",
+                    dlqId
+                );
+                dlqRetryFailureHandler.handleRetryFailure(dlqId, e);
+                return;
             }
-    }
 
-    @KafkaListener(topics = "order-create-fail")
-    public void orderCreateFail(String orderCreateFailMessage) {
-        log.info("[kafkaConsumer] orderCreateFail : orderCreateFailMessage {}", orderCreateFailMessage);
-        try {
-            OrderCreateFailedMessage message = objectMapper.readValue(orderCreateFailMessage, OrderCreateFailedMessage.class);
-            OrderCreateFailCommandResponse request = adapter.toOrderCreateFailCommand(message);
-            orderCreateSagaService.handleOrderCreateFailed(request);
-            log.info("주문 생성 실패 메시지 처리 완료");
-        } catch (Exception e) {
-            log.error("주문 실패 메시지 파싱 실패");
+            throw e;
         }
     }
 
 
-    @KafkaListener(topics = "stock-deduction-success")
-    public void stockDeductionSuccess(String stockDeductionSuccessMessage) {
+    @RetryableTopic(
+        attempts = "3",
+        backoff = @Backoff(delay = 1000, multiplier = 2.0),
+        dltTopicSuffix = "-dlq"
+    )
+    @KafkaListener(topics = "order-create-fail", groupId = "orchestration-consumer-group")
+    public void orderCreateFail(String orderCreateFailMessage) throws JsonProcessingException {
+        log.info("[kafkaConsumer] orderCreateFail : orderCreateFailMessage {}", orderCreateFailMessage);
+
+            OrderCreateFailedMessage message = objectMapper.readValue(orderCreateFailMessage, OrderCreateFailedMessage.class);
+            OrderCreateFailCommandResponse request = adapter.toOrderCreateFailCommand(message);
+            orderCreateSagaService.handleOrderCreateFailed(request);
+
+            log.info("주문 생성 실패 메시지 처리 완료");
+
+    }
+
+    @RetryableTopic(
+        attempts = "3",
+        backoff = @Backoff(delay = 1000, multiplier = 2.0),
+        dltTopicSuffix = "-dlq"
+    )
+    @KafkaListener(topics = "stock-deduction-success", groupId = "orchestration-consumer-group")
+    public void stockDeductionSuccess(String stockDeductionSuccessMessage) throws JsonProcessingException {
         log.info("[KafkaConsumer] stockDeductionSuccess :  stockDeductionSuccessMessage: {}", stockDeductionSuccessMessage);
 
-        try {
             StockDeductionSuccessMessage message = objectMapper.readValue(stockDeductionSuccessMessage, StockDeductionSuccessMessage.class);
             PaymentCreateCommandRequest request = adapter.toPaymentCreateCommand(message);
             orderCreateSagaService.handlerStockDeductionSuccess(request);
 
             publisher.publishPaymentCreateCommand("payment-create-request", request);
             log.info("[KafkaConsumer] stockDeductionSuccess : 결제 생성 명령 성공");
-        } catch (Exception e) {
-            log.error("[KafkaConsumer] stockDeductionSuccess : 메시지 파싱 실패 : {}", stockDeductionSuccessMessage, e);
-        }
 
     }
 
-    //TODO: 재고차감 실패 이벤트 구독 로직
-    @KafkaListener(topics = "stock-deduction-fail")
-    public void stockDeductionFail(String stockDeductionFailMessage) {
-        log.info("[KafkaConsumer] stockDeductionFail :  stockDeductionFailMessage: {}", stockDeductionFailMessage);
 
-        try {
+    //TODO: 재고차감 실패 이벤트 구독 로직
+    @RetryableTopic(
+        attempts = "3",
+        backoff = @Backoff(delay = 1000, multiplier = 2.0),
+        dltTopicSuffix = "-dlq"
+    )
+    @KafkaListener(topics = "stock-deduction-fail", groupId = "orchestration-consumer-group")
+    public void stockDeductionFail(String stockDeductionFailMessage) throws JsonProcessingException {
+        log.info("[KafkaConsumer] stockDeductionFail :  stockDeductionFailMessage: {}", stockDeductionFailMessage);
 
             StockDeductionFailMessage message = objectMapper.readValue(stockDeductionFailMessage, StockDeductionFailMessage.class);
             if(message == null){
@@ -116,17 +177,13 @@ public class KafkaConsumer {
             publisher.publishOrderDeleteCommand("order-delete-request", orderRequest);
             log.info("[KafkaConsumer] stockDeductionFail : 주문 삭제 이벤트 발행 성공");
 
-        } catch (Exception e) {
-            log.error("[KafkaConsumer] stockDeductionFail : 재고 차감 실패 메시지 처리 실패 : {}", stockDeductionFailMessage, e);
-        }
 
     }
 
-    @KafkaListener(topics = "payment-create-success")
-    public void paymentCreateSuccess(String paymentCreateSuccessMessage) {
+    @KafkaListener(topics = "payment-create-success", groupId = "orchestration-consumer-group")
+    public void paymentCreateSuccess(String paymentCreateSuccessMessage) throws JsonProcessingException {
         log.info("[KafkaConsumer] paymentCreateSuccess  :  paymentCreateSuccessMessage: {}", paymentCreateSuccessMessage);
 
-        try {
             PaymentCreateSuccessMessage message = objectMapper.readValue(paymentCreateSuccessMessage, PaymentCreateSuccessMessage.class);
 
             log.info("[KafkaConsumer] paymentCreateSuccess - sagsId : {}, userId : {}, orderId : {}",message.sagaId(), message.userId(), message.orderId());
@@ -144,18 +201,18 @@ public class KafkaConsumer {
 
             orderCreateSagaService.endOrderCreateSaga(message.sagaId());
 
-
-        } catch (Exception e) {
-            log.error("[KafkaConsumer] paymentCreateSuccess : 메시지 파싱 실패 : {}", paymentCreateSuccessMessage, e);
-
-        }
     }
 
-    @KafkaListener(topics = "payment-create-fail")
-    public void paymentCreateFail(String paymentCreateFailMessage) {
+
+    @RetryableTopic(
+        attempts = "3",
+        backoff = @Backoff(delay = 1000, multiplier = 2.0),
+        dltTopicSuffix = "-dlq"
+    )
+    @KafkaListener(topics = "payment-create-fail", groupId = "orchestration-consumer-group")
+    public void paymentCreateFail(String paymentCreateFailMessage) throws JsonProcessingException {
         log.info("[KafkaConsumer] paymentCreateFail  :  paymentCreateFailMessage: {}", paymentCreateFailMessage);
 
-        try {
             PaymentCreateFailMessage message = objectMapper.readValue(paymentCreateFailMessage, PaymentCreateFailMessage.class);
 
             if(message == null){
@@ -180,10 +237,6 @@ public class KafkaConsumer {
             publisher.publishOrderDeleteCommand("order-delete-request", orderRequest);
             log.info("[KafkaConsumer] paymentCreateFail : 주문 삭제 이벤트 발행 성공");
 
-        } catch (Exception e) {
-            log.error("[KafkaConsumer] paymentCreateFail : 결제 생성 실패 메시지 처리 실패 : {}", paymentCreateFailMessage, e);
-
-        }
     }
 
 }
