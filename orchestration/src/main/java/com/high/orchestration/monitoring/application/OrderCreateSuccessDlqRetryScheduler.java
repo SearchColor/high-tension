@@ -1,8 +1,8 @@
 package com.high.orchestration.monitoring.application;
 
 import com.high.orchestration.monitoring.application.dto.DlqPermanentFailedMessage;
-import com.high.orchestration.monitoring.domain.KafkaDlqMessage;
-import com.high.orchestration.monitoring.domain.KafkaDlqRepository;
+import com.high.orchestration.monitoring.domain.Outbox;
+import com.high.orchestration.monitoring.domain.OutboxRepository;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -25,7 +25,7 @@ public class OrderCreateSuccessDlqRetryScheduler {
     private static final int MAX_RETRY = 3;
     private static final String TOPIC = "order-create-success";
 
-    private final KafkaDlqRepository kafkaDlqRepository;
+    private final OutboxRepository outboxRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final DlqEventPublisher dlqEventPublisher;
 
@@ -36,7 +36,7 @@ public class OrderCreateSuccessDlqRetryScheduler {
 
         log.info("[DLQ Scheduler] 재시도 대상 메시지 조회 시작");
 
-        List<KafkaDlqMessage> targets = kafkaDlqRepository.findRetryTargetsByTopic(TOPIC, now);
+        List<Outbox> targets = outboxRepository.findRetryTargetsByTopic(TOPIC, now);
 
         if (targets.isEmpty()) {
             log.info("[DLQ Scheduler] 재시도 대상 메시지 없음");
@@ -49,7 +49,7 @@ public class OrderCreateSuccessDlqRetryScheduler {
         int failCount = 0;
         int permanentFailCount = 0;
 
-        for (KafkaDlqMessage message : targets) {
+        for (Outbox message : targets) {
             try {
                 RetryResult result = retryMessage(message);
 
@@ -75,7 +75,7 @@ public class OrderCreateSuccessDlqRetryScheduler {
 
 
     @Transactional
-    protected RetryResult retryMessage(KafkaDlqMessage message) {
+    protected RetryResult retryMessage(Outbox message) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
 
 
@@ -92,7 +92,7 @@ public class OrderCreateSuccessDlqRetryScheduler {
                 message.getDlqId(), message.getRetryCount());
 
             message.markPermanentFail();
-            kafkaDlqRepository.save(message);
+            outboxRepository.save(message);
 
             // 영구 실패 이벤트 발행
             publishPermanentFailed(message);
@@ -103,8 +103,8 @@ public class OrderCreateSuccessDlqRetryScheduler {
 
         // 재시도 진행 중으로 상태 변경 (중복 처리 방지)
         message.markRetrying();
-        kafkaDlqRepository.save(message);
-        kafkaDlqRepository.flush();  // 즉시 DB 반영
+        outboxRepository.save(message);
+        outboxRepository.flush();  // 즉시 DB 반영
 
         try {
             log.info("[DLQ Retry] Kafka 재전송 시도 - dlqId={}, topic={}",
@@ -124,7 +124,7 @@ public class OrderCreateSuccessDlqRetryScheduler {
                 message.getDlqId(), message.getRetryCount());
 
             message.markReprocessed();
-            kafkaDlqRepository.save(message);
+            outboxRepository.save(message);
             return RetryResult.SUCCESS;
 
         } catch (Exception e) {
@@ -139,7 +139,7 @@ public class OrderCreateSuccessDlqRetryScheduler {
             LocalDateTime nextRetryAt = LocalDateTime.now(ZoneOffset.UTC).plusMinutes(nextDelayMinutes);
 
             message.increaseRetry(nextRetryAt);
-            kafkaDlqRepository.save(message);
+            outboxRepository.save(message);
 
             log.info(
                 "[DLQ Retry] 다음 재시도 예정 - dlqId={}, nextRetryAt={}, delayMinutes={}",
@@ -153,7 +153,7 @@ public class OrderCreateSuccessDlqRetryScheduler {
     }
 
 
-    private void publishPermanentFailed(KafkaDlqMessage message) {
+    private void publishPermanentFailed(Outbox message) {
         try {
             DlqPermanentFailedMessage failedMessage = DlqPermanentFailedMessage.of(
                 message.getDlqId(),

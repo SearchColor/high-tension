@@ -18,9 +18,6 @@ import org.springframework.stereotype.Service;
 public class DlqConsumer {
 
     private final DlqRecordService dlqRecordService;
-    //private final KafkaDlqEventPublisher publisher;
-
-    //private final OrderCreateSuccessDlqRetryScheduler dlqRetryService;
 
     @KafkaListener(topics = "order-create-success-dlq")
     public void orderCreateSuccessDlq(

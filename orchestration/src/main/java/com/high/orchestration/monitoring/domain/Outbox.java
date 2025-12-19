@@ -17,10 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Entity
-@Table(name = "p_kafka_dlq_message")
+@Table(name = "p_outbox")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class KafkaDlqMessage extends BaseUpdateEntity {
+public class Outbox extends BaseUpdateEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -52,7 +52,7 @@ public class KafkaDlqMessage extends BaseUpdateEntity {
     private LocalDateTime failedAt;
 
 
-    private KafkaDlqMessage(
+    private Outbox(
         String originalTopic,
         String dlqTopic,
         int partitionNo,
@@ -86,7 +86,7 @@ public class KafkaDlqMessage extends BaseUpdateEntity {
         this.dlqStatus = dlqStatus;
     }
 
-    public static KafkaDlqMessage create(
+    public static Outbox create(
         String originalTopic,
         String dlqTopic,
         int partitionNo,
@@ -102,7 +102,7 @@ public class KafkaDlqMessage extends BaseUpdateEntity {
         Integer deliveryAttempt,
         LocalDateTime nextRetryAt
         ) {
-        return new KafkaDlqMessage(
+        return new Outbox(
             originalTopic,
             dlqTopic,
             partitionNo,

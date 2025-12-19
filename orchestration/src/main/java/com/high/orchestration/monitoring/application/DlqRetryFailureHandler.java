@@ -1,8 +1,8 @@
 package com.high.orchestration.monitoring.application;
 
 import com.high.orchestration.monitoring.application.dto.DlqPermanentFailedMessage;
-import com.high.orchestration.monitoring.domain.KafkaDlqMessage;
-import com.high.orchestration.monitoring.domain.KafkaDlqRepository;
+import com.high.orchestration.monitoring.domain.Outbox;
+import com.high.orchestration.monitoring.domain.OutboxRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class DlqRetryFailureHandler {
 
-    private final KafkaDlqRepository kafkaDlqRepository;
+    private final OutboxRepository outboxRepository;
     private final DlqEventPublisher dlqEventPublisher;
 
     @Transactional
@@ -26,11 +26,11 @@ public class DlqRetryFailureHandler {
         );
 
         try {
-            KafkaDlqMessage message = kafkaDlqRepository.findById(UUID.fromString(dlqId))
+            Outbox message = outboxRepository.findById(UUID.fromString(dlqId))
                 .orElseThrow(() -> new IllegalArgumentException("DLQ 메시지를 찾을 수 없음: " + dlqId));
 
             message.markPermanentFail();
-            kafkaDlqRepository.save(message);
+            outboxRepository.save(message);
 
             log.info(
                 "[DLQ Retry Failure] 영구 실패 처리 완료 - dlqId={}, retryCount={}",
@@ -47,7 +47,7 @@ public class DlqRetryFailureHandler {
         }
     }
 
-    private void publishPermanentFailed(KafkaDlqMessage message) {
+    private void publishPermanentFailed(Outbox message) {
         try {
             DlqPermanentFailedMessage failedMessage = DlqPermanentFailedMessage.of(
                 message.getDlqId(),

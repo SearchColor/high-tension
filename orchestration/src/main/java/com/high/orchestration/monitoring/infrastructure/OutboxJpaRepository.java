@@ -1,6 +1,6 @@
 package com.high.orchestration.monitoring.infrastructure;
 
-import com.high.orchestration.monitoring.domain.KafkaDlqMessage;
+import com.high.orchestration.monitoring.domain.Outbox;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -10,16 +10,16 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface KafkaDlqJpaRepository extends JpaRepository<KafkaDlqMessage, UUID> {
+public interface OutboxJpaRepository extends JpaRepository<Outbox, UUID> {
 
     @Query("""
-        SELECT d FROM KafkaDlqMessage d
-        WHERE d.originalTopic = :topic
-        AND d.dlqStatus = 'RETRY_WAITING'
-        AND d.nextRetryAt <= :now
-        ORDER BY d.createdAt ASC
+        SELECT o FROM Outbox o
+        WHERE o.originalTopic = :topic
+        AND o.dlqStatus = 'RETRY_WAITING'
+        AND o.nextRetryAt <= :now
+        ORDER BY o.createdAt ASC
         """)
-    List<KafkaDlqMessage> findRetryTargetsByTopic(
+    List<Outbox> findRetryTargetsByTopic(
         @Param("topic") String topic,
         @Param("now") LocalDateTime now
     );
