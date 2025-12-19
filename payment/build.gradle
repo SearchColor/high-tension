@@ -62,10 +62,7 @@ dependencies {
 
 	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 
-	// orchestration
-    // implementation 'com.high:orchestration:0.0.1-SNAPSHOT'
 
-	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 }
 
 dependencyManagement {
