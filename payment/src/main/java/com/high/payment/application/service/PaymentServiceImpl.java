@@ -24,7 +24,9 @@ import com.high.payment.domain.model.PaymentOutbox;
 import com.high.payment.domain.model.PaymentStatus;
 import com.high.payment.domain.port.out.PaymentOutboxRepositoryPort;
 import com.high.payment.domain.port.out.PaymentRepositoryPort;
-import com.high.payment.domain.port.out.UserValidationPort;
+import com.high.payment.domain.port.out.PaymentSagaRepositoryPort;
+import com.high.payment.domain.model.PaymentSaga;
+import com.high.payment.domain.model.PaymentSagaStatus;
 import com.high.payment.exception.PaymentException;
 import com.high.payment.exception.PaymentErrorCode;
 
@@ -36,15 +38,13 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
-	// private final PaymentRepository paymentRepository; //
 	private final PaymentOutboxRepositoryPort outboxRepository;
 	private final IamportClientPort iamportClient;
 	private final ObjectMapper objectMapper;
 	private final PaymentRepositoryPort paymentRepositoryPort; // Hexagonal Port 사용
 	private final UserServiceClient userServiceClient;
-	private final PaymentSagaEventPort eventPublisher;
-	private final UserValidationPort userValidationPort;
 	private final PaymentSagaEventPort paymentSagaEventPort;
+	private final PaymentSagaRepositoryPort paymentSagaRepositoryPort;
 
 	@Override
 	@Transactional // DB 저장과 Outbox 저장을 하나의 트랜잭션으로 묶음
@@ -297,57 +297,77 @@ public class PaymentServiceImpl implements PaymentService {
 		UUID sagaId = command.sagaId();
 		UUID orderId = command.orderId();
 		UUID userId = command.userId();
+		Integer paymentPrice = command.paymentPrice();
 
-		log.info("[Saga] 결제 요청 수신: SagaId={}, OrderId={}, UserId={}", sagaId, orderId, userId);
+		log.info("[Saga] 결제 Intent 생성 요청 수신: SagaId={}, OrderId={}, UserId={}, Price={}",
+				 sagaId, orderId, userId, paymentPrice);
+
+		// 0) paymentPrice 검증 (Intent 생성 단계에서도 최소 검증은 필요)
+		if (paymentPrice == null || paymentPrice <= 0) {
+			PaymentSagaResultMessage fail = new PaymentSagaResultMessage(
+				sagaId, orderId, userId, false,
+				"paymentPrice는 1 이상이어야 합니다.",
+				PaymentErrorCode.PAYMENT_BAD_REQUEST.getCode()
+			);
+			paymentSagaEventPort.publishPaymentResult(fail);
+			return;
+		}
+
+		// 1) 멱등 처리: sagaId로 먼저 조회해서 이미 SUCCESS/FAIL이면 즉시 종료
+		var existingSagaOpt = paymentSagaRepositoryPort.findBySagaId(sagaId);
+		if (existingSagaOpt.isPresent()) {
+			var existingSaga = existingSagaOpt.get();
+
+			if (existingSaga.getStatus() != PaymentSagaStatus.PENDING) {
+				log.warn("[Saga] 이미 처리된 SagaId={} status={} - skip", sagaId, existingSaga.getStatus());
+				return;
+			}
+		}
+
+		// 2) saga row 없으면 생성(PENDING)
+		var saga = existingSagaOpt.orElseGet(() ->
+												 paymentSagaRepositoryPort.save(PaymentSaga.start(sagaId, orderId, userId)
+												 ));
 
 		try {
-			// 1. 유저 검증 (UserServiceClient는 UUID를 받도록 수정됨)
-			try {
-				userServiceClient.validateUser(userId);
-				log.info("[Saga] 유저 검증 성공: UserId={}", userId);
-			} catch (Exception e) {
-				throw new RuntimeException("유저 유효성 검증 실패: " + e.getMessage());
-			}
+			// 3) 유저 검증 (필요하면 유지)
+			userServiceClient.validateUser(userId);
 
-			// 2. [중요] DTO 필드 누락으로 인한 임시 데이터 생성
-			log.warn("[Saga] 주의: DTO에 결제금액 정보가 없어 '0원'으로 임시 처리합니다.");
+			// 4) 결제 레코드(PENDING) 생성만 한다. (PG 승인 X, complete() X)
+			Payment payment = Payment.builder()
+									 .orderId(orderId)
+									 .userId(userId)
+									 .paymentPrice(paymentPrice)
+									 .paymentMethod("CARD")
+									 .status(PaymentStatus.PENDING)
+									 .build();
 
-			CreatePaymentRequest tempRequest = new CreatePaymentRequest(
-				orderId,
-				userId,     // Payment 도메인은 String userId를 사용함
-				0,       // 임시 값: 0원
-				"SAGA_TEST_CARD"       // 임시 값: 테스트용 결제수단
-			);
+			Payment saved = paymentRepositoryPort.save(payment);
 
-			// 3. 기존 결제 로직 재사용
-			processPayment(tempRequest);
+			// 5) 오케스트레이터에게 “결제 생성 성공” 알림 -> true: 결제 완료가 아닌 결제 생성
+			saga.success("Payment saga success");
+			paymentSagaRepositoryPort.save(saga);
 
-			// 4. 성공 이벤트 발행 (Orchestrator에게 알림)
+			// 6) 오케스트레이터 결과 발행
 			PaymentSagaResultMessage successResult = new PaymentSagaResultMessage(
-				sagaId,
-				orderId,
-				userId,
-				true,
-				"Payment successful",
-				null
+				sagaId, orderId, userId, true, "Payment successful", null
 			);
 			paymentSagaEventPort.publishPaymentResult(successResult);
-			log.info("[Saga] 결제 성공 이벤트 발행 완료");
 
-		} catch (PaymentException pe) {
-			log.error("[Saga] 결제 처리 중 실패 발생: {}", pe.getMessage());
+			log.info("[Saga] 결제 Intent 생성 완료: paymentId={}", saved.getId());
 
-			// 5. 실패 이벤트 발행 (보상 트랜잭션 유도)
-			PaymentSagaResultMessage failResult = new PaymentSagaResultMessage(
+		} catch (Exception e) {
+			log.error("[Saga] 결제 Intent 생성 실패: {}", e.getMessage(), e);
+
+			PaymentSagaResultMessage fail = new PaymentSagaResultMessage(
 				sagaId,
 				orderId,
 				userId,
 				false,
-				"알 수 없는 오류: " + pe.getMessage(),
-				PaymentErrorCode.PAYMENT_INTERNAL_SERVER_ERROR.getCode()
+				"Payment intent create failed: " + e.getMessage(),
+				5003
 			);
-			// 💡 단일 메서드 호출로 변경
-			paymentSagaEventPort.publishPaymentResult(failResult);
+			paymentSagaEventPort.publishPaymentResult(fail);
 		}
 	}
 }
