@@ -25,10 +25,19 @@ spring:
     init:
       mode: always
 
-  redis:
-    host: localhost
-    port: 6379
-    timeout: 3000ms
+  data: # 에러 발생하면 이 부분 삭제하기
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 3000ms
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 5000
+      cache-null-values: false
+      use-key-prefix: true
+      key-prefix: product::
 
 redisson:
   mode: single

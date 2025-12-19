@@ -2,6 +2,8 @@ package com.high.product.application.service;
 
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +36,11 @@ public class ProductService {
 	private final Limited_ProductRepository limited_ProductRepository;
 
 	// 일반상품 생성
+	@CacheEvict(
+		cacheNames = "product",
+		key = "#result.id()",
+		condition = "#result != null"
+	)
 	public ProductResponse createProduct(ProductCreateRequest request) {
 
 		Product product = Product.createProduct(
@@ -49,6 +56,10 @@ public class ProductService {
 
 	// 일반상품 단건 조회
 	@Transactional(readOnly = true)
+	@Cacheable(
+		cacheNames = "product",
+		key = "#productId"
+	)
 	public ProductResponse getProductById(UUID productId) {
 		Product product = productRepository.findByIdAndDeletedAtIsNull(productId)
 			.orElseThrow(() -> new ProductException(ProductErrorCode.PRODUCT_NOT_FOUND));
@@ -71,6 +82,11 @@ public class ProductService {
 
 	// 일반상품 카테고리별 조회
 	@Transactional(readOnly = true)
+	@Cacheable(
+		value = "productsByCategory",
+		key = "{#category, #page, #size, #sort, #direction}",
+		unless = "#result == null"
+	)
 	public Page<ProductResponse> getProductsByCategory(String category, int page, int size, String sort,
 		String direction) {
 		Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
@@ -83,6 +99,10 @@ public class ProductService {
 	}
 
 	// 일반상품 수정
+	@CacheEvict(
+		cacheNames = "product",
+		key = "#productId"
+	)
 	public ProductResponse updateProduct(UUID productId, ProductUpdateRequest request) {
 		// 상품 존재 확인
 		Product product = productRepository.findById(productId)
@@ -99,6 +119,10 @@ public class ProductService {
 	}
 
 	// 일반상품 삭제(임시)
+	@CacheEvict(
+		cacheNames = "product",
+		key = "#productId"
+	)
 	public void deleteProduct(UUID productId) {
 		// 상품 존재 확인
 		Product product = productRepository.findById(productId)
@@ -113,6 +137,11 @@ public class ProductService {
 	}
 
 	// 한정상품 등록
+	@CacheEvict(
+		cacheNames = "limitedProduct",
+		key = "#result.id()",
+		condition = "#result != null"
+	)
 	public LimitedProductResponse createLimitedProduct(LimitedProductCreateRequest request) {
 
 
@@ -131,6 +160,10 @@ public class ProductService {
 
 	// 한정상품 단건 조회
 	@Transactional(readOnly = true)
+	@Cacheable(
+		cacheNames = "limitedProduct",
+		key = "#limitedProductId"
+	)
 	public LimitedProductResponse getLimitedProductById(UUID limitedProductId) {
 		Limited_Product limitedProduct = limited_ProductRepository.findById(limitedProductId)
 			.orElseThrow(() -> new CustomException(CommonErrorCode.NOT_FOUND));
@@ -152,6 +185,11 @@ public class ProductService {
 
 	// 한정상품 카테고리별 조회(페이징 & 정렬)
 	@Transactional(readOnly = true)
+	@Cacheable(
+		value = "limitedProductsByCategory",
+		key = "{#category, #page, #size, #sort, #direction}",
+		unless = "#result == null"
+	)
 	public Page<LimitedProductResponse> getLimitedProductsByCategory(String category, int page, int size, String sort,
 		String direction) {
 

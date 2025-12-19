@@ -6,11 +6,13 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
 
+import com.high.product.application.port.SagaDeduplicationPort;
+
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class SagaIdDeduplication {
+public class SagaIdDeduplication implements SagaDeduplicationPort {
 
 	private final RedissonClient redissonClient;
 
