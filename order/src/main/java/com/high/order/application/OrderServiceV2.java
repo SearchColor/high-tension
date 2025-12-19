@@ -7,6 +7,7 @@ import com.high.order.application.dto.external.PaymentResponse;
 import com.high.order.application.dto.external.ProductResponse;
 import com.high.order.application.dto.internal.OrderItemCreateInfo;
 import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
+import com.high.order.application.dto.internal.kafka.request.ProcessOrderSuccessCommand;
 import com.high.order.application.dto.internal.kafka.response.OrderSuccessResponse;
 import com.high.order.application.dto.request.OrderItemDeliveryStatusChangeRequest;
 import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
@@ -21,6 +22,7 @@ import com.high.order.application.exception.NoPermissionToChangeOrderItemStatusE
 import com.high.order.application.exception.OrderBadRequestException;
 import com.high.order.application.exception.OrderItemStatusNotAllowedException;
 import com.high.order.application.exception.OrderNotFoundException;
+import com.high.order.application.port.EventPublisher;
 import com.high.order.application.service.CouponService;
 import com.high.order.application.service.PaymentService;
 import com.high.order.application.service.ProductService;
@@ -51,6 +53,7 @@ public class OrderServiceV2 {
     private final ProductService productService;
     private final CouponService couponService;
     private final PaymentService paymentService;
+    private final EventPublisher eventPublisher;
 
 
     @Transactional
@@ -355,13 +358,30 @@ public class OrderServiceV2 {
         return OrderResponse.from(order);
     }
 
-//    @Transactional
-//    public void processOrderSuccess(ProcessOrderSuccessCommand command) {
-//        UUID orderId = command.orderId();
-//        Order order = getOrderForUser(orderId, );
-//        order.updateStatus(OrderStatus.SUCCESS);
-//        orderRepository.save(order);
-//    }
+    //주문 성공시 슬랙메시지 보내기 임시 테스트 로직
+    @Transactional(readOnly = true)
+    public void processOrderSuccess(UUID orderId) {
+           Order order = orderRepository.findById(orderId).orElseThrow(OrderNotFoundException::new);
+
+        List<String> orderItemNameList = order.getOrderItems().stream().map(orderItem ->
+            getProduct(orderItem.getProductId()).name()).toList();
+
+
+        ProcessOrderSuccessCommand command = ProcessOrderSuccessCommand.create(
+            orderId,
+            order.getCustomerId(),
+            order.getPaidAmount(),
+            order.getCreatedAt().toString(),
+            orderItemNameList
+        );
+        log.info("external 전송 정보 - orderId : {}, userId : {}, paidAmount : {}, createdAt : {}",command.orderId(), command.userId(), command.paidAmount(), command.createdAt());
+
+        System.out.println("주문 아이템 리스트");
+        for(String name : orderItemNameList) {
+            System.out.println(name);
+        }
+        eventPublisher.sendOrderProcessSuccess("order-process-success", command);
+    }
 
     @Transactional
     public OrderItemIdResponse changeOrderItemStatusForRefund(UUID orderId, UUID orderItemId, OrderItemStatusChangeRequest request, UUID userId, String userRole) {

@@ -2,6 +2,7 @@ package com.high.order.infrastructure.kafka.producer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.high.order.application.dto.internal.kafka.request.ProcessOrderSuccessCommand;
 import com.high.order.application.dto.internal.kafka.response.OrderCreateFailedResponse;
 import com.high.order.application.dto.internal.kafka.response.OrderDeleteResponse;
 import com.high.order.application.dto.internal.kafka.response.OrderSuccessResponse;
@@ -82,5 +83,21 @@ public class KafkaEventPublisher implements EventPublisher {
         kafkaTemplate.send(topic, jsonString);
         log.info("[KafkaProducer] sendOrderDeleteFail : 이벤트 발행 성공");
     }
+
+    @Override
+    public void sendOrderProcessSuccess(String topic, ProcessOrderSuccessCommand command) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonString = "";
+
+        try {
+            jsonString = objectMapper.writeValueAsString(command);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        kafkaTemplate.send(topic, jsonString);
+        log.info("[KafkaProducer] sendOrderProcessSuccess : 이벤트 발행 성공");
+    }
+
 
 }

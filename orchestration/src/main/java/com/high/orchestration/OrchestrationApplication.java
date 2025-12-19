@@ -3,7 +3,9 @@ package com.high.orchestration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
+@EnableScheduling
 @SpringBootApplication
 @ComponentScan(basePackages = {"com.high.orchestration", "com.library.module"})
 public class OrchestrationApplication {
