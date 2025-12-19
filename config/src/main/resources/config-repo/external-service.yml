@@ -33,6 +33,14 @@ management:
     sampling:
       probability: 1.0
 
+kafka:
+  bootstrap-servers: localhost:9092
+  consumer:
+    group-id: external-service-group
+
+  topic:
+    order-process-success: order-process-success
+
 logging:
   level:
     com.high.external: INFO
