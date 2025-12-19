@@ -30,8 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CouponIssueService {
 
-    private final CouponService couponService;
+    // private final CouponService couponService;
     private final CouponIssueRepository couponIssueRepository;
+    private final CouponReader couponReader;
 
     private final OrderPort orderPort;
     private final CouponCachePort couponCachePort;
@@ -47,7 +48,7 @@ public class CouponIssueService {
 
         log.info("User {} is issued a coupon", userId);
 
-        Coupon coupon = couponService.getCouponById(couponId);
+        Coupon coupon = couponReader.getCouponById(couponId);
 
         Long result = couponCachePort.tryIssueCoupon(
                 couponId,
@@ -72,7 +73,7 @@ public class CouponIssueService {
     // Consumer 호출 메서드
     @Transactional
     public void saveCouponIssue(UUID couponId, UUID userId) {
-        Coupon coupon = couponService.getCouponById(couponId);
+        Coupon coupon = couponReader.getCouponById(couponId);
         CouponIssue couponIssue = CouponIssue.issueCoupon(coupon, userId, LocalDateTime.now());
         couponIssueRepository.save(couponIssue);
 
