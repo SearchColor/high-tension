@@ -41,6 +41,12 @@ logging:
   level:
     root: INFO
     org.apache.kafka: WARN
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB           # 파일 최대 크기
+      max-history: 7                # 7일간 보관
+      total-size-cap: 1GB           # 전체 로그 최대 1GB
+      clean-history-on-start: true  # 시작 시 오래된 로그 정리
 
 management:
   zipkin:
@@ -49,3 +55,4 @@ management:
   tracing:
     sampling:
       probability: 1.0
+

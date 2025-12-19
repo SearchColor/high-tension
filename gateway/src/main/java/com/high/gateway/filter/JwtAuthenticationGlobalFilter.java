@@ -38,6 +38,11 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
             "/api/v1/users/login",
             "/api/v1/users/reissue",
 
+            // Passkey Authentication (Public - No JWT required)
+            "/api/v1/passkeys/authenticate/start",
+            "/api/v1/passkeys/authenticate/finish",
+            "/passkey-test.html",
+
             // Swagger UI & OpenAPI Docs
             "/docs/**",
             "/swagger-ui/**",

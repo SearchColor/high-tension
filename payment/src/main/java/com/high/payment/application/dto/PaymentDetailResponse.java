@@ -8,7 +8,7 @@ import com.high.payment.domain.model.Payment;
 public record PaymentDetailResponse (
 	String orderId,
 	String paymentId,
-	BigDecimal amount,
+	Integer paymentPrice,
 	String status, // PaymentStatus
 	String pgTid,
 	LocalDateTime createdAt
@@ -17,7 +17,7 @@ public record PaymentDetailResponse (
 		return new PaymentDetailResponse(
 			payment.getOrderId().toString(),
 			payment.getId().toString(),
-			payment.getAmount(),
+			payment.getPaymentPrice(),
 			payment.getStatus().name(),
 			payment.getPgTid(),
 			payment.getCreatedAt()

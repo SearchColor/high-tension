@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passkey Test - High Tension</title>
+    <link rel="icon" href="data:,">
+    <script src="https://unpkg.com/@simplewebauthn/browser@9.0.0/dist/bundle/index.umd.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        input {
+            padding: 8px;
+            margin-right: 10px;
+            width: 200px;
+        }
+
+        button {
+            padding: 8px 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔑 Passkey Test Console</h1>
+
+    <div id="authStatus" class="card">
+        현재 상태: <span id="tokenStatus">로그인 필요</span>
+        <button onclick="logout()" style="float: right; background-color: #666;">로그아웃</button>
+    </div>
+
+    <div class="card">
+        <h2>1. 회원가입 & 로그인 (기존 방식)</h2>
+        <p>패스키 등록을 위해 먼저 로그인이 필요합니다.</p>
+        <input type="email" id="email" placeholder="Email" value="test@example.com">
+        <input type="password" id="password" placeholder="Password" value="test1234@">
+        <button onclick="login()">로그인</button>
+        <button onclick="signup()" style="background-color: #28a745;">회원가입</button>
+    </div>
+
+    <div class="card">
+        <h2>2. 패스키 등록</h2>
+        <input type="text" id="credentialName" placeholder="기기 이름 (예: My MacBook)" value="My Test Device">
+        <button onclick="registerPasskey()">패스키 등록</button>
+    </div>
+
+    <div class="card">
+        <h2>3. 패스키 로그인</h2>
+        <p>비밀번호 없이 생체 인증으로 로그인합니다.</p>
+        <button onclick="authenticatePasskey()">패스키로 로그인</button>
+    </div>
+
+    <div class="card">
+        <h3>Logs</h3>
+        <pre id="logs">Waiting for action...</pre>
+    </div>
+
+    <script>
+        const API_BASE = '/api/v1'; // Relative path to support both 8000 and 8100
+
+        // Passkey endpoints
+        const PASSKEY_BASE = '/api/v1/passkeys';
+
+        const { startRegistration, startAuthentication } = SimpleWebAuthnBrowser;
+
+        function log(message, isError = false) {
+            const el = document.getElementById('logs');
+            const time = new Date().toLocaleTimeString();
+            const msg = `[${time}] ${message}`;
+            el.innerText = msg + '\n' + el.innerText;
+            if (isError) console.error(message); else console.log(message);
+        }
+
+        function getHeaders() {
+            const token = localStorage.getItem('accessToken');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            };
+        }
+
+        function updateStatus() {
+            const token = localStorage.getItem('accessToken');
+            document.getElementById('tokenStatus').innerText = token ? '로그인 됨 ✅' : '로그인 필요 ❌';
+            document.getElementById('tokenStatus').className = token ? 'success' : 'error';
+        }
+
+        async function signup() {
+            try {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                log('회원가입 요청 중...');
+                const res = await fetch(`${API_BASE}/users/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, name: 'Test User' })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    log('회원가입 성공: ' + JSON.stringify(data));
+                } else {
+                    throw new Error(JSON.stringify(data));
+                }
+            } catch (e) {
+                log('회원가입 실패: ' + e.message, true);
+            }
+        }
+
+        async function login() {
+            try {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                log('로그인 요청 중...');
+                const res = await fetch(`${API_BASE}/users/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('accessToken', data.data.accessToken);
+                    log('로그인 성공');
+                    updateStatus();
+                } else {
+                    throw new Error(JSON.stringify(data));
+                }
+            } catch (e) {
+                log('로그인 실패: ' + e.message, true);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('accessToken');
+            updateStatus();
+            log('로그아웃 됨');
+        }
+
+        async function registerPasskey() {
+            try {
+                // 1. Start Registration
+                log('패스키 등록 시작...');
+                const credentialName = document.getElementById('credentialName').value;
+
+                const startRes = await fetch(`${PASSKEY_BASE}/register/start`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ credentialName })
+                });
+
+                if (!startRes.ok) throw new Error('Registration Start Failed');
+
+                const startData = await startRes.json();
+                let options = JSON.parse(startData.data.publicKeyCredentialCreationOptions);
+
+                // UNWRAP (Yubico returns { publicKey: ... })
+                if (options.publicKey) {
+                    options = options.publicKey;
+                }
+
+                console.log('Registration Options:', options); // Debug logging
+
+                // 2. Browser Interaction
+                log('브라우저 인증 프롬프트 활성화...');
+
+                // FORCE PRINT OPTIONS TO LOG
+                const debugJson = JSON.stringify(options, null, 2);
+                document.getElementById('logs').innerText = '[DEBUG OPTIONS]\n' + debugJson + '\n\n' + document.getElementById('logs').innerText;
+
+                // Validation Check
+                if (!options.challenge) log('❌ Error: challenge is missing inside options!', true);
+                if (!options.user) log('❌ Error: user is missing inside options!', true);
+                else if (!options.user.id) log('❌ Error: user.id is missing inside options!', true);
+
+                const credential = await startRegistration(options);
+
+                // 3. Finish Registration
+                log('서버로 자격 증명 전송 중...');
+                const finishRes = await fetch(`${PASSKEY_BASE}/register/finish`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        credentialJson: JSON.stringify(credential),
+                        credentialName
+                    })
+                });
+
+                if (!finishRes.ok) throw new Error(await finishRes.text());
+
+                log('✅ 패스키 등록 완료!');
+            } catch (e) {
+                log('❌ 패스키 등록 실패: ' + e.message, true);
+            }
+        }
+
+        async function authenticatePasskey() {
+            try {
+                // 1. Start Authentication
+                log('패스키 로그인 시작...');
+
+                const startRes = await fetch(`${PASSKEY_BASE}/authenticate/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({}) // Username-less auth
+                });
+
+                if (!startRes.ok) throw new Error('Authentication Start Failed');
+
+                const startData = await startRes.json();
+                let options = JSON.parse(startData.data.publicKeyCredentialRequestOptions);
+
+                // UNWRAP
+                if (options.publicKey) {
+                    options = options.publicKey;
+                }
+
+                // 2. Browser Interaction
+                log('브라우저 인증 프롬프트 활성화 (지문/FaceID를 사용하세요)...');
+                const assertion = await startAuthentication(options);
+
+                // 3. Finish Authentication
+                log('서버로 인증 정보 전송 중...');
+                const finishRes = await fetch(`${PASSKEY_BASE}/authenticate/finish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        credentialJson: JSON.stringify(assertion)
+                    })
+                });
+
+                if (!finishRes.ok) throw new Error(await finishRes.text());
+
+                const finishData = await finishRes.json();
+                localStorage.setItem('accessToken', finishData.data.accessToken);
+                updateStatus();
+                log('✅ 패스키 로그인 성공! Access Token 발급됨.');
+
+            } catch (e) {
+                log('❌ 패스키 로그인 실패: ' + e.message, true);
+            }
+        }
+
+        // Init
+        updateStatus();
+    </script>
+</body>
+
+</html>

@@ -10,9 +10,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface JpaCouponIssueRepository extends JpaRepository<CouponIssue, UUID> {
 
-    boolean existsByCouponIdAndUserId(UUID couponId, UUID userId);
-    long countByCouponId(UUID couponId);
-
     // 리스트 조회
     @Query("""
     SELECT ci FROM CouponIssue ci

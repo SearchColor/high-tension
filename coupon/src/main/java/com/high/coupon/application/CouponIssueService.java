@@ -6,8 +6,11 @@ import com.high.coupon.application.dto.response.CouponValidationResponse;
 import com.high.coupon.application.dto.response.UserCouponResponse;
 import com.high.coupon.application.exception.CouponIssueNotFoundException;
 import com.high.coupon.application.exception.CouponOutOfStockException;
-import com.high.coupon.application.provider.OrderProvider;
-import com.high.coupon.application.provider.dto.OrderInfo;
+import com.high.coupon.application.port.out.CouponCachePort;
+import com.high.coupon.application.port.out.CouponIssueEventPort;
+import com.high.coupon.application.port.out.OrderPort;
+import com.high.coupon.application.port.out.dto.CouponIssueCreateMessage;
+import com.high.coupon.application.port.out.dto.OrderInfo;
 import com.high.coupon.domain.entity.Coupon;
 import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.exception.CouponAlreadyIssuedException;
@@ -27,42 +30,54 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CouponIssueService {
 
-    // todo : 고도화 필요 (발급 파트)
-
-    private final CouponService couponService; // 쿠폰 조회용
+    private final CouponService couponService;
     private final CouponIssueRepository couponIssueRepository;
-    private final OrderProvider orderProvider;
+
+    private final OrderPort orderPort;
+    private final CouponCachePort couponCachePort;
+
+    private final CouponIssueEventPort couponIssueEventPort;
 
     /**
      * 쿠폰 발급
+     * Redis 검증 -> Kafka 메시지 발송 -> 발급 응답
+     * DB 트랜잭션: ReadOnly (조회만 함)!
      */
-    @Transactional
     public CouponIssueResponse issueCoupon(UUID couponId, UUID userId) {
 
         log.info("User {} is issued a coupon", userId);
 
         Coupon coupon = couponService.getCouponById(couponId);
 
-        if (couponIssueRepository.existsByCouponIdAndUserId(couponId, userId)) {
+        Long result = couponCachePort.tryIssueCoupon(
+                couponId,
+                userId,
+                coupon.getTotalQuantity()
+        );
+
+        // 0 성공, -1 실패: 수량 소진, -2 실패: 이미 발급 받음
+        if (Long.valueOf(-2).equals(result)) {
             throw new CouponAlreadyIssuedException();
         }
-
-        /**
-         * todo: 동시성 문제로 고도화 필수 로직 (발급 수량 체크)
-         * 현재는 DB 조회 기반 단순 수량 체크 -> Redis 캐시 기반 + Lock 구현 필요
-         */
-        long issuedCount = couponIssueRepository.countByCouponId(couponId);
-        if (issuedCount >= coupon.getTotalQuantity()) {
+        if (Long.valueOf(-1).equals(result)) {
             throw new CouponOutOfStockException();
         }
 
-        CouponIssue couponIssue = CouponIssue.issueCoupon(coupon, userId, LocalDateTime.now());
-        CouponIssue savedCouponIssue = couponIssueRepository.save(couponIssue);
+        // Kafka로 메세지 전송 (비동기 처리)
+        couponIssueEventPort.publishIssueRequest(new CouponIssueCreateMessage(userId, couponId));
 
-        return CouponIssueResponse.from(savedCouponIssue);
+        return new CouponIssueResponse(true, "쿠폰이 발급되었습니다. 지급까지 시간이 소요될 수 있습니다");
     }
 
+    // Consumer 호출 메서드
+    @Transactional
+    public void saveCouponIssue(UUID couponId, UUID userId) {
+        Coupon coupon = couponService.getCouponById(couponId);
+        CouponIssue couponIssue = CouponIssue.issueCoupon(coupon, userId, LocalDateTime.now());
+        couponIssueRepository.save(couponIssue);
 
+        log.info("[COUPON ISSUE Consumer] DB 저장 완료: userId={}, couponId={}", userId, couponId);
+    }
 
 
     /**
@@ -135,7 +150,7 @@ public class CouponIssueService {
     @Transactional
     public void useCouponByOrderId(UUID orderId){
 
-        OrderInfo order = orderProvider.getOrder(orderId);
+        OrderInfo order = orderPort.getOrder(orderId);
 
         UUID couponIssuedId = order.couponIssueId();
         UUID userId = order.userId();
@@ -153,7 +168,7 @@ public class CouponIssueService {
     @Transactional
     public void restoreCouponByOrderId(UUID orderId) {
 
-        OrderInfo order = orderProvider.getOrder(orderId);
+        OrderInfo order = orderPort.getOrder(orderId);
         UUID couponIssueId = order.couponIssueId();
 
         log.info("[SAGA] couponIssueService Coupon 복원 요청: orderId={}, couponIssueId={}", orderId, couponIssueId);

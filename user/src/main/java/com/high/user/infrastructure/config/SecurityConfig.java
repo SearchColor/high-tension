@@ -53,7 +53,11 @@ public class SecurityConfig {
                                 "/api/v1/users/reissue",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html"
+                                "/swagger-ui.html",
+                        // 패스키 인증 시작/완료 (로그인)
+                                "/passkey-test.html",
+                                "/api/v1/passkeys/authenticate/start",
+                                "/api/v1/passkeys/authenticate/finish"
                         ).permitAll()
                         // 나머지는 인증 필요
                         .anyRequest().authenticated())

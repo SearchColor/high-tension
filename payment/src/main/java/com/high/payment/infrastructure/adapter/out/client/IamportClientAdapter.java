@@ -36,7 +36,7 @@ public class IamportClientAdapter implements IamportClientPort {
 			return IamportPaymentInfo.builder()
 									 .impUid(impUid)
 									 .merchantUid("b1c2d3e4-f5a6-7b8c-9d0e-1f2a3b4c5d6e")
-									 .amount(BigDecimal.valueOf(25000))
+									 .paymentPrice(25000)
 									 .status("paid")
 									 .pgTid("TID-MOCK-" + impUid.toUpperCase())
 									 .build();
@@ -45,7 +45,7 @@ public class IamportClientAdapter implements IamportClientPort {
 			return IamportPaymentInfo.builder()
 									 .impUid(impUid)
 									 .merchantUid("b1c2d3e4-f5a6-7b8c-9d0e-1f2a3b4c5d6e")
-									 .amount(BigDecimal.valueOf(0))
+									 .paymentPrice(0)
 									 .status("failed")
 									 .pgTid(null)
 									 .build();

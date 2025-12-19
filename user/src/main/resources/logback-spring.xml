@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <springProperty scope="context" name="serviceName" source="spring.application.name"/>
+
+    <appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>./logs/${serviceName}-json.log</file>
+
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>http.method</includeMdcKeyName>
+            <includeMdcKeyName>url.path</includeMdcKeyName>
+            <includeMdcKeyName>duration_ms</includeMdcKeyName>
+            <includeMdcKeyName>http.status_code</includeMdcKeyName>
+            <includeMdcKeyName>log.type</includeMdcKeyName>
+
+            <customFields>{"service_name":"${serviceName}"}</customFields>
+        </encoder>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>./logs/${serviceName}-json.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.springframework.security" level="WARN"/>
+    <logger name="com.netflix" level="WARN"/>
+    <logger name="org.springframework.cloud.netflix.eureka" level="WARN"/>
+
+    <logger name="com.high" level="INFO"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="JSON_FILE"/>
+    </root>
+</configuration>
