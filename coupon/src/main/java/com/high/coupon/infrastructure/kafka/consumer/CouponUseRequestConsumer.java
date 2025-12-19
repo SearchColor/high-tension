@@ -3,6 +3,7 @@ package com.high.coupon.infrastructure.kafka.consumer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.coupon.application.CouponIssueService;
+import com.high.coupon.infrastructure.context.MessageContext;
 import com.high.coupon.infrastructure.kafka.dto.CouponUseRequestMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +53,9 @@ public class CouponUseRequestConsumer {
         try {
             // JSON → DTO 역직렬화 (UUID 타입)
             dto = objectMapper.readValue(message, CouponUseRequestMessage.class);
+
+            MessageContext.set(dto.userId(), "USER");
+
             log.info("[SAGA COUPON CONSUMER: use req] 파싱 완료 sagaId: {}", dto.sagaId());
 
             // orderId 기반 wrapper 호출 (service)
@@ -71,6 +75,8 @@ public class CouponUseRequestConsumer {
             log.error("[SAGA COUPON CONSUMER: use req] 처리 실패 내용: {}, 에러: {}", message, e.getMessage());
             throw new RuntimeException("Kafka Consumer Error", e);
 
+        } finally {
+            MessageContext.clear();
         }
     }
 
