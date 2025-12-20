@@ -4,6 +4,7 @@ import com.high.coupon.application.dto.request.CouponCreateRequest;
 import com.high.coupon.application.dto.response.CouponCreateResponse;
 import com.high.coupon.application.dto.response.CouponDetailResponse;
 import com.high.coupon.application.dto.response.CouponListResponse;
+import com.high.coupon.application.exception.CouponNotFoundException;
 import com.high.coupon.domain.entity.Coupon;
 import com.high.coupon.domain.repository.CouponRepository;
 import com.library.jpa.response.PageResponse;
@@ -25,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class CouponService {
 
     private final CouponRepository couponRepository;
-    private final CouponReader couponReader;
 
     // 쿠폰 등록
     @Transactional
@@ -47,12 +47,14 @@ public class CouponService {
         return CouponCreateResponse.from(savedCoupon);
     }
 
+
     // 쿠폰 단건 조회
-    // todo 단건 조회 캐싱 방법 고민 (global, local)
-    public CouponDetailResponse getCouponDetail(UUID couponId) {
-        Coupon coupon = couponReader.getCouponById(couponId);
-        return CouponDetailResponse.from(coupon);
+    public CouponDetailResponse getCouponDetail(UUID couponId){
+        return couponRepository.findById(couponId)
+                .map(CouponDetailResponse::from)
+                .orElseThrow(CouponNotFoundException::new);
     }
+
 
     // 쿠폰 리스트 조회
     public PageResponse<CouponListResponse> getCouponPage(int page, int size, String sortBy, boolean isAsc) {
