@@ -150,4 +150,10 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("삭제되었습니다."));
     }
 
+    @GetMapping("/test/{orderId}")
+    public ResponseEntity<ApiResponse<OrderResponse>> testApi(@PathVariable UUID orderId) {
+        orderService.processOrderSuccess(orderId);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("요청 접수"));
+    }
+
 }

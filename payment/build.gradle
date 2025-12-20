@@ -31,6 +31,10 @@ ext {
 }
 
 dependencies {
+
+    // Logstash Logback Encoder
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+
 	// Spring Cloud & Boot Starters
 	implementation 'org.springframework.cloud:spring-cloud-starter-config'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -58,10 +62,9 @@ dependencies {
 
 	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 
-	// orchestration
-    // implementation 'com.high:orchestration:0.0.1-SNAPSHOT'
 
-	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
 }
 
 dependencyManagement {

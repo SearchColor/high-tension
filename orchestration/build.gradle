@@ -27,6 +27,10 @@ ext {
 }
 
 dependencies {
+
+    // Logstash Logback Encoder
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -41,7 +45,7 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     implementation 'com.github.sharedeffort:common-module:v1.1.9'
-    implementation 'com.github.sharedeffort:common-jpa:v1.0.2'
+    implementation 'com.github.sharedeffort:common-jpa:v1.0.3'
     implementation 'com.github.sharedeffort:common-security:v1.0.0'
 
 }

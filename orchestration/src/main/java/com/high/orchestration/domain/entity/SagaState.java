@@ -10,6 +10,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -39,6 +40,10 @@ public class SagaState extends BaseUpdateEntity {
     private String payload;
 
     private String errorMessage;
+
+    @Version
+    private Long version;
+
 
     private SagaState(UUID sagaId, UUID orderId, SagaType sagaType, SagaStatus sagaStatus, CurrentStep currentStep, String payload, String errorMessage) {
         this.sagaId = sagaId;

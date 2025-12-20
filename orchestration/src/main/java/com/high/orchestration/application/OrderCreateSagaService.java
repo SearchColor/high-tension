@@ -7,8 +7,8 @@ import com.high.orchestration.application.dto.internal.request.StockDeductionCom
 import com.high.orchestration.application.dto.internal.request.StockRestoreCommandRequest;
 import com.high.orchestration.application.dto.internal.response.OrderCreateFailCommandResponse;
 import com.high.orchestration.application.dto.request.OrderCreateRequest;
-import com.high.orchestration.application.exception.FailedToInitializationException;
 import com.high.orchestration.application.exception.FailedToStartSagaException;
+import com.high.orchestration.application.exception.SagaOptimisticLockException;
 import com.high.orchestration.application.exception.SagaStateNotFoundException;
 import com.high.orchestration.application.port.EventPublisher;
 import com.high.orchestration.domain.entity.SagaState;
@@ -19,6 +19,14 @@ import com.high.orchestration.domain.vo.SagaType;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.exception.JDBCConnectionException;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.QueryTimeoutException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,29 +38,32 @@ public class OrderCreateSagaService {
     private final SagaStateRepository sagaStateRepository;
     private final EventPublisher publisher;
 
-    private SagaState initSagaState(
+    @Retryable(
+        retryFor = {CannotAcquireLockException.class,
+                    QueryTimeoutException.class,
+                    JDBCConnectionException.class,
+                    DataAccessResourceFailureException.class},
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 500)
+    )
+    public SagaState initSagaState(
         UUID sagaId,
         UUID orderId,
         SagaType sagaType,
         CurrentStep currentStep,
         String payload
     ) {
-        try {
-            SagaState sagaState = SagaState.create(
-                sagaId,
-                orderId,
-                sagaType,
-                currentStep,
-                payload,
-                null
-            );
-           return sagaStateRepository.save(sagaState);
-
-        } catch ( Exception e ) {
-            log.error("[OrderCreateSagaService] SagaState initialization failed", e);
-            throw new FailedToInitializationException();
-        }
+        SagaState sagaState = SagaState.create(
+            sagaId,
+            orderId,
+            sagaType,
+            currentStep,
+            payload,
+            null
+        );
+       return sagaStateRepository.save(sagaState);
     }
+
 
 
     @Transactional
@@ -78,7 +89,7 @@ public class OrderCreateSagaService {
             publisher.publishOrderCreateCommand("order-create-request", orderCreateCommandRequest);
 
         } catch (Exception e) {
-            log.info("Saga 시작 실패, 주문 생성 요청 전송 실패");
+            log.error("Saga 시작 실패, 주문 생성 요청 전송 실패");
             recordSagaError(sagaState, e);
             throw new FailedToStartSagaException();
         }
@@ -86,82 +97,113 @@ public class OrderCreateSagaService {
     }
 
     @Transactional
+    @Retryable(
+        retryFor = {CannotAcquireLockException.class,
+                     QueryTimeoutException.class,
+                    JDBCConnectionException.class,
+                    DataAccessResourceFailureException.class,
+                    ObjectOptimisticLockingFailureException.class},
+        maxAttempts = 5,
+        backoff = @Backoff(delay = 100, multiplier = 1.5)
+    )
     public void handlerOrderCreateSuccess(StockDeductionCommandRequest stockRequest) {
         log.info("[OrderCreateSagaService] handlerOrderCreateSuccess - 주문생성완료 후 handler 유입 성공");
         UUID sagaId = stockRequest.sagaId();
         SagaState sagaState = getSagaState(sagaId);
-        try {
 
             if(checkIdempotency(sagaState, CurrentStep.ORDER_CREATE_VALIDATE)) {
+                log.info("[OrderCreateSagaService] handlerOrderCreateSuccess 이미 처리됨 - sagaId={}", sagaId);
                 return;
             }
+//            if(sagaId != null) {
+//                throw new RuntimeException("테스트용 강제 예외 발생!");
+//            }
 
             updateAndSaveSagaState(sagaState, CurrentStep.ORDER_CREATE_STOCK, stockRequest.toString());
             sagaState.updateOrderId(stockRequest.orderId());
+            sagaStateRepository.save(sagaState);
 
 
-        } catch (Exception e) {
-            log.error("[OrderCreateSagaService] handlerOrderCreateSuccess : 주문 생성 handler처리 실패");
-            recordSagaError(sagaState, e);
-
-        }
     }
 
+
     @Transactional
+    @Retryable(
+        retryFor = {CannotAcquireLockException.class,
+                    QueryTimeoutException.class,
+                    JDBCConnectionException.class,
+                    DataAccessResourceFailureException.class},
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 500, multiplier = 2.0)
+    )
+
     public void handleOrderCreateFailed(OrderCreateFailCommandResponse request) {
         UUID sagaId = request.sagaId();
         SagaState sagaState = getSagaState(sagaId);
 
-        try {
             sagaState.fail("주문 생성 실패: " + request.reason());
             sagaStateRepository.save(sagaState);
             log.error("[OrderCreateSagaService] handlerOrderCreateFailed 유입 - 실패상태 업데이트 :  sagaId={}, reason={}",
                 sagaId, request.reason());
-        } catch (Exception e) {
-            log.error("[OrderCreateSagaService] handlerOrderCreateFailed 유입 - 주문 생성 실패 처리 중 오류: sagaId={}", sagaId, e);
-        }
+
     }
 
     @Transactional
+    @Retryable(
+        retryFor = {CannotAcquireLockException.class,
+                    QueryTimeoutException.class,
+                    JDBCConnectionException.class,
+                    DataAccessResourceFailureException.class,
+                    ObjectOptimisticLockingFailureException.class},
+        maxAttempts = 5,
+        backoff = @Backoff(delay = 100, multiplier = 1.5)
+    )
     public void handlerStockDeductionSuccess(PaymentCreateCommandRequest request) {
         log.info("[OrderCreateSagaService] handlerStockDeductionSuccess - 재고차감 완료 후 handler 유입 성공");
         UUID sagaId = request.sagaId();
         SagaState sagaState = getSagaState(sagaId);
 
-        try {
             if (checkIdempotency(sagaState, CurrentStep.ORDER_CREATE_STOCK)) {
+                log.info("[OrderCreateSagaService] handlerStockDeductionSuccess 이미 처리됨 - sagaId={}", sagaId);
                 return;
             }
 
             updateAndSaveSagaState(sagaState, CurrentStep.ORDER_CREATE_PAYMENT, request.toString());
 
-
-        } catch (Exception e) {
-            log.error("[OrderCreateSagaService] handlerStockDeductionSuccess : 재고 차감 handler처리 실패");
-            recordSagaError(sagaState, e);
-        }
     }
 
+
     @Transactional
+    @Retryable(
+        retryFor = {CannotAcquireLockException.class,
+                    QueryTimeoutException.class,
+                    JDBCConnectionException.class,
+                    DataAccessResourceFailureException.class},
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 500, multiplier = 2.0)
+    )
     public void handlerStockDeductionFailed(UUID sagaId, String errorMessage) {
-        log.info("[OrderCreateSagaService] handlerStockDeductionFailed - 재고차감 실패 후 handler 유입 성공");
-        log.info("[OrderCreateSagaService] handlerStockDeductionFailed - sagaId : {}", sagaId);
+        log.info("[OrderCreateSagaService] handlerStockDeductionFailed - 재고차감 실패 후 handler 유입 성공, sagaId : {}", sagaId);
         SagaState sagaState = getSagaState(sagaId);
 
-        try {
             sagaState.fail("재고 차감 실패: " + errorMessage);
             sagaStateRepository.save(sagaState);
             log.info("[OrderCreateSagaService] handlerStockDeductionFailed 유입 - 실패상태 업데이트 :  sagaId={}, reason={}",
                 sagaId, errorMessage);
 
-        } catch (Exception e) {
-            log.error("[OrderCreateSagaService] handlerStockDeductionFailed 유입 - 재고 차감 실패 처리 중 오류: sagaId={}", sagaId, e);
-
-        }
     }
 
 
     @Transactional
+    @Retryable(
+        retryFor = {CannotAcquireLockException.class,
+                    QueryTimeoutException.class,
+                    JDBCConnectionException.class,
+                    DataAccessResourceFailureException.class,
+                    ObjectOptimisticLockingFailureException.class},
+        maxAttempts = 5,
+        backoff = @Backoff(delay = 200, multiplier = 2.0)
+    )
     public void stockDeductionFailedCompensation(OrderDeleteCommandRequest request) {
         log.info("[OrderCreateSagaService] stockDeductionFailedCompensation - 재고차감 실패 후 보상 트랜잭션 handler 유입 성공");
 
@@ -169,20 +211,32 @@ public class OrderCreateSagaService {
         SagaState sagaState = getSagaState(sagaId);
 
 
-        try {
+            if (sagaState.getSagaStatus() == SagaStatus.COMPENSATING
+                || sagaState.getSagaStatus() == SagaStatus.COMPENSATED) {
+                log.warn("[OrderCreateSagaService] stockDeductionFailedCompensation 이미 보상 처리 중/완료 - sagaId={}", sagaId);
+                return;
+            }
             sagaState.updateSagaStatus(SagaStatus.COMPENSATING);
             sagaStateRepository.save(sagaState);
             log.info("[OrderCreateSagaService] stockDeductionFailedCompensation - saga 상태 'COMPENSATING' 업데이트 완료");
-        } catch (Exception e) {
-            log.error("[OrderCreateSagaService] stockDeductionFailedCompensation 유입 - 재고 차감실패 보상트랜잭션 처리 중 오류: sagaId={}", sagaId, e);
 
-        }
     }
 
+
     @Transactional
+    @Retryable(
+        retryFor = {CannotAcquireLockException.class,
+                    QueryTimeoutException.class,
+                    JDBCConnectionException.class,
+                    DataAccessResourceFailureException.class,
+                    ObjectOptimisticLockingFailureException.class},
+        maxAttempts = 5,
+        backoff = @Backoff(delay = 200, multiplier = 2.0)
+    )
     public void PaymentCreateFailedCompensation(OrderDeleteCommandRequest orderRequest,
         StockRestoreCommandRequest stockRequest) {
-        log.info("[OrderCreateSagaService] PaymentCreateFailedCompensation - 결제 생성 실패 후 보상 트랜잭션 handler 유입 성공");
+        log.info(
+            "[OrderCreateSagaService] PaymentCreateFailedCompensation - 결제 생성 실패 후 보상 트랜잭션 handler 유입 성공");
 
         UUID sagaId = orderRequest.sagaId();
         SagaState sagaState = getSagaState(sagaId);
@@ -190,75 +244,148 @@ public class OrderCreateSagaService {
         //TODO:보상 트랜잭션 멱득성 체크 (상태값...추가해야 겠다...-> COMPENSATION_STOCK ..)
         //if (!sagaState..isStockRestored()) ... 확인 메서드도 추가..
 
-        try {
-            sagaState.updateSagaStatus(SagaStatus.COMPENSATING);
-            sagaStateRepository.save(sagaState);
-            log.info("[OrderCreateSagaService] PaymentCreateFailedCompensation - saga state 'COMPENSATING' 업데이트 완료");
-
-        } catch (Exception e) {
-            log.error("[OrderCreateSagaService] PaymentCreateFailedCompensation 유입 - 결제 생성 실패 보상트랜잭션 처리 중 오류: sagaId={}", sagaId, e);
-
+        if (sagaState.getSagaStatus() == SagaStatus.COMPENSATING
+            || sagaState.getSagaStatus() == SagaStatus.COMPENSATED) {
+            log.warn("[paymentCreateFailedCompensation] 이미 보상 처리 중/완료 - sagaId={}", sagaId);
+            return;
         }
-
+        sagaState.updateSagaStatus(SagaStatus.COMPENSATING);
+        sagaStateRepository.save(sagaState);
+        log.info(
+            "[OrderCreateSagaService] PaymentCreateFailedCompensation - saga state 'COMPENSATING' 업데이트 완료");
     }
 
 
     //이 메서드는 수정될 예정
     @Transactional
+    @Retryable(
+        retryFor = {CannotAcquireLockException.class,
+                    QueryTimeoutException.class,
+                    JDBCConnectionException.class,
+                    DataAccessResourceFailureException.class,
+                    ObjectOptimisticLockingFailureException.class},
+        maxAttempts = 5,
+        backoff = @Backoff(delay = 100, multiplier = 1.5)
+    )
     public void handlerPaymentCreateSuccess(UUID sagaId, UUID orderId) {
         log.info("[OrderCreateSagaService] handlerPaymentCreateSuccess - 결제생성 완료 후 handler 유입 성공");
         SagaState sagaState = getSagaState(sagaId);
 
-        try {
             if (checkIdempotency(sagaState, CurrentStep.ORDER_CREATE_PAYMENT)) {
+                log.info("[handlerPaymentCreateSuccess] 이미 처리됨 - sagaId={}", sagaId);
                 return;
             }
-
+            //TODO: 사가 상태 변경
             updateAndSaveSagaState(sagaState, null, orderId.toString());
 
-
-        } catch (Exception e) {
-            log.error("[OrderCreateSagaService] handlerPaymentCreateSuccess : 결제 요청 handler처리 실패");
-            recordSagaError(sagaState, e);
-
-        }
     }
 
+
     @Transactional
+    @Retryable(
+        retryFor = {CannotAcquireLockException.class,
+                    QueryTimeoutException.class,
+                    JDBCConnectionException.class,
+                    DataAccessResourceFailureException.class,
+                    ObjectOptimisticLockingFailureException.class},
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 500, multiplier = 2.0)
+    )
     public void handlerPaymentCreateFailed(UUID sagaId, String errorMessage) {
 
         log.info("[OrderCreateSagaService] handlerPaymentCreateFailed - 결제생성 실패 후 handler 유입 성공");
+
         SagaState sagaState = getSagaState(sagaId);
 
-        try {
             sagaState.fail("결제 생성 실패: " + errorMessage);
             sagaStateRepository.save(sagaState);
             log.info("[OrderCreateSagaService] handlerPaymentCreateFailed 유입 - 실패상태 업데이트 :  sagaId={}, reason={}",
                 sagaId, errorMessage);
 
-        } catch (Exception e) {
-            log.error("[OrderCreateSagaService] handlerPaymentCreateFailed 유입 - 결제 생성 실패 처리 중 오류: sagaId={}", sagaId, e);
-
-        }
 
     }
 
     @Transactional
+    @Retryable(
+        retryFor = {CannotAcquireLockException.class,
+                    QueryTimeoutException.class,
+                    JDBCConnectionException.class,
+                    DataAccessResourceFailureException.class,
+                    ObjectOptimisticLockingFailureException.class},
+        maxAttempts = 5,
+        backoff = @Backoff(delay = 100, multiplier = 1.5)
+    )
     public void endOrderCreateSaga(UUID sagaId) {
+        log.info("[OrderCreateSagaService] endOrderCreateSaga 시작 - sagaId={}", sagaId);
+
         SagaState sagaState = getSagaState(sagaId);
-        try {
+
             if (checkIdempotency(sagaState, CurrentStep.ORDER_CREATE_COMPLETE)) {
+                log.info("[OrderCreateSagaService] endOrderCreateSaga - 이미 완료됨 - sagaId={}", sagaId);
                 return;
             }
 
             updateAndSaveSagaState(sagaState, CurrentStep.ORDER_CREATE_COMPLETE, sagaId.toString());
             sagaStateRepository.save(sagaState);
-        } catch (Exception e) {
-            log.error("[OrderCreateSagaService] endOrderCreateSaga : saga 완료 처리 실패");
-            recordSagaError(sagaState, e);
-        }
+            log.info("[OrderCreateSagaService] endOrderCreateSaga  완료 - sagaId={}", sagaId);
+
     }
 
+    @Recover
+    public void recoverHandlerOrderCreateSuccess(
+        RuntimeException e,
+        StockDeductionCommandRequest stockRequest
+    ) {
+        UUID sagaId = stockRequest.sagaId();
+        SagaState sagaState = getSagaState(sagaId);
+
+        log.error(
+            "[RECOVER] handlerOrderCreateSuccess 최종 실패 - sagaId={}",
+            sagaId, e
+        );
+
+        sagaState.fail(
+            "ORDER_CREATE 단계 DB 장애로 인한 실패"
+        );
+        sagaStateRepository.save(sagaState);
+        throw e;
+    }
+
+    @Recover
+    public void recoverHandlerStockDeductionSuccess(
+        RuntimeException e,
+        PaymentCreateCommandRequest request
+    ) {
+        UUID sagaId = request.sagaId();
+        SagaState sagaState = getSagaState(sagaId);
+
+        log.error(
+            "[RECOVER] handlerStockDeductionSuccess 최종 실패 - sagaId={}",
+            sagaId, e
+        );
+
+        sagaState.fail("STOCK_DEDUCTION 단계 DB 장애로 인한 처리 실패");
+        sagaStateRepository.save(sagaState);
+        throw e;
+    }
+
+    @Recover
+    public void recoverHandlerPaymentCreateSuccess(
+        SagaOptimisticLockException e,
+        UUID sagaId,
+        UUID orderId
+    ) {
+        SagaState sagaState = getSagaState(sagaId);
+
+        log.error(
+            "[RECOVER] handlerPaymentCreateSuccess 최종 실패 - sagaId={}",
+            sagaId, e
+        );
+
+        sagaState.fail("PAYMENT_CREATE 단계 DB 장애로 인한 처리 실패");
+        sagaStateRepository.save(sagaState);
+        throw e;
+    }
 
 
     public SagaState getSagaState(UUID sagaId) {

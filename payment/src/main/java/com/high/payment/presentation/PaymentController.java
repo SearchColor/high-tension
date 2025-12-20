@@ -56,7 +56,7 @@ public class PaymentController {
 	// 결제 생성 API (POST /api/v1/payments)
 	@PostMapping
 	public ResponseEntity<CreatePaymentResponse> createPayment(@RequestBody CreatePaymentRequest request) {
-		log.info("결제 생성 요청 수신: OrderId={}, Amount={}", request.orderId(), request.amount());
+		log.info("결제 생성 요청 수신: OrderId={}, price={}", request.orderId(), request.paymentPrice());
 
 		// 1. 서비스 인터페이스를 통해 비즈니스 로직 호출
 		CreatePaymentResponse response = paymentService.createPayment(request);
@@ -76,8 +76,8 @@ public class PaymentController {
 		CreatePaymentResponse response = paymentService.getPayment(paymentId);
 
 		// 2. 서비스 처리 후 응답 데이터 상세 로그 추가
-		log.info("[Payment] 결제 조회 성공. PaymentId={}, OrderId={}, Amount={}",
-				 response.paymentId(), response.orderId(), response.amount());
+		log.info("[Payment] 결제 조회 성공. PaymentId={}, OrderId={}, Price={}",
+				 response.paymentId(), response.orderId(), response.paymentPrice());
 
 		// 3. 200 OK 응답 반환
 		return ResponseEntity.ok(response);

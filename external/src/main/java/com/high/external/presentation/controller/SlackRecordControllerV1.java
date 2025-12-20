@@ -10,6 +10,8 @@ import com.library.jpa.response.PageResponse;
 import com.library.module.response.ApiResponse;
 import com.library.security.util.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +26,7 @@ public class SlackRecordControllerV1 {
 
     private final SlackRecordServiceV1 serviceV1;
     private final SlackMessageServiceV1 messageServiceV1;
+    private static final Logger logger = LoggerFactory.getLogger(SlackRecordControllerV1.class);
 
 
     @PreAuthorize("hasRole('MASTER')")
@@ -64,4 +67,15 @@ public class SlackRecordControllerV1 {
         String response = messageServiceV1.slackMessageSend(request.getRecipientId(), request.getMessage());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+
+    @GetMapping("/test/error")
+    public String generateErrorLog() {
+        // 🚨 의도적으로 ERROR 레벨 로그를 발생시킵니다.
+        logger.error("!!! TEST_ERROR_START_DUMP !!! - This is a manual test error log to verify Kibana pipeline. Time: {}", System.currentTimeMillis());
+
+        return "Test Error log sent.";
+    }
+
+
 }

@@ -27,7 +27,7 @@ public class PaymentCommandConsumer {
 
 
 		} catch (Exception e) {
-			log.error(e.getMessage());
+			log.error("[Consumer] payment-create-request 메시지 처리 실패. raw={}", message, e);
 		}
 	}
 }
