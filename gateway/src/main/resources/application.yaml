@@ -1,5 +1,8 @@
 server:
   port: 8000
+  netty:
+    idle-timeout: 30s  # 30초 동안 유휴 상태면 연결 종료
+    connection-timeout: 5s
 
 eureka:
   client:
@@ -29,28 +32,65 @@ spring:
 
   cloud:
     gateway:
+      httpclient:
+        connect-timeout: 5000  # 5초 (밀리초)
+        response-timeout: 30s  # 30초
+        pool:
+          max-connections: 500
+          max-idle-time: 30s
       discovery:
         locator:
           enabled: true
-      server:
-        webflux:
-          routes:
+      routes:
             # 1. User Service (8100) - Authentication base
             - id: user-admin-service
               uri: lb://user-service
               predicates:
                 - Path=/api/v1/master/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: userServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/user-service
+                    statusCodes:
+                      - 408
+                      - 500
+                      - 502
+                      - 503
+                      - 504
 
             - id: user-internal-service
               uri: lb://user-service
               predicates:
                 - Path=/api/v1/internal/users/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: userServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/user-service
+                    statusCodes:
+                      - 408
+                      - 500
+                      - 502
+                      - 503
+                      - 504
 
             # Passkey Service (명시적 라우팅 - 향후 분리 시 변경 용이)
             - id: passkey-service
               uri: lb://user-service
               predicates:
                 - Path=/api/v1/passkeys/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: userServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/user-service
+                    statusCodes:
+                      - 408
+                      - 500
+                      - 502
+                      - 503
+                      - 504
 
             - id: user-test-page
               uri: lb://user-service
@@ -61,6 +101,17 @@ spring:
               uri: lb://user-service
               predicates:
                 - Path=/api/v1/users/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: userServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/user-service
+                    statusCodes:
+                      - 408
+                      - 500
+                      - 502
+                      - 503
+                      - 504
 
             - id: user-docs
               uri: lb://user-service
@@ -118,6 +169,9 @@ spring:
               uri: lb://order-service
               predicates:
                 - Path=/api/v1/orders/**
+              # metadata:
+              #   response-timeout: 60000  # 주문은 60초
+              #   connect-timeout: 10000
 
             - id: order-docs
               uri: lb://order-service
@@ -131,6 +185,9 @@ spring:
               uri: lb://payment-service
               predicates:
                 - Path=/api/v1/payments/**
+              # metadata:
+              #   response-timeout: 45000  # 결제는 45초
+              #   connect-timeout: 10000
 
             - id: payment-docs
               uri: lb://payment-service
@@ -189,12 +246,20 @@ springdoc:
 management:
   endpoints:
     web:
+      base-path: /internal/actuator
       exposure:
-        include: health,info,gateway
+        include: health,info,circuitbreakers,circuitbreakerevents
+  endpoint:
+    health:
+      show-details: when_authorized
+  health:
+    circuitbreakers:
+      enabled: true
 
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator: INFO
     org.springframework.web: DEBUG
     com.high.gateway.filter: DEBUG
     com.high.gateway.service: DEBUG
@@ -203,3 +268,31 @@ logging:
 rate-limit:
   max-tokens: 100        # 버킷 최대 용량 (tokens)
   refill-rate: 10        # 초당 토큰 리필 속도 (tokens/sec)
+
+# Circuit Breaker configuration (Resilience4j)
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        slowCallRateThreshold: 80
+        slowCallDurationThreshold: 2000ms
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+    instances:
+      userServiceCircuitBreaker:
+        baseConfig: default
+
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 5s
+        cancelRunningFuture: true
+    instances:
+      userServiceCircuitBreaker:
+        timeoutDuration: 5s

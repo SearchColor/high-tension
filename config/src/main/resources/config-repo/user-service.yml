@@ -38,6 +38,12 @@ spring:
       access-token-validity: 86400000  # 24시간 (개발 환경용, 프로덕션: 3600000 = 1시간)
       refresh-token-validity: 2592000000  # 30일 (개발 환경용, 프로덕션: 604800000 = 7일)
 
+  # Feign Circuit Breaker 활성화
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+
 management:
   zipkin:
     tracing:
@@ -52,3 +58,22 @@ logging:
     org.springframework.security: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql: TRACE
+
+# Resilience4j 설정
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 3
+    instances:
+      coupon-service:
+        baseConfig: default
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 3s
