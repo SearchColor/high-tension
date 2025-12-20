@@ -195,7 +195,7 @@
                 if (!startRes.ok) throw new Error('Registration Start Failed');
 
                 const startData = await startRes.json();
-                let options = JSON.parse(startData.data.publicKeyCredentialCreationOptions);
+                let options = startData.data.publicKeyCredentialCreationOptions;
 
                 // UNWRAP (Yubico returns { publicKey: ... })
                 if (options.publicKey) {
