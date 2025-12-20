@@ -3,7 +3,6 @@ package com.high.payment.infrastructure.config;
 import org.springframework.context.annotation.Configuration;
 
 import com.high.payment.infrastructure.context.MessageContext;
-import com.library.security.util.SecurityContextUtil;
 
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
@@ -22,10 +21,6 @@ public class FeignConfig implements RequestInterceptor {
 			return;
 		}
 
-		// 2. HTTP SecurityContext fallback
-		try {
-			requestTemplate.header("X-User-Id", SecurityContextUtil.getCurrentUserIdAsString());
-			requestTemplate.header("X-User-Role", SecurityContextUtil.getCurrentUserRole());
-		} catch (Exception ignored) {}
+		log.debug("[Fegin] No MessageContext found. Skip header injection." );
 	}
 }
