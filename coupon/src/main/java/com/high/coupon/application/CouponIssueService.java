@@ -16,11 +16,13 @@ import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.exception.CouponAlreadyIssuedException;
 import com.high.coupon.domain.exception.CouponNotOwnedException;
 import com.high.coupon.domain.repository.CouponIssueRepository;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,10 @@ public class CouponIssueService {
 
     private final CouponIssueEventPort couponIssueEventPort;
 
+    // config
+    @Value("${coupon.policy.retention-days}")
+    private long retentionDays;
+
     /**
      * 쿠폰 발급
      * Redis 검증 -> Kafka 메시지 발송 -> 발급 응답
@@ -50,10 +56,13 @@ public class CouponIssueService {
 
         Coupon coupon = couponReader.getCouponById(couponId);
 
+        long ttlSeconds = calculateTTL(coupon.getIssueEndAt());
+
         Long result = couponCachePort.tryIssueCoupon(
                 couponId,
                 userId,
-                coupon.getTotalQuantity()
+                coupon.getTotalQuantity(),
+                ttlSeconds
         );
 
         // 0 성공, -1 실패: 수량 소진, -2 실패: 이미 발급 받음
@@ -78,6 +87,19 @@ public class CouponIssueService {
         couponIssueRepository.save(couponIssue);
 
         log.info("[COUPON ISSUE Consumer] DB 저장 완료: userId={}, couponId={}", userId, couponId);
+    }
+
+
+    /**
+     * 발급 유저 목록 데이터 Redis 데이터 만료시간 계산 메서드
+     */
+    private long calculateTTL(LocalDateTime issueEndAt) {
+
+        // 일자 계산 = config(정책) + db(쿠폰 별 발급 종료일)
+        LocalDateTime endAtWithBuffer = issueEndAt.plusDays(retentionDays);
+
+        long seconds = Duration.between(LocalDateTime.now(), endAtWithBuffer).getSeconds();
+        return Math.max(seconds, 0); // TTL이 지난 과거 날짜 음수 방지
     }
 
 

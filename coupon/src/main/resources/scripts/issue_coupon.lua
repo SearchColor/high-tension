@@ -2,6 +2,7 @@
     -- KEYS[1]: 쿠폰 발급 유저 목록 SET
     -- ARGV[1] = userId (UUID - String)
     -- ARGV[2] = 총 수량 (limit)
+    -- ARGV[3] = 만료 시간 (TTL)
 
     0 성공
     -1 실패: 수량 소진
@@ -19,13 +20,16 @@ end
 -- 2. 쿠폰 잔여 수량 조회 및 체크 (local - 지역 변수 선언) SET 0(1)
 -- 카운터를 별도로 관리하지 않고, 실제 발급된 유저 수가 곧 수량으로 체크
 local current_count = redis.call('SCARD',KEYS[1])
-
 -- 수량이 없거나, 0보다 작거나 같으면 발급 불가 (tonumber - 문자열로 들어온 argv를 숫자로 변환하는 함수)
 if tonumber(current_count) >= tonumber(ARGV[2]) then
     return -1 -- [결과] 쿠폰 수량 소진
 end
 
--- 3. 발급 확정 (SET에 추가)
+-- 3. 발급 확정 (SET에 추가) 및 메모리 TTL
 redis.call('SADD', KEYS[1], ARGV[1])
+
+if redis.call('TTL', KEYS[1]) == -1 then
+    redis.call('EXPIRE', KEYS[1], ARGV[3]) -- 이벤트 종료일 + N일까지만 유지
+end
 
 return 0 -- [결과] 쿠폰 발급 성공

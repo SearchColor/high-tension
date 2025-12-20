@@ -1,6 +1,11 @@
 server:
   port: 8600
 
+# 쿠폰 발급 목록 정책
+coupon:
+  policy:
+    retention-days: 3  # 이벤트 종료 후 3일간 데이터 보관
+
 spring:
   application:
     name: coupon-service
