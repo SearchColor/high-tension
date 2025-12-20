@@ -12,4 +12,6 @@ public interface IamportClientPort {
 
 	// 금액 불일치 시 PG사에 취소 요청
 	void cancelPayment(String impUid, BigDecimal amount,String reason);
+
+	IamportPaymentInfo getPaymentInfoByMerchantUid(String merchantUid);
 }

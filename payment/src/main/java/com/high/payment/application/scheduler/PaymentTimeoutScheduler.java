@@ -64,8 +64,7 @@ public class PaymentTimeoutScheduler {
 					payment.getOrderId(),
 					payment.getUserId(),
 					payment.getPaymentPrice(),
-					"PAYMENT_TIMEOUT",
-					LocalDateTime.now()
+					"PAYMENT_TIMEOUT"
 				);
 
 				String json = objectMapper.writeValueAsString(payload);

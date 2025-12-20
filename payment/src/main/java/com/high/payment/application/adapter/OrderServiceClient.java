@@ -6,11 +6,12 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import com.high.payment.application.port.out.OrderResponse;
+import com.high.payment.application.dto.external.OrderDetailResponse;
+import com.high.payment.infrastructure.config.FeignConfig;
 import com.library.module.response.ApiResponse;
 
-@FeignClient(name = "order-serivce", configuration = FeignClient.class)
+@FeignClient(name = "order-service", configuration = FeignConfig.class)
 public interface OrderServiceClient {
 	@GetMapping("/internal/orders/{orderId}/payment-info")
-	ApiResponse<OrderResponse> getPaymentInfo(@PathVariable("orderId") UUID orderId);
+	ApiResponse<OrderDetailResponse> getOrderDetail(@PathVariable("orderId") UUID orderId);
 }

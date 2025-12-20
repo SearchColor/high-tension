@@ -8,7 +8,6 @@ public record PaymentCanceledEvent (
 	UUID orderId,
 	UUID userId,
 	Integer paymentPrice,
-	String reason,
-	LocalDateTime canceledAt
+	String reason
 ) {}
 

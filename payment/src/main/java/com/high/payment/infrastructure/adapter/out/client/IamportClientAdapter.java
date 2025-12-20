@@ -4,15 +4,21 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
-
 import com.high.payment.application.dto.IamportPaymentInfo;
 import com.high.payment.application.port.out.IamportClientPort;
+import com.high.payment.domain.model.Payment;
+import com.high.payment.domain.port.out.PaymentRepositoryPort;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class IamportClientAdapter implements IamportClientPort {
+
+	private final PaymentRepositoryPort paymentRepositoryPort;
+
 
 	// TODO: 실제 아임포트 API 연동 로직이 들어갈 곳 (현재는 Mock 처리)
 	@Override
@@ -35,7 +41,7 @@ public class IamportClientAdapter implements IamportClientPort {
 			// 성공 응답 (25000.00원, status: paid)
 			return IamportPaymentInfo.builder()
 									 .impUid(impUid)
-									 .merchantUid("b1c2d3e4-f5a6-7b8c-9d0e-1f2a3b4c5d6e")
+									 .merchantUid("00000000-0000-0000-0000-000000000000")
 									 .paymentPrice(25000)
 									 .status("paid")
 									 .pgTid("TID-MOCK-" + impUid.toUpperCase())
@@ -44,7 +50,7 @@ public class IamportClientAdapter implements IamportClientPort {
 			// 실패 응답 (status: failed)
 			return IamportPaymentInfo.builder()
 									 .impUid(impUid)
-									 .merchantUid("b1c2d3e4-f5a6-7b8c-9d0e-1f2a3b4c5d6e")
+									 .merchantUid("00000000-0000-0000-0000-000000000000")
 									 .paymentPrice(0)
 									 .status("failed")
 									 .pgTid(null)
@@ -57,5 +63,26 @@ public class IamportClientAdapter implements IamportClientPort {
 		log.warn(" [PG Mock] PG사에 결제 취소 요청 시뮬레이션 실행: ImpUid={}, Amount={}, Reason={}",
 				 impUid, amount, reason);
 		// 실제로는 여기에서 외부 API 호출 및 응답 처리가 이루어집니다.
+	}
+
+	@Override
+	public IamportPaymentInfo getPaymentInfoByMerchantUid(String merchantUid) {
+		UUID orderId = UUID.fromString(merchantUid);
+
+		Payment payment = paymentRepositoryPort.findByOrderId(orderId)
+											   .orElseThrow(() -> new IllegalStateException("결제 정보 없음 orderId=" + orderId));
+
+		log.info("[MockIamport] PG 결제 조회 성공 orderId={}, amount={}",
+				 orderId, payment.getPaymentPrice());
+
+		String pgTid = (payment.getPgTid() != null) ? payment.getPgTid() : ("TID-MOCK-" + orderId);
+
+		return IamportPaymentInfo.builder()
+								 .impUid("imp_mock_" + orderId)
+								 .merchantUid(merchantUid)
+								 .status("paid")
+								 .pgTid(pgTid)
+								 .paymentPrice(payment.getPaymentPrice())
+								 .build();
 	}
 }
