@@ -8,6 +8,7 @@ import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
 import com.high.order.application.dto.request.OrderStatusChangeRequest;
 import com.high.order.application.dto.request.OrderUpdateRequest;
 import com.high.order.application.dto.response.OrderDetailResponse;
+import com.high.order.application.dto.response.OrderItemCancelResponse;
 import com.high.order.application.dto.response.OrderItemIdResponse;
 import com.high.order.application.dto.response.OrderListResponse;
 import com.high.order.application.dto.response.OrderResponse;
@@ -90,10 +91,10 @@ public class OrderController {
     //부분 취소
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @PatchMapping("/{orderId}/cancel/{orderItemId}")
-    public ResponseEntity<ApiResponse<OrderItemIdResponse>> cancelOrderItem(@PathVariable UUID orderId, @PathVariable UUID orderItemId) {
+    public ResponseEntity<ApiResponse<OrderItemCancelResponse>> cancelOrderItem(@PathVariable UUID orderId, @PathVariable UUID orderItemId) {
         UUID userId = SecurityContextUtil.getCurrentUserId();
         String userRole = SecurityContextUtil.getCurrentUserRole();
-        OrderItemIdResponse response = orderService.cancelOrderItem(orderId, orderItemId, userId, userRole);
+        OrderItemCancelResponse response = orderService.cancelOrderItem(orderId, orderItemId, userId, userRole);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
