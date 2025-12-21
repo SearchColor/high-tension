@@ -18,6 +18,7 @@ import com.high.product.domain.model.Product_Stock;
 import com.high.product.domain.repository.StockRepository;
 import com.high.product.exception.ProductErrorCode;
 import com.high.product.application.port.SagaDeduplicationPort;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -127,6 +128,9 @@ public class StockDeductionService {
 
 				log.error("재고 차감 실패 sagaId={}", request.sagaId(), ex);
 				throw ex;
+			} finally {
+				// processing 키 제거 (재처리 가능하도록)
+				sagaDeduplicationPort.remove("processing:" + request.sagaId());
 			}
 		});
 	}
