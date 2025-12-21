@@ -10,29 +10,45 @@ import com.high.product.application.dto.kafka.success.StockDeductionSuccessMessa
 
 import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 @Component
+@RequiredArgsConstructor
 public class KafkaPublisherAdapter implements StockPublisherPort {
 
 	private final ProductKafkaPublisher kafkaPublisher;
 
 	@Override
 	public void publishSuccess(StockDeductionSuccessMessage message) {
-		kafkaPublisher.publishStockDeductionSuccess(message);
+		kafkaPublisher.send(
+			"stock-deduction-success",
+			String.valueOf(message.sagaId()),
+			message
+		);
 	}
 
 	@Override
 	public void publishFail(StockDeductionFailMessage message) {
-		kafkaPublisher.publishStockDeductionFail(message);
+		kafkaPublisher.send(
+			"stock-deduction-fail",
+			String.valueOf(message.sagaId()),
+			message
+		);
 	}
 
 	@Override
 	public void publishSuccess(StockRestoreSuccessMessage message) {
-		kafkaPublisher.publishStockRestoreSuccess(message);
+		kafkaPublisher.send(
+			"stock-restore-success",
+			String.valueOf(message.sagaId()),
+			message
+		);
 	}
 
 	@Override
 	public void publishFail(StockRestoreFailMessage message) {
-		kafkaPublisher.publishStockRestoreFail(message);
+		kafkaPublisher.send(
+			"stock-restore-fail",
+			String.valueOf(message.sagaId()),
+			message
+		);
 	}
 }
