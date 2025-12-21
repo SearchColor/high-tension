@@ -2,10 +2,10 @@ package com.high.order.infrastructure.kafka.producer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.high.order.application.dto.internal.kafka.request.ProcessOrderSuccessCommand;
-import com.high.order.application.dto.internal.kafka.response.OrderCreateFailedResponse;
-import com.high.order.application.dto.internal.kafka.response.OrderDeleteResponse;
-import com.high.order.application.dto.internal.kafka.response.OrderSuccessResponse;
+import com.high.order.application.dto.event.request.ProcessOrderSuccessCommand;
+import com.high.order.application.dto.event.response.OrderCreateFailedResponse;
+import com.high.order.application.dto.event.response.OrderDeleteResponse;
+import com.high.order.application.dto.event.response.OrderSuccessResponse;
 import com.high.order.application.port.EventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

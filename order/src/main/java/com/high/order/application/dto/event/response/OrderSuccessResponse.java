@@ -1,4 +1,4 @@
-package com.high.order.application.dto.internal.kafka.response;
+package com.high.order.application.dto.event.response;
 
 import com.high.order.domain.entity.Order;
 import java.util.UUID;

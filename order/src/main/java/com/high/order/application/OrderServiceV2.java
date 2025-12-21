@@ -1,12 +1,13 @@
 package com.high.order.application;
 
+
 import com.high.order.application.dto.external.CouponResponse;
 import com.high.order.application.dto.external.PaymentResponse;
 import com.high.order.application.dto.external.ProductResponse;
 import com.high.order.application.dto.internal.OrderItemCreateInfo;
-import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
-import com.high.order.application.dto.internal.kafka.request.ProcessOrderSuccessCommand;
-import com.high.order.application.dto.internal.kafka.response.OrderSuccessResponse;
+import com.high.order.application.dto.event.request.CreateOrderCommand;
+import com.high.order.application.dto.event.request.ProcessOrderSuccessCommand;
+import com.high.order.application.dto.event.response.OrderSuccessResponse;
 import com.high.order.application.dto.request.OrderItemDeliveryStatusChangeRequest;
 import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
 import com.high.order.application.dto.request.OrderStatusChangeRequest;
