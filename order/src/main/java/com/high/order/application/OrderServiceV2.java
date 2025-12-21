@@ -328,10 +328,12 @@ public class OrderServiceV2 { //current version
         return OrderResponse.from(order);
     }
 
-    //주문 성공시 슬랙메시지 보내기 임시 테스트 로직
-    @Transactional(readOnly = true)
+    @Transactional
     public void processOrderSuccess(UUID orderId) {
            Order order = getOrderForAdmin(orderId);
+
+           order.updateStatus(OrderStatus.SUCCESS);
+           orderRepository.save(order);
         List<String> orderItemNameList = order.getOrderItems().stream().map(orderItem ->
             getProduct(orderItem.getProductId()).name()).toList();
 
