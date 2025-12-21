@@ -12,13 +12,16 @@ import com.high.order.application.dto.response.OrderItemCancelResponse;
 import com.high.order.application.dto.response.OrderItemIdResponse;
 import com.high.order.application.dto.response.OrderListResponse;
 import com.high.order.application.dto.response.OrderResponse;
+import com.library.jpa.response.PageResponse;
 import com.library.module.response.ApiResponse;
 import com.library.security.util.SecurityContextUtil;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -70,10 +73,12 @@ public class OrderController {
 
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<OrderListResponse>>> getOrders() {
+    public ResponseEntity<ApiResponse<PageResponse<OrderListResponse>>> getOrders(
+        @PageableDefault(size = 10, sort = "createdAt", direction = Direction.DESC) Pageable pageable) {
         UUID userId = SecurityContextUtil.getCurrentUserId();
         String userRole = SecurityContextUtil.getCurrentUserRole();
-        List<OrderListResponse> responses = orderService.getOrders(userId, userRole);
+
+        PageResponse<OrderListResponse> responses = orderService.getOrders(userId, userRole, pageable);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responses));
     }
 

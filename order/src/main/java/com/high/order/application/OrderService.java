@@ -1,7 +1,5 @@
 package com.high.order.application;
 
-import static java.util.stream.Collectors.toList;
-
 import com.high.order.application.dto.external.CouponResponse;
 import com.high.order.application.dto.external.PaymentResponse;
 import com.high.order.application.dto.external.ProductResponse;
@@ -32,12 +30,15 @@ import com.high.order.domain.repository.OrderItemRepository;
 import com.high.order.domain.repository.OrderRepository;
 import com.high.order.domain.vo.OrderItemStatus;
 import com.high.order.domain.vo.OrderStatus;
+import com.library.jpa.response.PageResponse;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -138,21 +139,22 @@ public class OrderService { //❌❌❌ deprecated
     }
 
     @Transactional(readOnly = true)
-    public List<OrderListResponse> getOrders(UUID userId, String userRole) {
-        List<Order> orderList;
+    public PageResponse<OrderListResponse> getOrders(UUID userId, String userRole, Pageable pageable) {
+        Page<Order> orderList;
 
         if(userRole.equals("MASTER")) {
-            orderList = orderRepository.findAll(); //TODO: 페이징
-            return orderList.stream().map(OrderListResponse::from).collect(toList());
+            orderList = orderRepository.findAll(pageable); //TODO: 페이징
         }
 
         if(userRole.equals("SELLER")) {
-            orderList = orderRepository.findOrdersForSeller(userId);
-            return orderList.stream().map(OrderListResponse::from).collect(toList());
+            orderList = orderRepository.findOrdersForSeller(userId, pageable);
         }
 
-        orderList = orderRepository.findAllByCustomerIdAndDeletedAtIsNull(userId);
-        return orderList.stream().map(OrderListResponse::from).collect(toList());
+        orderList = orderRepository.findAllByCustomerIdAndDeletedAtIsNull(userId, pageable);
+
+        Page<OrderListResponse> orderListResponsePage = orderList.map(OrderListResponse::from);
+
+        return PageResponse.fromPage(orderListResponsePage);
     }
 
 

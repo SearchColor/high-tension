@@ -2,10 +2,11 @@ package com.high.order.infrastructure.repository;
 
 import com.high.order.domain.entity.Order;
 import com.high.order.domain.repository.OrderRepository;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -25,8 +26,8 @@ public class OrderRepositoryAdapter implements OrderRepository {
     }
 
     @Override
-    public List<Order> findAll() {
-        return jpaOrderRepository.findAll();
+    public Page<Order> findAll(Pageable pageable) {
+        return jpaOrderRepository.findAll(pageable);
     }
 
     @Override
@@ -35,8 +36,8 @@ public class OrderRepositoryAdapter implements OrderRepository {
     }
 
     @Override
-    public List<Order> findAllByDeletedAtIsNull() {
-        return jpaOrderRepository.findAllByDeletedAtIsNull();
+    public Page<Order> findAllByDeletedAtIsNull(Pageable pageable) {
+        return jpaOrderRepository.findAllByDeletedAtIsNull(pageable);
     }
 
     @Override
@@ -45,13 +46,13 @@ public class OrderRepositoryAdapter implements OrderRepository {
     }
 
     @Override
-    public List<Order> findOrdersForSeller(UUID sellerId) {
-        return jpaOrderRepository.findOrdersForSeller(sellerId);
+    public Page<Order> findOrdersForSeller(UUID sellerId, Pageable pageable) {
+        return jpaOrderRepository.findOrdersForSeller(sellerId, pageable);
     }
 
     @Override
-    public List<Order> findAllByCustomerIdAndDeletedAtIsNull(UUID userId) {
-        return jpaOrderRepository.findAllByCustomerIdAndDeletedAtIsNull(userId);
+    public Page<Order> findAllByCustomerIdAndDeletedAtIsNull(UUID userId, Pageable pageable) {
+        return jpaOrderRepository.findAllByCustomerIdAndDeletedAtIsNull(userId, pageable);
     }
 
     @Override
