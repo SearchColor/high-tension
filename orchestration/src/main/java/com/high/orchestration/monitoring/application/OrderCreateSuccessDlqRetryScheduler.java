@@ -29,7 +29,7 @@ public class OrderCreateSuccessDlqRetryScheduler {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final DlqEventPublisher dlqEventPublisher;
 
-    @Scheduled(fixedDelay = 10000) //10초
+    @Scheduled(fixedDelay = 3600000) //10초 (로그 확인이 어려워 임시로 1시간 설정)
     public void retryDlqMessages() {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         log.info("[DLQ Scheduler] 재시도 프로세스 시작 - 현재시간={}", now);
