@@ -51,6 +51,9 @@ dependencies {
 	// Redis Reactive dependencies
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
 
+	// Circuit Breaker (Reactive)
+	implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
+
 	// .env 파일 로드 (User Service와 동일)
 	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
 
