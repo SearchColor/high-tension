@@ -18,23 +18,23 @@ public class DlqRetryFailureHandler {
     private final DlqEventPublisher dlqEventPublisher;
 
     @Transactional
-    public void handleRetryFailure(String dlqId, Exception exception) {
+    public void handleRetryFailure(String outboxId, Exception exception) {
         log.error(
-            "[DLQ Retry Failure] DLQ 재시도 메시지 최종 실패 - dlqId={}, error={}",
-            dlqId,
+            "[DLQ Retry Failure] DLQ 재시도 메시지 최종 실패 - outboxId={}, error={}",
+            outboxId,
             exception.getMessage()
         );
 
         try {
-            Outbox message = outboxRepository.findById(UUID.fromString(dlqId))
-                .orElseThrow(() -> new IllegalArgumentException("DLQ 메시지를 찾을 수 없음: " + dlqId));
+            Outbox message = outboxRepository.findById(UUID.fromString(outboxId))
+                .orElseThrow(() -> new IllegalArgumentException("DLQ 메시지를 찾을 수 없음: " + outboxId));
 
             message.markPermanentFail();
             outboxRepository.save(message);
 
             log.info(
-                "[DLQ Retry Failure] 영구 실패 처리 완료 - dlqId={}, retryCount={}",
-                dlqId,
+                "[DLQ Retry Failure] 영구 실패 처리 완료 - outboxId={}, retryCount={}",
+                outboxId,
                 message.getRetryCount()
             );
 
@@ -42,7 +42,7 @@ public class DlqRetryFailureHandler {
             publishPermanentFailed(message);
 
         } catch (Exception e) {
-            log.error("[DLQ Retry Failure] 영구 실패 처리 중 오류 - dlqId={}", dlqId, e);
+            log.error("[DLQ Retry Failure] 영구 실패 처리 중 오류 - outboxId={}", outboxId, e);
             // TODO: Slack 알림
         }
     }
@@ -50,7 +50,7 @@ public class DlqRetryFailureHandler {
     private void publishPermanentFailed(Outbox message) {
         try {
             DlqPermanentFailedMessage failedMessage = DlqPermanentFailedMessage.of(
-                message.getDlqId(),
+                message.getOutboxId(),
                 message.getOriginalTopic(),
                 message.getPayload(),
                 message.getExceptionType(),
@@ -60,14 +60,14 @@ public class DlqRetryFailureHandler {
             dlqEventPublisher.publishPermanentFailed("dlq-permanent-failed", failedMessage);
 
             log.info(
-                "[DLQ Retry Failure] 영구 실패 이벤트 발행 완료 - dlqId={}",
-                message.getDlqId()
+                "[DLQ Retry Failure] 영구 실패 이벤트 발행 완료 - outboxId={}",
+                message.getOutboxId()
             );
 
         } catch (Exception e) {
             log.error(
-                "[DLQ Retry Failure] 영구 실패 이벤트 발행 실패 - dlqId={}",
-                message.getDlqId(),
+                "[DLQ Retry Failure] 영구 실패 이벤트 발행 실패 - outboxId={}",
+                message.getOutboxId(),
                 e
             );
         }

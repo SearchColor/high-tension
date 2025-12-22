@@ -52,7 +52,7 @@ public class KafkaConsumer {
     @KafkaListener(topics = "order-create-success", groupId = "orchestration-consumer-group")
     public void orderCreateSuccess(String orderCreateSuccessMessage,
         @Header(name = "from-dlq", required = false) Boolean fromDlq,
-        @Header(name = "dlq-id", required = false) String dlqId
+        @Header(name = "outboxId", required = false) String outboxId
     ) throws JsonProcessingException {
         OrderCreateSuccessMessage message = null;
         log.info(
@@ -84,12 +84,12 @@ public class KafkaConsumer {
             log.error("[KafkaConsumer] orderCreateSuccess 실패", e);
 
             //DLQ에서 온 메시지가 실패하면 즉시 영구 실패 처리
-            if (Boolean.TRUE.equals(fromDlq) && dlqId != null) {
+            if (Boolean.TRUE.equals(fromDlq) && outboxId != null) {
                 log.error(
-                    "[KafkaConsumer] DLQ에서 유입된 재시도 메시지 실패 - 영구 실패 처리 - dlqId={}",
-                    dlqId
+                    "[KafkaConsumer] DLQ에서 유입된 재시도 메시지 실패 - 영구 실패 처리 - Id={}",
+                    outboxId
                 );
-                dlqRetryFailureHandler.handleRetryFailure(dlqId, e);
+                dlqRetryFailureHandler.handleRetryFailure(outboxId, e);
                 return;
             }
 
