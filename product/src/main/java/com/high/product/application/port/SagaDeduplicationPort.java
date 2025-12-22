@@ -6,5 +6,7 @@ public interface SagaDeduplicationPort {
 
 	boolean tryProcess(String key, long ttlSeconds);
 
+	void save(String key, long ttlSeconds);
+
 	void remove(String key);
 }
