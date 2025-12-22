@@ -9,7 +9,6 @@ import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.high.payment.application.adapter.OrderServiceClient;
 import com.high.payment.application.adapter.UserServiceClient;
 import com.high.payment.application.dto.CreatePaymentRequest;
 import com.high.payment.application.dto.CreatePaymentResponse;
@@ -43,7 +42,6 @@ public class PaymentServiceImpl implements PaymentService {
 	private final PaymentOutboxRepositoryPort outboxRepository;
 	private final IamportClientPort iamportClient;
 	private final ObjectMapper objectMapper;
-	private final OrderServiceClient orderServiceClient;
 	private final PaymentRepositoryPort paymentRepositoryPort; // Hexagonal Port 사용
 	private final UserServiceClient userServiceClient;
 	private final PaymentSagaEventPort paymentSagaEventPort;
