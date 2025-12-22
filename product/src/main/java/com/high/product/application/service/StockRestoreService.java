@@ -1,9 +1,11 @@
 package com.high.product.application.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.product.application.dto.external.OrderDetailResponse;
 import com.high.product.application.dto.external.OrderItemResponse;
 import com.high.product.application.dto.kafka.failure.StockRestoreFailMessage;
@@ -13,11 +15,12 @@ import com.high.product.application.exception.ProductException;
 import com.high.product.application.port.DistributedLockPort;
 import com.high.product.application.port.OrderQueryPort;
 import com.high.product.application.port.RedisCacheEvictPort;
-import com.high.product.application.port.StockPublisherPort;
+import com.high.product.domain.model.KafkaOutbox;
+import com.high.product.domain.repository.KafkaOutboxRepository;
+import com.high.product.application.port.SagaDeduplicationPort;
 import com.high.product.domain.model.Product_Stock;
 import com.high.product.domain.repository.StockRepository;
 import com.high.product.exception.ProductErrorCode;
-import com.high.product.application.port.SagaDeduplicationPort;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,10 +32,11 @@ public class StockRestoreService {
 
 	private final OrderQueryPort orderQueryPort;
 	private final StockRepository stockRepository;
-	private final StockPublisherPort stockPublisherPort;
 	private final DistributedLockPort distributedLockPort;
 	private final SagaDeduplicationPort sagaDeduplicationPort;
 	private final RedisCacheEvictPort stockCacheEvictPort;
+	private final KafkaOutboxRepository kafkaOutboxRepository;
+	private final ObjectMapper objectMapper;
 
 	public void handleStockRestore(StockRestoreCommandRequest request) {
 
@@ -54,12 +58,11 @@ public class StockRestoreService {
 			// 이미 성공 처리된 복원
 			if (sagaDeduplicationPort.exists("restore:success:" + request.sagaId())) {
 				log.info("이미 복원 성공 sagaId={}, success 재전송", request.sagaId());
-				stockPublisherPort.publishSuccess(
-					new StockRestoreSuccessMessage(
-						request.sagaId(),
-						request.orderId(),
-						request.userId()
-					)
+
+				// 아웃박스 PENDING으로 저장 (재전송)
+				saveOutboxEvent(
+					"stock-restore-success",
+					new StockRestoreSuccessMessage(request.sagaId(), request.orderId(), request.userId())
 				);
 				return;
 			}
@@ -67,13 +70,12 @@ public class StockRestoreService {
 			// 이미 실패 처리된 복원
 			if (sagaDeduplicationPort.exists("restore:fail:" + request.sagaId())) {
 				log.info("이미 복원 실패 sagaId={}, fail 재전송", request.sagaId());
-				stockPublisherPort.publishFail(
-					new StockRestoreFailMessage(
-						request.sagaId(),
-						request.orderId(),
-						"이미 실패 처리된 복원 saga",
-						request.userId()
-					)
+
+				// 아웃박스 PENDING으로 저장 (재전송)
+				saveOutboxEvent(
+					"stock-restore-fail",
+					new StockRestoreFailMessage(request.sagaId(), request.orderId(), "이미 실패 처리된 복원 saga",
+						request.userId())
 				);
 				return;
 			}
@@ -92,7 +94,6 @@ public class StockRestoreService {
 						.orElseThrow(() -> new ProductException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
 					stock.increase(item.quantity());
-
 				}
 
 				// DB 트랜잭션 이후 캐시 무효화
@@ -104,12 +105,10 @@ public class StockRestoreService {
 				sagaDeduplicationPort.tryProcess("restore:success:" + request.sagaId(), 600);
 				sagaDeduplicationPort.remove("processing:" + request.sagaId());
 
-				stockPublisherPort.publishSuccess(
-					new StockRestoreSuccessMessage(
-						request.sagaId(),
-						request.orderId(),
-						request.userId()
-					)
+				// 아웃박스 PENDING으로 저장
+				saveOutboxEvent(
+					"stock-restore-success",
+					new StockRestoreSuccessMessage(request.sagaId(), request.orderId(), request.userId())
 				);
 
 				log.info("재고 복원 성공 sagaId={}", request.sagaId());
@@ -119,13 +118,10 @@ public class StockRestoreService {
 				sagaDeduplicationPort.tryProcess("restore:fail:" + request.sagaId(), 600);
 				sagaDeduplicationPort.remove("processing:" + request.sagaId());
 
-				stockPublisherPort.publishFail(
-					new StockRestoreFailMessage(
-						request.sagaId(),
-						request.orderId(),
-						ex.getMessage(),
-						request.userId()
-					)
+				// 아웃박스 PENDING으로 저장 (실패 이벤트)
+				saveOutboxEvent(
+					"stock-restore-fail",
+					new StockRestoreFailMessage(request.sagaId(), request.orderId(), ex.getMessage(), request.userId())
 				);
 
 				log.error("재고 복원 실패 sagaId={}", request.sagaId(), ex);
@@ -135,5 +131,31 @@ public class StockRestoreService {
 				sagaDeduplicationPort.remove("processing:" + request.sagaId());
 			}
 		});
+	}
+
+	// 아웃박스 저장 헬퍼 메서드
+	private void saveOutboxEvent(String topic, Object message) {
+		try {
+			String payload = objectMapper.writeValueAsString(message);
+			KafkaOutbox outbox = KafkaOutbox.builder()
+				.topic(topic)
+				.messageKey(message instanceof StockRestoreSuccessMessage s ? String.valueOf(s.sagaId()) :
+					message instanceof StockRestoreFailMessage f ? String.valueOf(f.sagaId()) :
+						UUID.randomUUID().toString())
+				.payload(payload)
+				.status("PENDING")
+				.sagaId(message instanceof StockRestoreSuccessMessage s ? s.sagaId() :
+					message instanceof StockRestoreFailMessage f ? f.sagaId() : null)
+				.orderId(message instanceof StockRestoreSuccessMessage s ? s.orderId() :
+					message instanceof StockRestoreFailMessage f ? f.orderId() : null)
+				.userId(message instanceof StockRestoreSuccessMessage s ? s.userId() :
+					message instanceof StockRestoreFailMessage f ? f.userId() : null)
+				.build();
+
+			kafkaOutboxRepository.save(outbox);
+		} catch (Exception e) {
+			log.error("Kafka Outbox 저장 실패", e);
+			throw new RuntimeException(e);
+		}
 	}
 }
