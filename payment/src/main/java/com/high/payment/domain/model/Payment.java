@@ -66,8 +66,11 @@ public class Payment {
 	}
 
 	public void cancel() {
-		if (this.status != PaymentStatus.COMPLETED) {
-			throw new IllegalStateException("COMPLETED 상태가 아니면 취소할 수 없습니다.");
+		if (this.status == PaymentStatus.CANCELED)
+			return;
+
+		if (this.status == PaymentStatus.FAILED) {
+			throw new IllegalStateException("FAILED 상태는 취소할 수 없습니다.");
 		}
 		this.status = PaymentStatus.CANCELED;
 		this.paymentTime = LocalDateTime.now();

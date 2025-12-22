@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import com.high.payment.domain.model.PaymentOutbox;
@@ -41,5 +43,17 @@ public class PaymentOutboxRepositoryAdapter implements PaymentOutboxRepositoryPo
 	@Override
 	public void deleteAll(List<PaymentOutbox> outboxes) {
 		jpaRepository.deleteAll(outboxes);
+	}
+
+
+	@Override
+	public List<PaymentOutbox> findPending(int batchSize) {
+		Pageable pageable = PageRequest.of(
+			0,
+			batchSize,
+			Sort.by(Sort.Direction.ASC, "createdAt")
+		);
+
+		return jpaRepository.findAllByStatus(PaymentOutbox.OutboxStatus.PENDING, pageable);
 	}
 }
