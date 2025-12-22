@@ -40,7 +40,7 @@ public class KafkaConsumer {
         private final OrderCreateAdapter adapter;
         private final KafkaEventPublisher publisher;
         private final DlqRetryFailureHandler dlqRetryFailureHandler;
-
+        
     @RetryableTopic(
         attempts = "3",
         backoff = @Backoff(
@@ -64,30 +64,16 @@ public class KafkaConsumer {
 
             message = objectMapper.readValue(orderCreateSuccessMessage,
                 OrderCreateSuccessMessage.class);
-//메시지 파싱실패는 재시도의미가 없을 것 같은데 이 경우에는 재시도 루트를 타지 않게 해야할지?
-//        } catch (Exception e) {
-//            log.error("[KafkaConsumer] 메시지 파싱 실패", e);
-//
-//            return;
-//        }
+
         StockDeductionCommandRequest stockRequest = null;
         CouponUseCommandRequest couponRequest = null;
 
-//        try {
+
             stockRequest = adapter.toStockDeductionCommand(message);
             couponRequest = adapter.toCouponUseCommandRequest(message);
 
             orderCreateSagaService.handlerOrderCreateSuccess(stockRequest);
-//service 로직도 service에서 에러처리를 따로 잡고있는데 이 경우에도 재시도 루트를 타지 않게 해야할지?
 
-//        } catch (Exception e) {
-//            log.warn(
-//                "[KafkaConsumer] 비즈니스 실패 - Kafka 재시도 안함",
-//                e
-//            );
-//            return;
-//        }
-//        try {
             publisher.publishCouponUseCommand("coupon-use-request", couponRequest);
             publisher.publishStockDeductionCommand("stock-deduction-request", stockRequest);
             log.info("[KafkaConsumer] orderCreateSuccess : 재고차감 명령 발행 성공 ");
