@@ -61,7 +61,7 @@ public class OrderCreateSuccessDlqRetryScheduler {
 
             } catch (Exception e) {
                 failCount++;
-                log.error("[DLQ Scheduler] 메시지 처리 중 예외 - Id={}",
+                log.error("[DLQ Scheduler] 메시지 처리 중 예외 - outboxId={}",
                     message.getOutboxId(), e);
             }
         }
@@ -80,7 +80,7 @@ public class OrderCreateSuccessDlqRetryScheduler {
 
 
         log.info(
-            "[DLQ Retry] 메시지 재시도 시작 - Id={}, retryCount={}, nextRetryAt={}, 현재시간={}",
+            "[DLQ Retry] 메시지 재시도 시작 - outboxId={}, retryCount={}, nextRetryAt={}, 현재시간={}",
             message.getOutboxId(),
             message.getRetryCount(),
             message.getNextRetryAt(),
@@ -88,7 +88,7 @@ public class OrderCreateSuccessDlqRetryScheduler {
 
         // 최대 재시도 횟수 초과 체크
         if (message.getRetryCount() >= MAX_RETRY) {
-            log.warn("[DLQ Retry] 최대 재시도 횟수 초과 - Id={}, retryCount={}",
+            log.warn("[DLQ Retry] 최대 재시도 횟수 초과 - outboxId={}, retryCount={}",
                 message.getOutboxId(), message.getRetryCount());
 
             message.markPermanentFail();
@@ -107,7 +107,7 @@ public class OrderCreateSuccessDlqRetryScheduler {
         outboxRepository.flush();  // 즉시 DB 반영
 
         try {
-            log.info("[DLQ Retry] Kafka 재전송 시도 - Id={}, topic={}",
+            log.info("[DLQ Retry] Kafka 재전송 시도 - outboxId={}, topic={}",
                 message.getOutboxId(), message.getOriginalTopic());
 
             //헤더에 dlq에서 출발하는 메시지임을 담음
