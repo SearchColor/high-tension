@@ -1,8 +1,8 @@
-package com.high.order.infrastructure.adapter;
+package com.high.order.infrastructure.kafka.adapter;
 
-import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
-import com.high.order.application.dto.internal.kafka.request.CreateOrderItemCommand;
-import com.high.order.application.dto.internal.kafka.request.DeleteOrderCommand;
+import com.high.order.application.dto.event.request.CreateOrderCommand;
+import com.high.order.application.dto.event.request.CreateOrderItemCommand;
+import com.high.order.application.dto.event.request.DeleteOrderCommand;
 import com.high.order.infrastructure.kafka.dto.response.OrderCreateRequestMessage;
 import com.high.order.infrastructure.kafka.dto.response.OrderDeleteRequestMessage;
 import org.springframework.stereotype.Component;

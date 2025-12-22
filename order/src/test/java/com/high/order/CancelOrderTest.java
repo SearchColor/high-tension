@@ -321,7 +321,7 @@ public class CancelOrderTest {
 //            // When & Then
 //            assertThatThrownBy(() ->
 //                orderService.cancelOrderItem(order.getOrderId(), nonExistentItemId))
-//                .isInstanceOf(OrderItemNotFoundExeption.class);
+//                .isInstanceOf(OrderItemNotFoundException.class);
 //        }
 //    }
 //

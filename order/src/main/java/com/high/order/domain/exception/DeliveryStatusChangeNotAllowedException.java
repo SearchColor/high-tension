@@ -1,4 +1,4 @@
-package com.high.order.application.exception;
+package com.high.order.domain.exception;
 
 import com.high.order.exception.OrderErrorCode;
 import com.library.module.exception.CustomException;
