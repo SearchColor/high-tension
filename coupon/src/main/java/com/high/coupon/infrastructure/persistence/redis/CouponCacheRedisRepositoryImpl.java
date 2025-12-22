@@ -22,14 +22,15 @@ public class CouponCacheRedisRepositoryImpl implements CouponCachePort {
     private final RedisScript<Long> issueCouponScript;
 
     @Override
-    public Long tryIssueCoupon(UUID couponId, UUID userId, Integer totalQuantity) {
+    public Long tryIssueCoupon(UUID couponId, UUID userId, Integer totalQuantity, Long ttlSeconds) {
         String key = "coupon:" + couponId + ":users";
 
         return redisTemplate.execute(
                 issueCouponScript,
                 Collections.singletonList(key),
                 userId.toString(),
-                String.valueOf(totalQuantity)
+                String.valueOf(totalQuantity),
+                String.valueOf(ttlSeconds)
         );
     }
 }

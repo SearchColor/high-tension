@@ -47,11 +47,14 @@ public class CouponService {
         return CouponCreateResponse.from(savedCoupon);
     }
 
+
     // 쿠폰 단건 조회
-    public CouponDetailResponse getCouponDetail(UUID couponId) {
-        Coupon coupon = getCouponById(couponId);
-        return CouponDetailResponse.from(coupon);
+    public CouponDetailResponse getCouponDetail(UUID couponId){
+        return couponRepository.findById(couponId)
+                .map(CouponDetailResponse::from)
+                .orElseThrow(CouponNotFoundException::new);
     }
+
 
     // 쿠폰 리스트 조회
     public PageResponse<CouponListResponse> getCouponPage(int page, int size, String sortBy, boolean isAsc) {
@@ -59,14 +62,6 @@ public class CouponService {
         Page<Coupon> pageResult = couponRepository.findAll(pageable);
         Page<CouponListResponse> couponList = pageResult.map(CouponListResponse::from);
         return PageResponse.fromPage(couponList, sortBy, isAsc);
-    }
-
-    /**
-     * 쿠폰 ID 조회 메서드
-     */
-    public Coupon getCouponById(UUID couponId){
-        return couponRepository.findById(couponId)
-                .orElseThrow(CouponNotFoundException::new);
     }
 
     /**
