@@ -1,4 +1,4 @@
-package com.high.order.application.dto.internal.kafka.request;
+package com.high.order.application.dto.event.request;
 
 import java.util.UUID;
 
