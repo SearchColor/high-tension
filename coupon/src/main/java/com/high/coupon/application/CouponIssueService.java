@@ -133,42 +133,25 @@ public class CouponIssueService {
         return CouponValidationResponse.from(couponIssue);
     }
 
-
     // 쿠폰 사용 처리
-//    @Transactional
-//    public CouponUseResponse useCoupon(UUID couponIssueId, UUID userId){
-//
-//        CouponIssue couponIssue = couponIssueRepository.findByIdAndUserId(couponIssueId, userId)
-//                .orElseThrow(CouponNotOwnedException::new);
-//
-//        couponIssue.useCoupon(userId, LocalDateTime.now());
-//        log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 사용처리 : couponIssueId={}, userId={}", couponIssueId, userId);
-//        return CouponUseResponse.from(couponIssue);
-//    }
+    @Transactional
+    public CouponUseResponse useCoupon(UUID couponIssueId, UUID userId) {
 
-      // 쿠폰 사용 처리
-      @Transactional
-      public CouponUseResponse useCoupon(UUID couponIssueId, UUID userId) {
+        CouponIssue couponIssue = couponIssueRepository.findByIdAndUserId(couponIssueId, userId)
+                .orElseThrow(CouponNotOwnedException::new);
 
-          // 조회
-          CouponIssue couponIssue = couponIssueRepository.findByIdAndUserId(couponIssueId, userId)
-                  .orElseThrow(CouponNotOwnedException::new);
+        couponIssue.validateUsable(userId, LocalDateTime.now());
 
-          // 도메인 로직 검증
-          couponIssue.validateUsable(userId, LocalDateTime.now());
+        int updated = couponIssueRepository.useCouponIfAvailable(
+                couponIssueId, userId, LocalDateTime.now());
 
-          // 업데이트
-            int updated = couponIssueRepository.useCouponIfAvailable(
-                    couponIssueId, userId, LocalDateTime.now());
+        if (updated == 0) {
+            throw new CouponAlreadyUsedException();
+        }
 
-            // 실패 시 예외 처리
-            if (updated == 0) {
-                throw new CouponAlreadyUsedException();
-            }
-
-          couponIssue.useCoupon(LocalDateTime.now());
-          log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 사용처리 : couponIssueId={}, userId={}", couponIssueId, userId);
-          return CouponUseResponse.from(couponIssue);
+        couponIssue.useCoupon(LocalDateTime.now());
+        log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 사용처리 : couponIssueId={}, userId={}", couponIssueId, userId);
+        return CouponUseResponse.from(couponIssue);
     }
 
 
