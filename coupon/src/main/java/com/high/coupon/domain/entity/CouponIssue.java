@@ -82,7 +82,7 @@ public class CouponIssue extends BaseEntity {
 
 
     // 발급 기간 체크 메서드
-    private static void validateIssuePeriod(Coupon coupon, LocalDateTime now) {
+    public static void validateIssuePeriod(Coupon coupon, LocalDateTime now) {
         if (now.isBefore(coupon.getIssueStartAt()) || now.isAfter(coupon.getIssueEndAt())) {
             throw new CouponIssuePeriodInvalidException();
         }

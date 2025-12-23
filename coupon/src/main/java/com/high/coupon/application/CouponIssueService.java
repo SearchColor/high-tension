@@ -56,6 +56,9 @@ public class CouponIssueService {
 
         Coupon coupon = couponReader.getCouponById(couponId);
 
+        // 검증
+        CouponIssue.validateIssuePeriod(coupon, LocalDateTime.now());
+
         long ttlSeconds = calculateTTL(coupon.getIssueEndAt());
 
         Long result = couponCachePort.tryIssueCoupon(
