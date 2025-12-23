@@ -5,9 +5,11 @@ import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
 import com.high.order.application.dto.request.OrderStatusChangeRequest;
 import com.high.order.application.dto.request.OrderUpdateRequest;
 import com.high.order.application.dto.response.OrderDetailResponse;
+import com.high.order.application.dto.response.OrderItemCancelResponse;
 import com.high.order.application.dto.response.OrderItemIdResponse;
 import com.high.order.application.dto.response.OrderListResponse;
 import com.high.order.application.dto.response.OrderResponse;
+import com.library.jpa.response.PageResponse;
 import com.library.module.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,19 +18,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 @Tag(name = "Order", description = "주문 API")
-@RequestMapping("/api/v1/orders")
 public interface OrderApiDocs {
 
 
@@ -40,8 +38,6 @@ public interface OrderApiDocs {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "주문을 찾을 수 없음", content = @Content)
     })
-    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
-    @GetMapping("/{orderId}")
     ResponseEntity<ApiResponse<OrderDetailResponse>> getOrderDetail(
         @Parameter(description = "주문 ID", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
         @PathVariable("orderId") UUID orderId);
@@ -56,9 +52,8 @@ public interface OrderApiDocs {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
     })
-    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
-    @GetMapping
-    ResponseEntity<ApiResponse<List<OrderListResponse>>> getOrders();
+    public ResponseEntity<ApiResponse<PageResponse<OrderListResponse>>> getOrders(
+        @PageableDefault(size = 10, sort = "createdAt", direction = Direction.DESC) Pageable pageable);
 
 
 
@@ -72,8 +67,6 @@ public interface OrderApiDocs {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "주문을 찾을 수 없음", content = @Content)
     })
-    @PreAuthorize("hasAnyRole('USER','MASTER')")
-    @PatchMapping("/{orderId}/cancel")
     ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(
         @Parameter(description = "주문 ID", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
         @PathVariable UUID orderId);
@@ -90,9 +83,7 @@ public interface OrderApiDocs {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "주문 또는 주문 상품을 찾을 수 없음", content = @Content)
     })
-    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
-    @PatchMapping("/{orderId}/cancel/{orderItemId}")
-    ResponseEntity<ApiResponse<OrderItemIdResponse>> cancelOrderItem(
+    ResponseEntity<ApiResponse<OrderItemCancelResponse>> cancelOrderItem(
         @Parameter(description = "주문 ID", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
         @PathVariable UUID orderId,
         @Parameter(description = "주문 상품 ID", required = true, example = "123e4567-e89b-12d3-a456-426614174001")
@@ -110,8 +101,6 @@ public interface OrderApiDocs {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "주문을 찾을 수 없음", content = @Content)
     })
-    @PreAuthorize("hasAnyRole('USER', 'MASTER')")
-    @PatchMapping("/{orderId}")
     ResponseEntity<ApiResponse<OrderResponse>> updateOrder(
         @Parameter(description = "주문 ID", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
         @PathVariable UUID orderId,
@@ -134,8 +123,6 @@ public interface OrderApiDocs {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음 (MASTER 권한 필요)", content = @Content),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "주문을 찾을 수 없음", content = @Content)
     })
-    @PreAuthorize("hasRole('MASTER')")
-    @PatchMapping("/{orderId}/status")
     ResponseEntity<ApiResponse<OrderResponse>> changeOrderStatus(
         @Parameter(description = "주문 ID", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
         @PathVariable UUID orderId,
@@ -158,8 +145,6 @@ public interface OrderApiDocs {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "주문 또는 주문 상품을 찾을 수 없음", content = @Content)
     })
-    @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
-    @PatchMapping("/{orderId}/items/{orderItemId}/refund")
     ResponseEntity<ApiResponse<OrderItemIdResponse>> changeOrderItemStatus(
         @Parameter(description = "주문 ID", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
         @PathVariable UUID orderId,
@@ -184,8 +169,6 @@ public interface OrderApiDocs {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음 (SELLER 또는 MASTER 권한 필요)", content = @Content),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "주문 또는 주문 상품을 찾을 수 없음", content = @Content)
     })
-    @PreAuthorize("hasAnyRole('SELLER', 'MASTER')")
-    @PatchMapping("/{orderId}/items/{orderItemId}/delivery/status")
     ResponseEntity<ApiResponse<OrderItemIdResponse>> changeOrderItemDeliveryStatus(
         @Parameter(description = "주문 ID", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
         @PathVariable UUID orderId,
@@ -209,8 +192,6 @@ public interface OrderApiDocs {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "주문을 찾을 수 없음", content = @Content)
     })
-    @PreAuthorize("hasAnyRole('USER', 'MASTER')")
-    @DeleteMapping("/{orderId}")
     ResponseEntity<ApiResponse<Void>> deleteOrder(
         @Parameter(description = "주문 ID", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
         @PathVariable UUID orderId);
@@ -218,7 +199,6 @@ public interface OrderApiDocs {
 
 
 
-    @GetMapping("/test/{orderId}")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "처리 성공",
             content = @Content(schema = @Schema(implementation = OrderResponse.class))),

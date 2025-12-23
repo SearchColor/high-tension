@@ -29,12 +29,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 
 @Slf4j
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/api/v1/orders")
 public class OrderController implements OrderApiDocs{
 
     private final OrderService orderServiceV1; //주문 생성 테스트용 (order service의 createOrder만 사용)
@@ -60,6 +62,7 @@ public class OrderController implements OrderApiDocs{
 //        return ResponseEntity.ok().build();
 //    }
 
+    @Override
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @GetMapping("/{orderId}")
     public ResponseEntity<ApiResponse<OrderDetailResponse>> getOrderDetail(@PathVariable("orderId") UUID orderId) {
@@ -69,6 +72,8 @@ public class OrderController implements OrderApiDocs{
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
+
+    @Override
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<OrderListResponse>>> getOrders(
@@ -82,6 +87,7 @@ public class OrderController implements OrderApiDocs{
 
 
     //전체 취소
+    @Override
     @PreAuthorize("hasAnyRole('USER','MASTER')")
     @PatchMapping("/{orderId}/cancel")
     public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(@PathVariable UUID orderId) {
@@ -92,6 +98,7 @@ public class OrderController implements OrderApiDocs{
     }
 
     //부분 취소
+    @Override
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @PatchMapping("/{orderId}/cancel/{orderItemId}")
     public ResponseEntity<ApiResponse<OrderItemCancelResponse>> cancelOrderItem(@PathVariable UUID orderId, @PathVariable UUID orderItemId) {
@@ -102,6 +109,7 @@ public class OrderController implements OrderApiDocs{
     }
 
     //주문 정보 변경
+    @Override
     @PreAuthorize("hasAnyRole('USER', 'MASTER')")
     @PatchMapping("/{orderId}")
     public ResponseEntity<ApiResponse<OrderResponse>> updateOrder(@PathVariable UUID orderId, @Valid @RequestBody OrderUpdateRequest request) {
@@ -112,6 +120,7 @@ public class OrderController implements OrderApiDocs{
     }
 
     //주문 상태 변경
+    @Override
     @PreAuthorize("hasRole('MASTER')")
     @PatchMapping("/{orderId}/status")
     public ResponseEntity<ApiResponse<OrderResponse>> changeOrderStatus(@PathVariable UUID orderId, @RequestBody
@@ -123,6 +132,7 @@ public class OrderController implements OrderApiDocs{
     }
 
     //주문 아이템 환불 상태 변경
+    @Override
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @PatchMapping("/{orderId}/items/{orderItemId}/refund")
     public ResponseEntity<ApiResponse<OrderItemIdResponse>> changeOrderItemStatus(@PathVariable UUID orderId, @PathVariable UUID orderItemId,
@@ -134,6 +144,7 @@ public class OrderController implements OrderApiDocs{
     }
 
     //주문 아이템 배송 상태 변경
+    @Override
     @PreAuthorize("hasAnyRole('SELLER', 'MASTER')")
     @PatchMapping("/{orderId}/items/{orderItemId}/delivery/status")
     public ResponseEntity<ApiResponse<OrderItemIdResponse>> changeOrderItemDeliveryStatus(
@@ -144,6 +155,7 @@ public class OrderController implements OrderApiDocs{
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
+    @Override
     @PreAuthorize("hasAnyRole('USER', 'MASTER')")
     @DeleteMapping("/{orderId}")
     public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable UUID orderId) {
@@ -153,6 +165,7 @@ public class OrderController implements OrderApiDocs{
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("삭제되었습니다."));
     }
 
+    @Override
     @GetMapping("/test/{orderId}")
     public ResponseEntity<ApiResponse<OrderResponse>> testApi(@PathVariable UUID orderId) {
         orderService.processOrderSuccess(orderId);

@@ -9,8 +9,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -46,8 +44,6 @@ public interface OrchestrationApiDocs {
             content = @Content
         )
     })
-    @PreAuthorize("hasRole('USER')")
-    @PostMapping("/order")
     public ResponseEntity<ApiResponse<Void>> orderCreate(
         @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "주문 생성 요청 정보 (상품, 수량, 배송지 등)",
