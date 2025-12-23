@@ -26,7 +26,7 @@ public class SlackRecord extends BaseDeleteEntity {
     @Column(nullable = false)
     private String recipientId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
 
 
