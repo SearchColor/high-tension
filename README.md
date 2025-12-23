@@ -6,35 +6,47 @@
 <br>
 
 # 🛒 Project Overview (프로젝트 개요)
-프로젝트 개요 / 설명
+MSA 아키텍처를 기반으로 핵심 커머스 기능을 유연하게 제공하는 C2C 온라인 쇼핑 플랫폼.<br>
+상품의 검색 → 장바구니 → 주문 → 결제까지의 전 과정을 처리하는 이커머스 핵심 기능을 MSA 구조로 구현하여, 확장성과 안정성을 목표로 구현한 쇼핑 서비스입니다.
 
 ## 📝 사용자 주요 기능
 - 주요 기능 간단하게
 - 주요 기능 간단하게
 
 ## 🗓️ 개발 기간
-2025.xx.xx ~ 2025.xx.xx
+2025.11.24 ~ 2025.12.26
 
 </br>
 
 # ⚒️ Technology Stack (기술 스택)
 
-- 필요한 뱃지 정리 필요
-
+### Backend
 ![Java](https://img.shields.io/badge/Java%2017-007396?style=for-the-badge&logo=java&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot%203.5.8-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
 ![Spring Data JPA](https://img.shields.io/badge/Spring%20Data%20JPA-228B22?style=for-the-badge&logo=java&logoColor=white)
 ![Spring Security](https://img.shields.io/badge/Spring%20Security-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
 
-![Kafka](https://img.shields.io/badge/Kafka-231F20?style=for-the-badge&logo=apachekafka&logoColor=white)
+### Database & Cache
 ![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 ![MySql](https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
+
+### Messaging
+![Kafka](https://img.shields.io/badge/Kafka-231F20?style=for-the-badge&logo=apachekafka&logoColor=white)
+
+### Logging & Monitoring (ELK Stack)
+![Elastic Search](https://img.shields.io/badge/Elastic_Search-005571?style=for-the-badge&logo=elasticsearch&logoColor=white)
+![Filebeat](https://img.shields.io/badge/Filebeat-005571?style=for-the-badge&logo=elastic&logoColor=white)
+![Kibana](https://img.shields.io/badge/Kibana-005571?style=for-the-badge&logo=Kibana&logoColor=white)
+![Logstash](https://img.shields.io/badge/Logstash-005571?style=for-the-badge&logo=logstash&logoColor=white)
+
+### Infrastructure & DevOps
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 
+### Tools & Collaboration
 ![IntelliJ IDEA](https://img.shields.io/badge/IntelliJ_IDEA-000000.svg?style=for-the-badge&logo=intellij-idea&logoColor=white)
 ![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
 ![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)
-
 ![Slack](https://img.shields.io/badge/Slack-4A154B?style=for-the-badge&logo=slack&logoColor=white)
 ![Notion](https://img.shields.io/badge/Notion-000000?style=for-the-badge&logo=notion&logoColor=white)
 
@@ -55,7 +67,7 @@
 <br>
 <br>
 
-# 🗝️ Key Features (주요 기능)
+# 🗝️ Features (구현 기능)
 
 기존 내용은 수정하여 작성해주세요 (어떤 내용을 포함하고, 어떤 서술식으로 할 지 논의 필요)
 
@@ -97,8 +109,20 @@
 
 # 📂 Project Structure (프로젝트 구조)
 ```plaintext
-각 서비스 모듈은 4계층 레이어드 아키텍처를 기본으로 합니다.
-생성 시 추가
+Config Server와 API Gateway를 포함한 멀티 모듈 구조로 구성되어 있으며,
+보안, JPA 등 공통 기능은 별도의 저장소에서 관리되는 공통 라이브러리를 의존성 형태로 사용합니다.
+각 서비스 모듈은 4계층 레이어드 아키텍처를 따릅니다.
+└─main
+    ├─java
+    │  └─com
+    │      └─high-tension
+    │          └─service-module
+    │              ├─application
+    │              ├─domain
+    │              ├─exception
+    │              ├─infrastructure
+    │              └─presentation
+    └─resources
 ```
 
 <br>
@@ -113,7 +137,7 @@ Git Flow를 기반으로 하며, 다음과 같은 브랜치를 사용합니다.
     - **전략**
 
       | Branch Type | Description                                       |
-            |-------------|---------------------------------------------------|
+      |-------------|---------------------------------------------------|
       | `dev`       | 주요 개발 branch, `main`으로 merge 전 거치는 branch |
       | `feature`   | 각자 개발할 branch, 기능 단위로 생성하기, 할 일 issue 등록 후 branch 생성 및 작업 |
 
