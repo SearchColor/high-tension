@@ -1,7 +1,7 @@
 package com.high.order.domain.entity;
 
-import com.high.order.domain.exception.InvalidOrderStateException;
-import com.high.order.domain.exception.OrderCancellationException;
+import com.high.order.domain.exception.OrderCancellationNotAllowedByItemStatusException;
+import com.high.order.domain.exception.OrderStatusChangeNotAllowedException;
 import com.high.order.domain.vo.DeliveryStatus;
 import com.high.order.domain.vo.OrderItemStatus;
 import com.library.jpa.common.entity.BaseEntity;
@@ -15,8 +15,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -79,15 +77,19 @@ public class OrderItem extends BaseEntity {
         System.out.println("[Order] 총 금액 계산 완료 : " + this.itemTotalPrice);
     }
 
-    public int calculateCancelAmounts(BigDecimal discountPercent) {
-        BigDecimal price = BigDecimal.valueOf(itemTotalPrice);
-        BigDecimal discountRate = discountPercent.divide(new BigDecimal("100"), 4,
-            RoundingMode.HALF_UP);
-        BigDecimal discountAmountBd = price.multiply(discountRate);
-        BigDecimal finalPrice = price.subtract(discountAmountBd);
-
-        return finalPrice.setScale(0, RoundingMode.HALF_UP).intValue();
-    }
+//    public int calculateCancelAmounts(BigDecimal discountPercent) {
+//        if(discountPercent != null) {
+//            BigDecimal price = BigDecimal.valueOf(itemTotalPrice);
+//            BigDecimal discountRate = discountPercent.divide(new BigDecimal("100"), 4,
+//                RoundingMode.HALF_UP);
+//            BigDecimal discountAmountBd = price.multiply(discountRate);
+//            BigDecimal finalPrice = price.subtract(discountAmountBd);
+//
+//            return finalPrice.setScale(0, RoundingMode.HALF_UP).intValue();
+//        }
+//            return this.itemTotalPrice;
+//
+//        }
 
     public boolean isCancellable() {
         return (this.orderItemStatus == OrderItemStatus.CREATED || this.orderItemStatus == OrderItemStatus.SUCCESS)
@@ -97,7 +99,7 @@ public class OrderItem extends BaseEntity {
     public void updateItemStatus(OrderItemStatus nextStatus) {
         if (!this.orderItemStatus.canTransitionTo(nextStatus)) {
             System.out.println("[orderItem] 상태를 업데이트할 수 없음");
-            throw new InvalidOrderStateException();
+            throw new OrderStatusChangeNotAllowedException();
         }
         System.out.println("[orderItem] 상태 업데이트 : " + nextStatus);
         this.orderItemStatus = nextStatus;
@@ -111,7 +113,7 @@ public class OrderItem extends BaseEntity {
     public void cancel() {
         if (!isCancellable()) {
             System.out.println("[orderItem] 취소할 수 없는 주문 상품");
-            throw new OrderCancellationException();
+            throw new OrderCancellationNotAllowedByItemStatusException();
         }
         this.orderItemStatus = OrderItemStatus.CANCELED;
     }

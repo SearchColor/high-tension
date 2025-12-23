@@ -1,9 +1,9 @@
 package com.high.order.application.port;
 
-import com.high.order.application.dto.internal.kafka.request.ProcessOrderSuccessCommand;
-import com.high.order.application.dto.internal.kafka.response.OrderCreateFailedResponse;
-import com.high.order.application.dto.internal.kafka.response.OrderDeleteResponse;
-import com.high.order.application.dto.internal.kafka.response.OrderSuccessResponse;
+import com.high.order.application.dto.event.request.ProcessOrderSuccessCommand;
+import com.high.order.application.dto.event.response.OrderCreateFailedResponse;
+import com.high.order.application.dto.event.response.OrderDeleteResponse;
+import com.high.order.application.dto.event.response.OrderSuccessResponse;
 
 public interface EventPublisher {
     void sendOrderCreateSuccess(String topic, OrderSuccessResponse response);

@@ -1,11 +1,11 @@
-package com.high.order.domain.exception;
+package com.high.order.application.exception;
 
 import com.high.order.exception.OrderErrorCode;
 import com.library.module.exception.CustomException;
 
-public class OrderItemNotFoundExeption extends CustomException {
+public class OrderItemNotFoundException extends CustomException {
 
-    public OrderItemNotFoundExeption() {
+    public OrderItemNotFoundException() {
         super(OrderErrorCode.ORDER_ITEM_NOT_FOUND);
     }
 }
