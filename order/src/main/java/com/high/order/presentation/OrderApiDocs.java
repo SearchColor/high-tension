@@ -52,7 +52,7 @@ public interface OrderApiDocs {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패", content = @Content),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음", content = @Content),
     })
-    public ResponseEntity<ApiResponse<PageResponse<OrderListResponse>>> getOrders(
+    ResponseEntity<ApiResponse<PageResponse<OrderListResponse>>> getOrders(
         @PageableDefault(size = 10, sort = "createdAt", direction = Direction.DESC) Pageable pageable);
 
 
