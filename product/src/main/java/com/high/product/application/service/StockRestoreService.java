@@ -115,14 +115,7 @@ public class StockRestoreService {
 
 			} catch (Exception ex) {
 
-				sagaDeduplicationPort.tryProcess("restore:fail:" + request.sagaId(), 600);
 				sagaDeduplicationPort.remove("processing:" + request.sagaId());
-
-				// 아웃박스 PENDING으로 저장 (실패 이벤트)
-				saveOutboxEvent(
-					"stock-restore-fail",
-					new StockRestoreFailMessage(request.sagaId(), request.orderId(), ex.getMessage(), request.userId())
-				);
 
 				log.error("재고 복원 실패 sagaId={}", request.sagaId(), ex);
 				throw ex;

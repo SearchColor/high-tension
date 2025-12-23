@@ -114,15 +114,7 @@ public class StockDeductionService {
 
 			} catch (Exception ex) {
 
-				sagaDeduplicationPort.tryProcess("fail:" + request.sagaId(), 600);
 				sagaDeduplicationPort.remove("processing:" + request.sagaId());
-
-				// 아웃박스 PENDING으로 저장 (실패 이벤트)
-				saveOutboxEvent(
-					"stock-deduction-fail",
-					new StockDeductionFailMessage(request.sagaId(), request.orderId(), ex.getMessage(),
-						request.userId())
-				);
 
 				log.error("재고 차감 실패 sagaId={}", request.sagaId(), ex);
 				throw ex;
