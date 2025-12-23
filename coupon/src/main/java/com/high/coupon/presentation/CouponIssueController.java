@@ -34,20 +34,4 @@ public class CouponIssueController {
         var response = couponIssueService.issueCoupon(couponId, userId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
-
-//
-//    /**
-//     * todo: 테스트용 URL
-//     */
-//    @PostMapping("/{couponId}/issue/test")
-//    public ResponseEntity<CouponIssueResponse> issueCouponTest(
-//            @PathVariable UUID couponId,
-//            @RequestBody TestCouponRequest request // 아래 만든 record 사용
-//    ) {
-//        // 서비스 호출 (userId를 Body에서 꺼내서 넘김)
-//        var response = couponIssueService.issueCoupon(couponId, request.userId());
-//        return ResponseEntity.ok(response);
-//    }
-//
-//    public record TestCouponRequest(UUID userId) {}
 }

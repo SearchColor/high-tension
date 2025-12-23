@@ -16,8 +16,8 @@ public class CouponIssueRepositoryAdaptor implements CouponIssueRepository {
     private final JpaCouponIssueRepository jpaCouponIssueRepository;
 
     @Override
-    public CouponIssue save(CouponIssue couponIssue) {
-        return jpaCouponIssueRepository.save(couponIssue);
+    public void save(CouponIssue couponIssue) {
+        jpaCouponIssueRepository.save(couponIssue);
     }
 
     @Override

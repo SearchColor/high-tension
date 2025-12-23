@@ -8,7 +8,8 @@ import java.util.UUID;
 
 public interface CouponIssueRepository {
 
-    CouponIssue save(CouponIssue couponIssue);
+    void save(CouponIssue couponIssue);
+
     Optional<CouponIssue> findById(UUID couponIssueId);
 
     // 사용자 별 사용 가능 쿠폰만 조회
