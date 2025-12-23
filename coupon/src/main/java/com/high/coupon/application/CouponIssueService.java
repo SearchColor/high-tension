@@ -14,6 +14,7 @@ import com.high.coupon.application.port.out.dto.OrderInfo;
 import com.high.coupon.domain.entity.Coupon;
 import com.high.coupon.domain.entity.CouponIssue;
 import com.high.coupon.domain.exception.CouponAlreadyIssuedException;
+import com.high.coupon.domain.exception.CouponAlreadyUsedException;
 import com.high.coupon.domain.exception.CouponNotOwnedException;
 import com.high.coupon.domain.repository.CouponIssueRepository;
 import java.time.Duration;
@@ -32,7 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CouponIssueService {
 
-    // private final CouponService couponService;
     private final CouponIssueRepository couponIssueRepository;
     private final CouponReader couponReader;
 
@@ -135,16 +135,42 @@ public class CouponIssueService {
 
 
     // 쿠폰 사용 처리
-    @Transactional
-    public CouponUseResponse useCoupon(UUID couponIssueId, UUID userId){
+//    @Transactional
+//    public CouponUseResponse useCoupon(UUID couponIssueId, UUID userId){
+//
+//        CouponIssue couponIssue = couponIssueRepository.findByIdAndUserId(couponIssueId, userId)
+//                .orElseThrow(CouponNotOwnedException::new);
+//
+//        couponIssue.useCoupon(userId, LocalDateTime.now());
+//        log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 사용처리 : couponIssueId={}, userId={}", couponIssueId, userId);
+//        return CouponUseResponse.from(couponIssue);
+//    }
 
-        CouponIssue couponIssue = couponIssueRepository.findByIdAndUserId(couponIssueId, userId)
-                .orElseThrow(CouponNotOwnedException::new);
+      // 쿠폰 사용 처리
+      @Transactional
+      public CouponUseResponse useCoupon(UUID couponIssueId, UUID userId) {
 
-        couponIssue.useCoupon(userId, LocalDateTime.now());
-        log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 사용처리 : couponIssueId={}, userId={}", couponIssueId, userId);
-        return CouponUseResponse.from(couponIssue);
+          // 조회
+          CouponIssue couponIssue = couponIssueRepository.findByIdAndUserId(couponIssueId, userId)
+                  .orElseThrow(CouponNotOwnedException::new);
+
+          // 도메인 로직 검증
+          couponIssue.validateUsable(userId, LocalDateTime.now());
+
+          // 업데이트
+            int updated = couponIssueRepository.useCouponIfAvailable(
+                    couponIssueId, userId, LocalDateTime.now());
+
+            // 실패 시 예외 처리
+            if (updated == 0) {
+                throw new CouponAlreadyUsedException();
+            }
+
+          couponIssue.useCoupon(LocalDateTime.now());
+          log.info("[INTERNAL] Coupon-Issue-Service - 쿠폰 사용처리 : couponIssueId={}, userId={}", couponIssueId, userId);
+          return CouponUseResponse.from(couponIssue);
     }
+
 
     // 쿠폰 복원 처리 (주문/결제 취소)
     @Transactional

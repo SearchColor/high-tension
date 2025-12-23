@@ -92,8 +92,7 @@ public class CouponIssue extends BaseEntity {
     /**
      * 쿠폰 사용 처리
      */
-    public void useCoupon(UUID userId, LocalDateTime now){
-        validateUsable(userId, now);
+    public void useCoupon(LocalDateTime now){
         this.isUsed = true;
         this.usedAt = now;
     }
