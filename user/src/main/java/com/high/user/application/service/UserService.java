@@ -143,12 +143,12 @@ public class UserService {
         }
 
         // Soft Delete User
-        user.softDelete(userId.toString());
+        user.softDelete(userId);
 
         // Soft Delete Passkeys
         var passkeys = passkeyRepository.findByUserIdAndDeletedAtIsNull(userId);
         if (!passkeys.isEmpty()) {
-            passkeys.forEach(pk -> pk.softDelete(userId.toString()));
+            passkeys.forEach(pk -> pk.softDelete(userId));
             passkeyRepository.saveAll(passkeys);
             log.info("사용자 패스키 삭제 처리 완료 (Soft Delete) - userId: {}, count: {}", userId, passkeys.size());
         }
