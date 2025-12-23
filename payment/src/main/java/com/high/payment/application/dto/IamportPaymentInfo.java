@@ -1,6 +1,5 @@
 package com.high.payment.application.dto;
 
-import java.math.BigDecimal;
 
 import lombok.Builder;
 import lombok.Getter;
