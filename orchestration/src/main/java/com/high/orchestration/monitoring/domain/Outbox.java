@@ -1,6 +1,7 @@
 package com.high.orchestration.monitoring.domain;
 
 import com.library.jpa.common.entity.BaseUpdateEntity;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -17,14 +18,14 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Entity
-@Table(name = "p_outbox")
+@Table(name = "p_orchestration_outbox")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Outbox extends BaseUpdateEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID dlqId;
+    private UUID outboxId;
 
     private String originalTopic;
     private String dlqTopic;
@@ -32,6 +33,7 @@ public class Outbox extends BaseUpdateEntity {
     private Long offsetNo;
     private String consumerGroup;
 
+    @Column(columnDefinition = "TEXT")
     private String payload;
 
     private String exceptionType;
@@ -125,25 +127,25 @@ public class Outbox extends BaseUpdateEntity {
         this.retryCount++;
         this.nextRetryAt = nextRetryAt;
         this.dlqStatus = DlqStatus.RETRY_WAITING;
-        log.info("[DLQ] 재시도 횟수 증가 - dlqId={}, retryCount={}, nextRetryAt={}",
-            this.dlqId, this.retryCount, this.nextRetryAt);
+        log.info("[DLQ] 재시도 횟수 증가 - outboxId={}, retryCount={}, nextRetryAt={}",
+            this.outboxId, this.retryCount, this.nextRetryAt);
     }
 
     public void markReprocessed() {
         this.dlqStatus = DlqStatus.RETRY_SUCCESS;
         this.isReprocessed = true;
-        log.info("[DLQ] 재처리 성공 - dlqId={}, status={}", this.dlqId, this.dlqStatus);
+        log.info("[DLQ] 재처리 성공 - outboxId={}, status={}", this.outboxId, this.dlqStatus);
     }
 
     public void markPermanentFail() {
         this.dlqStatus = DlqStatus.PERMANENT_FAIL;
-        log.info("[DLQ] 영구 실패 처리 - dlqId={}, retryCount={}, status={}",
-            this.dlqId, this.retryCount, this.dlqStatus);
+        log.info("[DLQ] 영구 실패 처리 - outboxId={}, retryCount={}, status={}",
+            this.outboxId, this.retryCount, this.dlqStatus);
     }
 
     //중복 처리 방지 위해
     public void markRetrying() {
         this.dlqStatus = DlqStatus.RETRYING;
-        log.info("[DLQ] 재시도 진행 중 - dlqId={}, status={}", this.dlqId, this.dlqStatus);
+        log.info("[DLQ] 재시도 진행 중 - outboxId={}, status={}", this.outboxId, this.dlqStatus);
     }
 }

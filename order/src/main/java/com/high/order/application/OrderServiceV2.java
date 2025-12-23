@@ -162,7 +162,7 @@ public class OrderServiceV2 { //current version
 
     @Transactional(readOnly = true)
     public PageResponse<OrderListResponse> getOrders(UUID userId, String userRole, Pageable pageable) {
-        Page<Order> orderList;
+        Page<Order> orderList = null;
 
         if(userRole.equals("MASTER")) {
             orderList = orderRepository.findAll(pageable); //TODO: 페이징
@@ -172,8 +172,9 @@ public class OrderServiceV2 { //current version
             orderList = orderRepository.findOrdersForSeller(userId, pageable);
         }
 
-        orderList = orderRepository.findAllByCustomerIdAndDeletedAtIsNull(userId, pageable);
-
+        if(userRole.equals("USER")) {
+            orderList = orderRepository.findAllByCustomerIdAndDeletedAtIsNull(userId, pageable);
+        }
         Page<OrderListResponse> orderListResponsePage = orderList.map(OrderListResponse::from);
 
         return PageResponse.fromPage(orderListResponsePage);
