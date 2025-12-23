@@ -191,8 +191,10 @@ services:
       # Eureka Docker 환경 오버라이드
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: user-service
-      # JWT Secret
-      JWT_SECRET: ${JWT_SECRET}
+      # JWT 설정 - Spring property 이름과 일치하도록 환경변수 설정
+      SPRING_SECURITY_JWT_SECRET: ${JWT_SECRET}
+      SPRING_SECURITY_JWT_ACCESS_TOKEN_VALIDITY: 86400000
+      SPRING_SECURITY_JWT_REFRESH_TOKEN_VALIDITY: 2592000000
 
   # 9. Product Service (상품 관리)
   product-service:

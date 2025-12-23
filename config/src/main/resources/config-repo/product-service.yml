@@ -25,6 +25,34 @@ spring:
     init:
       mode: always
 
+  data: # 에러 발생하면 이 부분 삭제하기
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 3000ms
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 5000
+      cache-null-values: false
+      use-key-prefix: true
+      key-prefix: "product::" # 이 부분이 에러원인(""로 감싸줘야 함)
+
+redisson:
+  mode: single
+  single:
+    address: redis://localhost:6379
+  #  mode: cluster # 나중에 K8s로 배포를 한다고 가정하면 필요한 코드
+  #  cluster:
+  #    nodes:
+  #      - redis://redis-0.redis:6379
+  #      - redis://redis-1.redis:6379
+  #      - redis://redis-2.redis:6379
+  lock:
+    wait-time: 5s
+    lease-time: 15s
+
 management:
   zipkin:
     tracing:

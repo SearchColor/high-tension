@@ -41,3 +41,12 @@ eureka:
 # FeignClient에서 사용하는 user-service URL
 user-service:
   url: http://localhost:8081
+
+payment:
+  intent:
+    ttl-minutes: 15   # PENDING 유지 최대 시간
+  scheduler:
+    payment-timeout:
+      fixed-delay-ms: 60000  # 1분마다 스캔
+      batch-size: 200
+

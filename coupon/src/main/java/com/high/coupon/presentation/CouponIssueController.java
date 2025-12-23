@@ -11,7 +11,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -32,16 +31,19 @@ public class CouponIssueController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-
-    /**
-     * todo: 테스트용 URL
-     */
-    @PostMapping("/{couponId}/issue/test")
-    public ResponseEntity<CouponIssueResponse> issueCouponTest(
-            @PathVariable UUID couponId,
-            @RequestParam UUID userId
-    ){
-        var response = couponIssueService.issueCoupon(couponId, userId);
-        return ResponseEntity.ok(response);
-    }
+//
+//    /**
+//     * todo: 테스트용 URL
+//     */
+//    @PostMapping("/{couponId}/issue/test")
+//    public ResponseEntity<CouponIssueResponse> issueCouponTest(
+//            @PathVariable UUID couponId,
+//            @RequestBody TestCouponRequest request // 아래 만든 record 사용
+//    ) {
+//        // 서비스 호출 (userId를 Body에서 꺼내서 넘김)
+//        var response = couponIssueService.issueCoupon(couponId, request.userId());
+//        return ResponseEntity.ok(response);
+//    }
+//
+//    public record TestCouponRequest(UUID userId) {}
 }

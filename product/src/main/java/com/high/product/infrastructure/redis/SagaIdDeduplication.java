@@ -1,0 +1,47 @@
+package com.high.product.infrastructure.redis;
+
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
+import org.springframework.stereotype.Component;
+
+import java.util.concurrent.TimeUnit;
+
+import com.high.product.application.port.SagaDeduplicationPort;
+
+import lombok.RequiredArgsConstructor;
+
+@Component
+@RequiredArgsConstructor
+public class SagaIdDeduplication implements SagaDeduplicationPort {
+
+	private final RedissonClient redissonClient;
+
+	// 이미 존재하는지 체크
+	@Override
+	public boolean exists(String key) {
+		return Boolean.TRUE.equals(redissonClient.getBucket(key).get());
+	}
+
+	// 최초 처리 시도
+	@Override
+	public boolean tryProcess(String key, long ttlSeconds) {
+		RBucket<Boolean> bucket = redissonClient.getBucket(key);
+		Boolean exists = bucket.get();
+		if (exists != null && exists)
+			return false;
+		bucket.set(true, ttlSeconds, TimeUnit.SECONDS);
+		return true;
+	}
+
+	// 최종 실패 상태 등을 강제로 저장할 때 사용
+	@Override
+	public void save(String key, long ttlSeconds) {
+		redissonClient.getBucket(key).set(true, ttlSeconds, TimeUnit.SECONDS);
+	}
+
+	// processing key 삭제 (재처리 가능)
+	@Override
+	public void remove(String key) {
+		redissonClient.getBucket(key).delete();
+	}
+}

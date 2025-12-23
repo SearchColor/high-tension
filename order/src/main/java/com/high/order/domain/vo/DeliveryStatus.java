@@ -1,7 +1,10 @@
 package com.high.order.domain.vo;
 
+import com.high.order.domain.exception.DeliveryStatusChangeNotAllowedException;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Getter
 public enum DeliveryStatus {
 
@@ -29,5 +32,12 @@ public enum DeliveryStatus {
             case SHIPPING -> nextStatus == DELIVERED;
             case DELIVERED -> false;
         };
+    }
+
+    public void validateTransition(DeliveryStatus nextStatus) {
+        if(!canTransitionTo(nextStatus)) {
+            log.error("잘못된 상태 전환 시도: {} -> {}", this, nextStatus);
+            throw new DeliveryStatusChangeNotAllowedException();
+        }
     }
 }

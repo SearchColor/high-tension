@@ -1,7 +1,5 @@
 package com.high.order.application;
 
-import static java.util.stream.Collectors.toList;
-
 import com.high.order.application.dto.external.CouponResponse;
 import com.high.order.application.dto.external.PaymentResponse;
 import com.high.order.application.dto.external.ProductResponse;
@@ -12,37 +10,42 @@ import com.high.order.application.dto.request.OrderItemStatusChangeRequest;
 import com.high.order.application.dto.request.OrderStatusChangeRequest;
 import com.high.order.application.dto.request.OrderUpdateRequest;
 import com.high.order.application.dto.response.OrderDetailResponse;
+import com.high.order.application.dto.response.OrderItemCancelResponse;
 import com.high.order.application.dto.response.OrderItemIdResponse;
 import com.high.order.application.dto.response.OrderListResponse;
 import com.high.order.application.dto.response.OrderResponse;
-import com.high.order.application.exception.DeliveryStatusChangeNotAllowedException;
+import com.high.order.application.exception.IllegalContactFormatRequestException;
 import com.high.order.application.exception.NoPermissionToChangeOrderItemStatusException;
-import com.high.order.application.exception.OrderBadRequestException;
-import com.high.order.application.exception.OrderItemStatusNotAllowedException;
+import com.high.order.application.exception.OrderItemNotFoundException;
 import com.high.order.application.exception.OrderNotFoundException;
+import com.high.order.application.exception.PaymentNotCancelableException;
+import com.high.order.application.exception.PaymentNotFoundException;
+import com.high.order.application.exception.PaymentNotRefundableException;
 import com.high.order.application.service.CouponService;
 import com.high.order.application.service.PaymentService;
 import com.high.order.application.service.ProductService;
 import com.high.order.domain.entity.Order;
 import com.high.order.domain.entity.OrderItem;
-import com.high.order.domain.exception.OrderItemNotFoundExeption;
 import com.high.order.domain.repository.OrderItemRepository;
 import com.high.order.domain.repository.OrderRepository;
 import com.high.order.domain.vo.OrderItemStatus;
 import com.high.order.domain.vo.OrderStatus;
+import com.library.jpa.response.PageResponse;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class OrderService {
+public class OrderService { //❌❌❌ deprecated
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
@@ -136,21 +139,22 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public List<OrderListResponse> getOrders(UUID userId, String userRole) {
-        List<Order> orderList;
+    public PageResponse<OrderListResponse> getOrders(UUID userId, String userRole, Pageable pageable) {
+        Page<Order> orderList;
 
         if(userRole.equals("MASTER")) {
-            orderList = orderRepository.findAll(); //TODO: 페이징
-            return orderList.stream().map(OrderListResponse::from).collect(toList());
+            orderList = orderRepository.findAll(pageable); //TODO: 페이징
         }
 
         if(userRole.equals("SELLER")) {
-            orderList = orderRepository.findOrdersForSeller(userId);
-            return orderList.stream().map(OrderListResponse::from).collect(toList());
+            orderList = orderRepository.findOrdersForSeller(userId, pageable);
         }
 
-        orderList = orderRepository.findAllByCustomerIdAndDeletedAtIsNull(userId);
-        return orderList.stream().map(OrderListResponse::from).collect(toList());
+        orderList = orderRepository.findAllByCustomerIdAndDeletedAtIsNull(userId, pageable);
+
+        Page<OrderListResponse> orderListResponsePage = orderList.map(OrderListResponse::from);
+
+        return PageResponse.fromPage(orderListResponsePage);
     }
 
 
@@ -187,117 +191,108 @@ public class OrderService {
 
         }
 
-        //결제 검증
-//        PaymentResponse paymentResponse = null;
-//        try {
-//            paymentResponse = getPayment(orderId);
-//            log.info("payment 통신 성공 - 결제 ID : {}, 주문 ID : {}, 결제 status : {}" ,
-//                paymentResponse.paymentId(), paymentResponse.orderId(), paymentResponse.status());
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            e.getMessage();
-//            throw e;
-//        }
-//
-//        if(paymentResponse == null) {
-//            throw new PaymentNotFoundException();
-//        }
-//        if (!(paymentResponse.status().equals("REQUESTED") || paymentResponse.status().equals("COMPLETED"))) {
-//            throw new NoPermissionToCancelOrderException();
-//        }
 
-        if (!order.getOrderStatus().canTransitionTo(OrderStatus.CANCELED)) {
-            throw new OrderBadRequestException();
+        OrderStatus orderStatus = order.getOrderStatus();
+
+        orderStatus.validateCancellable(); //order의 상태가 CREATE or SUCCESS인지 검증
+
+        //결제 정보 검증(결제 상태가 결제요청 혹은 결제완료 상태여야 함)
+        PaymentResponse paymentResponse = null;
+        try {
+            paymentResponse = getPayment(orderId);
+            log.info("payment 통신 성공 - 결제 ID : {}, 주문 ID : {}, 결제 status : {}" ,
+                paymentResponse.paymentId(), paymentResponse.orderId(), paymentResponse.status());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            e.getMessage();
+            throw e;
         }
 
-        if (order.getOrderStatus().equals(OrderStatus.CREATED)) {
-            order.cancelOrder();
-            orderRepository.save(order);
-
-            //TODO: 재고 복원, 쿠폰 사용 되돌리기 kafka 요청
-            return OrderResponse.from(order);
+        if(paymentResponse == null) {
+            throw new PaymentNotFoundException();
+        }
+        if (!(paymentResponse.status().equals("PENDING") || paymentResponse.status().equals("COMPLETED"))) {
+            throw new PaymentNotCancelableException();
         }
 
+        if (orderStatus.equals(OrderStatus.SUCCESS)) {
+            //주문상태가 SUCCESS(결제완료)일 때 주문 아이템중 하나라도 환불신청 또는 환불 상태일 때 주문취소 불가능
+            order.validateCancellableForOrderItems();
+        }
 
-        //주문 아이템중 하나라도 환불신청 또는 환불 상태일 때 주문취소 불가능
-           if(!order.getOrderItems().stream().allMatch(OrderItem::isCancellable)) {
-               throw new OrderBadRequestException();
-           }
-               order.cancelOrder();
-               orderRepository.save(order);
-               //TODO: 재고 복원, 쿠폰 사용 되돌리기, 결제 취소 요청
-               return OrderResponse.from(order);
+        order.cancelOrder();
+        orderRepository.save(order);
+
+        return OrderResponse.from(order);
 
     }
 
     @Transactional
-    public OrderItemIdResponse cancelOrderItem(UUID orderId, UUID orderItemId, UUID userId, String userRole) {
+    public OrderItemCancelResponse cancelOrderItem(UUID orderId, UUID orderItemId, UUID userId, String userRole) {
 
         Order order = null;
-        OrderItem orderItem = null;
 
         if(userRole.equals("MASTER")) {
             order = getOrderForAdmin(orderId);
-            orderItem = getActiveOrderItemForAdmin(orderItemId);
-
         }
         if(userRole.equals("SELLER")) {
             order = orderRepository.findOrderForSeller(orderId, userId)
                 .orElseThrow(OrderNotFoundException::new);
-            orderItem = getActiveOrderItemForSeller(orderId, orderItemId, userId);
         }
 
         if(userRole.equals("USER")) {
             order = getOrderForUser(orderId, userId);
-            orderItem = getOrderItemForUser(orderItemId, userId);
-
         }
 
         //결제 검증
-//        PaymentResponse paymentResponse = null;
-//        try {
-//            paymentResponse = getPayment(orderId);
-//            log.info("payment 통신 성공 - 결제 ID : {}, 주문 ID : {}, 결제 status : {}" ,
-//                paymentResponse.paymentId(), paymentResponse.orderId(), paymentResponse.status());
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            e.getMessage();
-//            throw e;
-//        }
-//
-//        if(paymentResponse == null) {
-//            throw new PaymentNotFoundException();
-//        }
-//
-//        if (!paymentResponse.status().equals("REQUESTED")) {
-//            throw new NoPermissionToCancelOrderItemException();
-//        }
+        PaymentResponse paymentResponse = null;
+        try {
+            paymentResponse = getPayment(orderId);
+            log.info("payment 통신 성공 - 결제 ID : {}, 주문 ID : {}, 결제 status : {}" ,
+                paymentResponse.paymentId(), paymentResponse.orderId(), paymentResponse.status());
 
-        //전체 주문이 이미 결제된 상태이면 부분 아이템 주문취소 불가능 (미안해요...개발자 실력이 허접이라..ㅜㅜ)
-        if(!order.getOrderStatus().equals(OrderStatus.CREATED)) {
-            log.info("주문 상태가 \"주문 생성\" 상태가 아님");
-            throw new OrderBadRequestException();
+        } catch (Exception e) {
+            e.printStackTrace();
+            e.getMessage();
+            throw e;
         }
 
-        //주문 아이템의 상태가 주문 생성(결제 전) 상태가 아니면 주문취소 불가능
-        if(!orderItem.getOrderItemStatus().equals(OrderItemStatus.CREATED)) {
-            log.info("주문 상품의 상태가 \"주문 생성\" 상태가 아님");
-            throw new OrderBadRequestException();
+        if(paymentResponse == null) {
+            throw new PaymentNotFoundException();
         }
+
+        if (!paymentResponse.status().equals("PENDING")) {
+            throw new PaymentNotCancelableException();
+        }
+
+        //전체 주문이 이미 결제된 상태이면 부분 아이템 주문취소 불가능
+        order.getOrderStatus().validatePartialCancellation();
+
+        UUID couponIssueId = order.getCouponIssueId();
+        BigDecimal couponDiscountPercent = null;
+
+        if(couponIssueId != null) {
+            log.info("쿠폰 ID : {}" , couponIssueId);
+
+            CouponResponse couponResponse = getCoupon(couponIssueId);
+            couponDiscountPercent = couponResponse.discountRate();
+
+        }
+
+        //취소 전 금액 확인
+        Integer previousTotalPrice = order.getTotalPrice();
+        Integer previousPaidAmount = order.getPaidAmount();
+        log.info("취소 전 - 최종 금액 : {}, 결제 금액 : {}", previousTotalPrice, previousPaidAmount);
 
         order.cancelItem(orderItemId);
 
+        //금액 재계산
+        order.recalculateAllAmounts(couponDiscountPercent);
+
         orderRepository.save(order);
 
-        //TODO: 쿠폰적용 금액으로 다시 로직 작성해야함
-        Integer recalculatingPrice =  order.getTotalPrice() - orderItem.getItemTotalPrice();
-
-        order.updateTotalPrice(recalculatingPrice);
-        orderRepository.save(order);
-        //TODO: 취소한 상품 재고 복원 요청
-        return OrderItemIdResponse.from(orderItem);
+        return OrderItemCancelResponse.of(orderItemId);
     }
 
     @Transactional
@@ -332,55 +327,44 @@ public class OrderService {
         OrderItemStatus nextStatus = request.orderItemStatus(); //변경할 상태
 
 
-        if (!currentStatus.canChangeStatus()) {
-            log.info("아이템 상태 변경 불가 상태 (SUCCESS or RETURN_REQUEST 상태가 아님)");
-            throw new OrderItemStatusNotAllowedException();
-        }
+        currentStatus.canChangeStatus();
 
         if (userRole.equals("USER") && nextStatus.equals(OrderItemStatus.RETURNED)) { //USER는 환불완료 상태로 변경 불가
             throw new NoPermissionToChangeOrderItemStatusException();
         }
 
-        if(!currentStatus.canTransitionTo(nextStatus)) { //상태 변경 정책에 위배되지 않는지 검증
-            log.info("변경 불가능한 상태로 상태변경 요청이 들어옴");
-            throw new OrderItemStatusNotAllowedException();
-        }
-
-        if(nextStatus.isCanceled()) {
-            //결제 완료 후에 부분취소 불가능(전체취소만 가능)
-            log.info("부분취소 요청이 들어옴");
-            throw new OrderItemStatusNotAllowedException();
-        }
+        currentStatus.validateTransitionTo(nextStatus);
+        currentStatus.invalidPartialCancelRequest(nextStatus);
 
         //결제 내역 조회
-//        PaymentResponse paymentResponse = null;
-//        try {
-//            paymentResponse = getPayment(orderId);
-//            log.info("payment 통신 성공 - 결제 ID : {}, 주문 ID : {}, 결제 status : {}" ,
-//                paymentResponse.paymentId(), paymentResponse.orderId(), paymentResponse.status());
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            e.getMessage();
-//            throw e;
-//        }
-//
-//        if(paymentResponse == null) {
-//            throw new PaymentNotFoundException();
-//        }
-//
-//        if (!(paymentResponse.status().equals("COMPLETED") || paymentResponse.status().equals("REFUNDED"))) {
-//            throw new NoPermissionToCancelOrderException();
-//        }
+        PaymentResponse paymentResponse = null;
+        try {
+            paymentResponse = getPayment(orderId);
+            log.info("payment 통신 성공 - 결제 ID : {}, 주문 ID : {}, 결제 status : {}" ,
+                paymentResponse.paymentId(), paymentResponse.orderId(), paymentResponse.status());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            e.getMessage();
+            throw e;
+        }
+
+        if(paymentResponse == null) {
+            throw new PaymentNotFoundException();
+        }
+
+        if (!(paymentResponse.status().equals("COMPLETED") || paymentResponse.status().equals("REFUNDED"))) {
+            throw new PaymentNotRefundableException();
+        }
 
         //결제 완료 상태이면 환불 요청 가능
-        if (nextStatus.isReturnRequest() /* && paymentResponse.status().equals("COMPLETED")*/) {
+        if (nextStatus.isReturnRequest()  && paymentResponse.status().equals("COMPLETED")) {
             //TODO: 결제에 환불요청 보내기 (Kafka - 오케스트레이션에서 )
             orderItem.updateItemStatus(OrderItemStatus.RETURN_REQUEST);
         }
 
         //배송완료 상태이고, 환불 요청상태이면 환불완료 상태로 변경 가능
-        if (nextStatus.isReturned() && orderItem.getDeliveryStatus().canTransitionToRefund() /* && paymentResponse.status().equals("REFUNDED") */ ) {
+        if (nextStatus.isReturned() && orderItem.getDeliveryStatus().canTransitionToRefund() && paymentResponse.status().equals("REFUNDED") ) {
             orderItem.updateItemStatus(OrderItemStatus.RETURNED);
 
         }
@@ -404,14 +388,9 @@ public class OrderService {
         }
 
 
-        if(orderItem.getOrderItemStatus().cannotChangeDeliveryStatus()) {
-            log.info("주문이 CREATED 상태이거나 CANCELED면 배송상태 변경 불가");
-            throw new OrderBadRequestException();
-        }
+        orderItem.getOrderItemStatus().cannotChangeDeliveryStatus();
 
-        if(!orderItem.getDeliveryStatus().canTransitionTo(request.deliveryStatus())) {
-            throw new DeliveryStatusChangeNotAllowedException();
-        }
+        orderItem.getDeliveryStatus().validateTransition(request.deliveryStatus());
 
         orderItem.updateDeliveryStatus(request.deliveryStatus());
         orderItemRepository.save(orderItem);
@@ -433,15 +412,9 @@ public class OrderService {
             order = getOrderForAdmin(orderId);
         }
 
-        if(!order.getOrderStatus().isUpdatableDeliveryInfo()) {
-            log.info("주문이 취소되어 배송정보 변경이 불가능합니다.");
-            throw new OrderBadRequestException();
-        }
+        order.getOrderStatus().isUpdatableDeliveryInfo();
 
-        if(!order.validateUpdatableDeliveryInfo()) {
-            log.info("배송이 시작되어 배송정보 변경이 불가능합니다.");
-            throw new OrderBadRequestException();
-        }
+        order.validateUpdatableDeliveryInfo();
 
         String recipient = request.recipient().orElse(null);
         String recipientContact =  request.recipientContact().orElse(null);
@@ -451,7 +424,7 @@ public class OrderService {
 
         //recipientContact가 null일 수 있으므로 null이 아닐 경우에 한하여 서비스에서 형식 검증
         if(recipientContact != null && !recipientContact.matches("^(010)(-?\\d{4})(-?\\d{4})$")) {
-            throw new OrderBadRequestException();
+            throw new IllegalContactFormatRequestException();
         }
 
         order.updateDeliveryInfo(recipient, recipientContact, deliveryAddress, detailAddress, requestMessage);
@@ -476,15 +449,18 @@ public class OrderService {
     }
 
     public OrderItem getActiveOrderItemForAdmin(UUID orderItemId) {
-        return orderItemRepository.findByOrderItemIdAndDeletedAtIsNull(orderItemId).orElseThrow(OrderItemNotFoundExeption::new);
+        return orderItemRepository.findByOrderItemIdAndDeletedAtIsNull(orderItemId).orElseThrow(
+            OrderItemNotFoundException::new);
     }
 
     public OrderItem getActiveOrderItemForSeller(UUID orderId, UUID orderItemId, UUID producerId) {
-        return orderItemRepository.findByOrderIdAndOrderItemIdAndProducerIdAndDeletedAtIsNull(orderId, orderItemId, producerId).orElseThrow(OrderItemNotFoundExeption::new);
+        return orderItemRepository.findByOrderIdAndOrderItemIdAndProducerIdAndDeletedAtIsNull(orderId, orderItemId, producerId).orElseThrow(
+            OrderItemNotFoundException::new);
     }
 
     public OrderItem getOrderItemForUser(UUID orderItemId, UUID userId) {
-        return orderItemRepository.findOrderItemForUser(orderItemId, userId).orElseThrow(OrderItemNotFoundExeption::new);
+        return orderItemRepository.findOrderItemForUser(orderItemId, userId).orElseThrow(
+            OrderItemNotFoundException::new);
     }
 
     //feignClient 통신 메서드들

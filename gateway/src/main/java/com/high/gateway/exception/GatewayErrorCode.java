@@ -27,8 +27,15 @@ public enum GatewayErrorCode implements BaseErrorCode {
     // 92xx: Rate Limiting Errors
     RATE_LIMIT_EXCEEDED(9200, HttpStatus.TOO_MANY_REQUESTS, "요청 한도를 초과했습니다"),
 
+    // 93xx: Circuit Breaker Errors
+    SERVICE_UNAVAILABLE(9300, HttpStatus.SERVICE_UNAVAILABLE, "서비스가 일시적으로 사용할 수 없습니다"),
+    CIRCUIT_BREAKER_OPEN(9301, HttpStatus.SERVICE_UNAVAILABLE, "서비스 보호를 위해 요청이 차단되었습니다"),
+    SERVICE_TIMEOUT(9302, HttpStatus.GATEWAY_TIMEOUT, "서비스 응답 시간을 초과했습니다"),
+
     // 95xx: Server Errors
-    INTERNAL_SERVER_ERROR(9500, HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다");
+    INTERNAL_SERVER_ERROR(9500, HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다"),
+    CONNECTION_TIMEOUT(9503, HttpStatus.SERVICE_UNAVAILABLE, "서비스에 연결할 수 없습니다"),
+    GATEWAY_TIMEOUT(9504, HttpStatus.GATEWAY_TIMEOUT, "요청 시간이 초과되었습니다");
 
     private final int code;
     private final HttpStatus status;

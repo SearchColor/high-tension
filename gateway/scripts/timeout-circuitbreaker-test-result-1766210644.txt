@@ -1,0 +1,139 @@
+Gateway Timeout & Circuit Breaker Test Result
+Test Date: 2025-12-20 15:04:04
+========================================
+
+[Test 0] 회원가입
+✓ 회원가입 성공
+Email: test_1766210644@example.com
+
+[Test 1] JWT 토큰 획득 (로그인)
+✓ 토큰 획득 성공
+Token: eyJhbGciOiJIUzUxMiJ9...
+
+[Test 2] Circuit Breaker 상태 조회
+Endpoint: http://localhost:8000/internal/actuator/circuitbreakers
+Response:
+{
+  "circuitBreakers": {
+    "userServiceCircuitBreaker": {
+      "failureRate": "20.0%",
+      "slowCallRate": "20.0%",
+      "failureRateThreshold": "50.0%",
+      "slowCallRateThreshold": "80.0%",
+      "bufferedCalls": 5,
+      "failedCalls": 1,
+      "slowCalls": 1,
+      "slowFailedCalls": 1,
+      "notPermittedCalls": 0,
+      "state": "CLOSED"
+    }
+  }
+}
+✓ Circuit Breaker 상태 확인됨
+State: CLOSED
+
+[Test 3] User Service Circuit Breaker (Coupon Service 호출)
+
+1단계: Coupon Service 중지
+명령어: docker stop msa-coupon
+
+2단계: 내 쿠폰 조회 (5회 반복)
+요청 #1: HTTP 200
+  → Fallback 동작 (X-Fallback-Triggered: true)
+요청 #2: HTTP 200
+  → Fallback 동작 (X-Fallback-Triggered: true)
+요청 #3: HTTP 200
+  → Fallback 동작 (X-Fallback-Triggered: true)
+요청 #4: HTTP 200
+  → Fallback 동작 (X-Fallback-Triggered: true)
+요청 #5: HTTP 200
+  → Fallback 동작 (X-Fallback-Triggered: true)
+
+결과: 성공 5/5, Fallback 5/5
+✓ User Service Circuit Breaker Fallback 동작 확인
+
+3단계: Coupon Service 재시작
+명령어: docker start msa-coupon
+
+[Test 4] Gateway Circuit Breaker (User Service 다운)
+
+1단계: User Service 중지
+명령어: docker stop msa-user
+
+2단계: Gateway에서 User Service 호출 (10회 반복)
+요청 #1: HTTP 503
+  → Circuit Breaker Fallback (9300)
+요청 #2: HTTP 503
+  → Circuit Breaker Fallback (9300)
+요청 #3: HTTP 503
+  → Circuit Breaker Fallback (9300)
+요청 #4: HTTP 503
+  → Circuit Breaker Fallback (9300)
+요청 #5: HTTP 503
+  → Circuit Breaker Fallback (9300)
+요청 #6: HTTP 503
+  → Circuit Breaker Fallback (9300)
+요청 #7: HTTP 503
+  → Circuit Breaker Fallback (9300)
+요청 #8: HTTP 503
+  → Circuit Breaker Fallback (9300)
+요청 #9: HTTP 503
+  → Circuit Breaker Fallback (9300)
+요청 #10: HTTP 503
+  → Circuit Breaker Fallback (9300)
+
+결과: Timeout 0/10, Fallback 10/10
+✓ Gateway Circuit Breaker 동작 확인
+
+3단계: Circuit Breaker 상태 확인 (OPEN 예상)
+State: OPEN
+
+4단계: User Service 재시작
+명령어: docker start msa-user
+
+5단계: 서비스 준비 대기 (30초)
+
+6단계: 30초 대기 (Half-Open 전환 대기)
+
+7단계: Half-Open 상태 확인
+State: HALF_OPEN
+
+8단계: 복구 요청 3회 (CLOSED 전환 유도)
+요청 #1: HTTP 200
+요청 #2: HTTP 200
+요청 #3: HTTP 200
+
+9단계: Circuit CLOSED 확인
+State: CLOSED
+✓ Circuit 복구 완료 (CLOSED)
+
+[Test 5] ConnectException 처리 개선 확인
+
+1단계: Product Service 중지
+명령어: docker stop msa-product
+
+2단계: Product Service 호출 (Circuit Breaker 없음)
+HTTP Code: 503
+Error Code: 9503
+✓ ConnectException 정상 처리 (503, 9503)
+
+3단계: Product Service 재시작
+명령어: docker start msa-product
+
+========================================
+Test Summary
+========================================
+✓ Test 0: 회원가입
+✓ Test 1: JWT 토큰 획득
+✓ Test 2: Circuit Breaker 상태 조회
+✓ Test 3: User Service Circuit Breaker
+✓ Test 4: Gateway Circuit Breaker
+✓ Test 5: ConnectException 처리
+
+🎉 모든 테스트 성공 Timeout & Circuit Breaker가 정상 동작합니다.
+
+결과 파일: /c/Users/gy990/OneDrive/GYP/14.Master_Java/02.workspace/high-tension/gateway/scripts/timeout-circuitbreaker-test-result-1766210644.txt
+
+추가 확인사항:
+  - Gateway 로그: docker-compose -f docker-compose.dev.yml logs -f gateway-service
+  - User Service 로그: docker-compose -f docker-compose.dev.yml logs -f user-service

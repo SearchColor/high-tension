@@ -26,33 +26,27 @@ public class CouponServiceClientAdaptor implements CouponClient {
 
     @Override
     public List<CouponResponse> getUserCoupons(UUID userId) {
-        try {
-            log.info("Fetching user coupons from Coupon Service: userId={}", userId);
+        log.info("Fetching user coupons from Coupon Service: userId={}", userId);
 
-            ApiResponse<List<UserCouponResponse>> response =
-                    couponServiceClient.getUserCoupons(userId);
+        // Coupon Service는 X-User-Id 헤더에서 userId를 가져옴
+        // FeignConfig.requestInterceptor()에서 자동으로 헤더 추가
+        ApiResponse<List<UserCouponResponse>> response =
+                couponServiceClient.getUserCoupons();
 
-            if (response == null || response.data() == null) {
-                log.warn("Coupon Service returned null response for userId={}", userId);
-                return Collections.emptyList();
-            }
-
-            // Infrastructure DTO → Application DTO 변환
-            List<CouponResponse> coupons = response.data().stream()
-                    .map(this::convertToApplicationDto)
-                    .toList();
-
-            log.info("User coupons fetched successfully: userId={}, count={}",
-                    userId, coupons.size());
-
-            return coupons;
-
-        } catch (Exception e) {
-            // Fallback: Feign 실패 시 빈 리스트 반환
-            log.error("Failed to fetch coupons from Coupon Service: userId={}, error={}",
-                    userId, e.getMessage(), e);
+        if (response == null || response.data() == null) {
+            log.warn("Coupon Service returned null response for userId={}", userId);
             return Collections.emptyList();
         }
+
+        // Infrastructure DTO → Application DTO 변환
+        List<CouponResponse> coupons = response.data().stream()
+                .map(this::convertToApplicationDto)
+                .toList();
+
+        log.info("User coupons fetched successfully: userId={}, count={}",
+                userId, coupons.size());
+
+        return coupons;
     }
 
     /**

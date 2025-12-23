@@ -3,17 +3,18 @@ package com.high.order.infrastructure.kafka.consumer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.high.order.application.OrderServiceV2;
-import com.high.order.application.dto.internal.kafka.request.CreateOrderCommand;
-import com.high.order.application.dto.internal.kafka.request.DeleteOrderCommand;
-import com.high.order.application.dto.internal.kafka.response.OrderCreateFailedResponse;
-import com.high.order.application.dto.internal.kafka.response.OrderDeleteResponse;
-import com.high.order.application.dto.internal.kafka.response.OrderSuccessResponse;
+import com.high.order.application.dto.event.request.CreateOrderCommand;
+import com.high.order.application.dto.event.request.DeleteOrderCommand;
+import com.high.order.application.dto.event.response.OrderCreateFailedResponse;
+import com.high.order.application.dto.event.response.OrderDeleteResponse;
+import com.high.order.application.dto.event.response.OrderSuccessResponse;
 import com.high.order.application.port.EventPublisher;
-import com.high.order.infrastructure.adapter.OrderCreateAdapter;
 import com.high.order.infrastructure.context.MessageContext;
 import com.high.order.infrastructure.exception.EmptyKafkaMessageException;
+import com.high.order.infrastructure.kafka.adapter.OrderCreateAdapter;
 import com.high.order.infrastructure.kafka.dto.response.OrderCreateRequestMessage;
 import com.high.order.infrastructure.kafka.dto.response.OrderDeleteRequestMessage;
+import com.high.order.infrastructure.kafka.dto.response.PaymentSuccessMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -72,7 +73,7 @@ public class KafkaConsumer {
 
             OrderCreateFailedResponse orderCreateFailedResponse =
                 OrderCreateFailedResponse.of(orderCreateRequestMessage.sagaId(),
-                    errorMessage, orderCreateRequestMessage.ordererId() );
+                    errorMessage, orderCreateRequestMessage.ordererId());
 
             publisher.sendOrderCreateFail("order-create-fail", orderCreateFailedResponse);
             MessageContext.clear();
@@ -90,10 +91,11 @@ public class KafkaConsumer {
         OrderDeleteRequestMessage orderDeleteRequestMessage = null;
         objectMapper = new ObjectMapper();
         try {
-            orderDeleteRequestMessage = objectMapper.readValue(message, OrderDeleteRequestMessage.class);
+            orderDeleteRequestMessage = objectMapper.readValue(message,
+                OrderDeleteRequestMessage.class);
             System.out.println(objectMapper.writeValueAsString(orderDeleteRequestMessage));
 
-            if(orderDeleteRequestMessage == null) {
+            if (orderDeleteRequestMessage == null) {
                 log.info("[Kafka Consumer] handleOrderDeleteRequest : 메시지가 비어있음");
                 throw new EmptyKafkaMessageException();
             }
@@ -102,14 +104,14 @@ public class KafkaConsumer {
             e.printStackTrace();
         }
 
-
         DeleteOrderCommand command = adapter.toDeleteCommand(orderDeleteRequestMessage);
 
         try {
             log.info("[KafkaConsumer] handleOrderDeleteRequest : 주문 삭제 로직 실행");
             orderService.deleteOrder(command.orderId(), orderDeleteRequestMessage.userId(), "USER");
             String resultMessage = command.orderId() + " 삭제 완료 처리";
-            OrderDeleteResponse response = OrderDeleteResponse.of(command.sagaId(), command.orderId(), resultMessage);
+            OrderDeleteResponse response = OrderDeleteResponse.of(command.sagaId(),
+                command.orderId(), resultMessage);
 
             publisher.sendOrderDeleteSuccess("order-delete-success", response);
             log.info("[KafkaConsumer] handlerOrderCreatRequest : 주문 삭제 성공 메시지 생성");
@@ -117,14 +119,37 @@ public class KafkaConsumer {
         } catch (Exception e) {
 
             //TODO: 주문 삭제 실패시 로직 및 실패 메시지 발행
-            log.info("[KafkaConsumer] handleOrderDeleteRequest : 주문 삭제 로직 실행 실패 / 삭제 성공 메시지 발행 요청 실패");
+            log.info(
+                "[KafkaConsumer] handleOrderDeleteRequest : 주문 삭제 로직 실행 실패 / 삭제 성공 메시지 발행 요청 실패");
             String errorMessage = e.getMessage();
-            OrderDeleteResponse response = OrderDeleteResponse.of(command.orderId(), command.sagaId(), errorMessage);
+            OrderDeleteResponse response = OrderDeleteResponse.of(command.orderId(),
+                command.sagaId(), errorMessage);
             publisher.sendOrderDeleteFail("order-delete-fail", response);
 
         }
 
     }
 
+    @KafkaListener(topics = "payment-create-success")
+    public void handlePaymentCreateSuccess(String message) {
+        log.info("Kafka Message : {}", message);
+        PaymentSuccessMessage paymentSuccessMessage = null;
+        objectMapper = new ObjectMapper();
+        try {
+            paymentSuccessMessage = objectMapper.readValue(message, PaymentSuccessMessage.class);
+
+            if (paymentSuccessMessage == null) {
+                log.info("[Kafka Consumer] handleOrderDeleteRequest : 메시지가 비어있음");
+                throw new EmptyKafkaMessageException();
+            }
+
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        orderService.processOrderSuccess(paymentSuccessMessage.orderId());
+
+    }
 
 }

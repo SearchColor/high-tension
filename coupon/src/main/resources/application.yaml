@@ -9,6 +9,12 @@ spring:
         enabled: true
         service-id: config
 
+server:
+  tomcat:
+    threads:
+      max: 500 # 동시에 처리 가능한 HTTP 요청 쓰레드 수 설정
+    accept-count: 500 # 대기 가능한 요청 수
+
 management:
   endpoints:
     web:
@@ -30,3 +36,6 @@ logging:
     org.springframework.transaction: DEBUG
     org.hibernate.SQL: INFO
     org.hibernate.type.descriptor.sql: INFO
+    #com.zaxxer.hikari: DEBUG
+    #org.apache.coyote: DEBUG
+    #org.springframework.cache: TRACE

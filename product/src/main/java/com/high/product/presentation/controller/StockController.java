@@ -47,7 +47,7 @@ public class StockController {
 	}
 
 	// ID로 단건 조회
-	// @GetMapping("/products/stocks/{productId}")
+	@GetMapping("/products/stocks/{productId}")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<StockResponse>> getStockById(@PathVariable UUID productId) {
 		StockResponse response = stockService.getStockById(productId);

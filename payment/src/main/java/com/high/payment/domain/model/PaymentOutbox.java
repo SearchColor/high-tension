@@ -62,11 +62,26 @@ public class PaymentOutbox {
 							.build();
 	}
 
-	public void markAsSent() {
-		this.status = OutboxStatus.SENT;
+	public static PaymentOutbox create(
+		UUID aggregateId,
+		String eventType,
+		String payload,
+		String topic,
+		String messageKey
+	) {
+		return PaymentOutbox.builder()
+							.aggregateId(aggregateId)
+							.aggregateType("PAYMENT")
+							.eventType(eventType)
+							.payload(payload)
+							.topic(topic)
+							.messageKey(messageKey)
+							.status(OutboxStatus.PENDING)
+							.createdAt(LocalDateTime.now())
+							.build();
 	}
 
-	public String getTopic(){
-		return this.eventType;
+	public void markAsSent() {
+		this.status = OutboxStatus.SENT;
 	}
 }

@@ -2,6 +2,8 @@ package com.high.product.application.service;
 
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +40,10 @@ public class StockService {
 	private final Limited_ProductRepository limitedProductRepository;
 
 	// 일반상품 재고 등록
+	@CacheEvict(
+		cacheNames = "stock",
+		key = "#request.productId()"
+	)
 	public StockResponse createStock(StockCreateRequest request) {
 
 		// 해당 상품이 있는지 확인
@@ -65,6 +71,10 @@ public class StockService {
 
 	// 일반상품 재고 단건 조회
 	@Transactional(readOnly = true)
+	@Cacheable(
+		cacheNames = "stock",
+		key = "#productId"
+	)
 	public StockResponse getStockById(UUID productId) {
 		Product_Stock stock = stockRepository.findByProductId(productId)
 			.orElseThrow(() -> new ProductException(ProductErrorCode.STOCK_NOT_FOUND));
@@ -86,6 +96,10 @@ public class StockService {
 	}
 
 	// 한정상품 재고 등록
+	@CacheEvict(
+		cacheNames = "limitedStock",
+		key = "#request.limitedProductId()"
+	)
 	public LimitedStockResponse createLimitedStock(LimitedStockCreateRequest request) {
 
 		// 해당 상품이 있는지 확인
@@ -108,6 +122,11 @@ public class StockService {
 	}
 
 	// 한정상품Id로 재고 단건 조회
+	@Transactional(readOnly = true)
+	@Cacheable(
+		cacheNames = "limitedStock",
+		key = "#limitedProductId"
+	)
 	public LimitedStockResponse getStockByLimitedProductById(UUID limitedProductId) {
 
 		Limited_Product_Stock limitedProduct = limitedStockRepository.findById(limitedProductId)
@@ -130,6 +149,10 @@ public class StockService {
 
 	// 일반 상품 재고 차감
 	@Transactional
+	@CacheEvict(
+		cacheNames = "stock",
+		key = "#productId"
+	)
 	public StockResponse reduceStock(UUID productId, int quantity) {
 		Product_Stock stock = stockRepository.findByProductIdForUpdate(productId)
 			.orElseThrow(() -> new ProductException(ProductErrorCode.PRODUCT_NOT_FOUND));
@@ -141,6 +164,10 @@ public class StockService {
 	}
 
 	// 일반 상품 재고 복원
+	@CacheEvict(
+		cacheNames = "stock",
+		key = "#productId"
+	)
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void restoreStock(UUID productId, int quantity) {
 		Product_Stock stock = stockRepository.findByProductIdForUpdate(productId)

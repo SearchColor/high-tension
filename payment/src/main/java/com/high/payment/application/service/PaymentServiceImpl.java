@@ -29,6 +29,7 @@ import com.high.payment.domain.model.PaymentSaga;
 import com.high.payment.domain.model.PaymentSagaStatus;
 import com.high.payment.exception.PaymentException;
 import com.high.payment.exception.PaymentErrorCode;
+import com.high.payment.infrastructure.kafka.dto.OrderDeleteRequestMessage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -156,75 +157,99 @@ public class PaymentServiceImpl implements PaymentService {
 	@Transactional
 	public void verifyAndFinalizePayment(String impUid, String merchantUid) {
 
-		//  1. MerchantUid 필수 값 체크 및 UUID 변환 (오류 발생 방지 로직)
-		if (!StringUtils.hasText(merchantUid)) { // StringUtils.hasText(String)는 null 또는 공백을 체크합니다.
+		// 1) merchantUid 유효성 + UUID 변환
+		if (!StringUtils.hasText(merchantUid)) {
 			log.error("MerchantUid가 누락되었습니다. Webhook 데이터 오류.");
 			throw new PaymentException(PaymentErrorCode.PAYMENT_BAD_REQUEST, "MerchantUid가 누락되었습니다.");
 		}
 
-		UUID orderId;
+		final UUID orderId;
 		try {
-			// MerchantUid를 UUID로 변환 시도
 			orderId = UUID.fromString(merchantUid);
 		} catch (IllegalArgumentException e) {
 			log.error("MerchantUid 형식이 유효한 UUID가 아닙니다: {}", merchantUid);
 			throw new PaymentException(PaymentErrorCode.PAYMENT_BAD_REQUEST, "유효하지 않은 MerchantUid 형식입니다.");
 		}
 
-		log.info(" [Service] 결제 검증 시작: ImpUid={}, OrderId={}", impUid, orderId);
+		log.info("[Service] 결제 검증 시작: impUid={}, orderId={}", impUid, orderId);
 
-		// 2. DB에서 초기 결제 정보 조회 (Order ID 사용)
+		// 2) DB 결제 정보 조회
 		Payment payment = paymentRepositoryPort.findByOrderId(orderId)
-											   .orElseThrow(
-												   () -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND,
-																			  "DB에 결제 요청 정보가 없습니다. OrderId: "
-																				  + orderId));
+											   .orElseThrow(() -> new PaymentException(
+												   PaymentErrorCode.PAYMENT_NOT_FOUND,
+												   "DB에 결제 요청 정보가 없습니다. OrderId: " + orderId
+											   ));
 
-		// 3. PG사에서 실제 결제 정보 조회 (IamportClientPort 사용)
-		IamportPaymentInfo pgInfo = iamportClient.getPaymentInfo(impUid);
-
-		String pgTid = pgInfo.getPgTid();
-		if (!StringUtils.hasText(pgTid)) {
-			log.error(" PG사로부터 유효한 PG TID를 받지 못했습니다. ImpUid={}", impUid);
+		// 3) PG 조회 (merchantUid 기반)
+		final IamportPaymentInfo pgInfo;
+		try {
+			pgInfo = iamportClient.getPaymentInfoByMerchantUid(merchantUid);
+		} catch (Exception e) {
+			log.error("[Service] PG 결제 조회 실패. merchantUid={}", merchantUid, e);
 			payment.fail();
 			paymentRepositoryPort.save(payment);
-			throw new PaymentException(PaymentErrorCode.PG_CLIENT_ERROR,
-									   "PG사 정보 조회 실패: 유효한 거래번호(PG TID)가 누락되었습니다.");
+			throw new PaymentException(PaymentErrorCode.PG_CLIENT_ERROR, "PG사 결제 조회 실패: " + e.getMessage());
 		}
 
-		// 4. 결제 검증 (금액 일치 여부 확인)
-		Integer dbPrice = payment.getPaymentPrice();
+		// 4) 결제 상태 검증
+		if (pgInfo == null || !StringUtils.hasText(pgInfo.getStatus())) {
+			payment.fail();
+			paymentRepositoryPort.save(payment);
+			throw new PaymentException(PaymentErrorCode.PAYMENT_VERIFICATION_FAILED, "PG 결제 상태 조회 실패");
+		}
+
+		if (!"paid".equalsIgnoreCase(pgInfo.getStatus())) {
+			log.error("[Service] PG 결제 상태가 paid가 아님. status={}, impUid={}", pgInfo.getStatus(), impUid);
+			payment.fail();
+			paymentRepositoryPort.save(payment);
+			throw new PaymentException(PaymentErrorCode.PAYMENT_VERIFICATION_FAILED, "PG 결제 상태가 paid가 아닙니다.");
+		}
+
+		// 5) 금액 검증
+		Integer expectedPrice = payment.getPaymentPrice();
 		Integer pgPrice = pgInfo.getPaymentPrice();
 
-		if (dbPrice == null || pgPrice == null) {
-			iamportClient.cancelPayment(impUid, BigDecimal.valueOf(pgPrice == null ? 0 : pgPrice), "결제 금액 누락으로 인한 취소");
+		if (expectedPrice == null || pgPrice == null) {
 			payment.fail();
 			paymentRepositoryPort.save(payment);
 			throw new PaymentException(PaymentErrorCode.PAYMENT_VERIFICATION_FAILED, "결제 금액 누락으로 인한 검증 실패.");
 		}
 
-		if (!dbPrice.equals(pgPrice)) {
+		if (!expectedPrice.equals(pgPrice)) {
+			// 금액 불일치면 취소 요청 후 실패 처리
 			iamportClient.cancelPayment(impUid, BigDecimal.valueOf(pgPrice), "금액 불일치로 인한 취소");
 			payment.fail();
 			paymentRepositoryPort.save(payment);
 			throw new PaymentException(PaymentErrorCode.PAYMENT_VERIFICATION_FAILED, "결제 금액 불일치로 인한 검증 실패.");
 		}
 
-		// 5. 결제 완료 상태 확정 및 DB 저장
+		// 6) PG TID 검증 + 결제 확정
+		String pgTid = pgInfo.getPgTid();
+		if (!StringUtils.hasText(pgTid)) {
+			log.error("[Service] PG TID 누락. impUid={}", impUid);
+			payment.fail();
+			paymentRepositoryPort.save(payment);
+			throw new PaymentException(PaymentErrorCode.PG_CLIENT_ERROR, "PG사 거래번호(PG TID) 누락");
+		}
+
 		payment.complete(pgTid);
 		paymentRepositoryPort.save(payment);
 
-		// 6. Outbox 저장 및 이벤트 발행 (주문 서비스 통보)
+		// 7) Outbox 저장 (payment.completed)
 		try {
 			PaymentCompletedEvent outboxPayload = new PaymentCompletedEvent(
-				payment.getId(), payment.getOrderId(), payment.getUserId(),
-				payment.getPaymentPrice(), payment.getStatus().name()
+				payment.getId(),
+				payment.getOrderId(),
+				payment.getUserId(),
+				payment.getPaymentPrice(),
+				payment.getStatus().name()
 			);
 
 			String jsonPayload = objectMapper.writeValueAsString(outboxPayload);
 			PaymentOutbox outbox = PaymentOutbox.create(payment.getId(), "payment.completed", jsonPayload);
 			outboxRepository.save(outbox);
-			log.info("Outbox 저장 완료. 결제 완료 이벤트 발행 예정.");
+
+			log.info("[Service] 결제 완료 확정 + Outbox 저장 완료. orderId={}", orderId);
 
 		} catch (JsonProcessingException e) {
 			throw new PaymentException(PaymentErrorCode.PAYMENT_BAD_REQUEST, "Outbox JSON 변환 에러");
@@ -271,18 +296,38 @@ public class PaymentServiceImpl implements PaymentService {
 
 		// 5. Outbox 이벤트 저장 (payment.canceled)
 		try {
-			// 이벤트 페이로드 생성
-			String payload = objectMapper.writeValueAsString(payment);
+			// 1) payment.canceled (결제 도메인 이벤트)
+			String paymentCanceledPayload = objectMapper.writeValueAsString(payment);
 
-			// Outbox 생성 (인자 3개: aggregateId, eventType, payload)
-			PaymentOutbox outbox = PaymentOutbox.create(
+			PaymentOutbox paymentCanceledOutbox = PaymentOutbox.create(
 				payment.getId(),
 				"payment.canceled",
-				payload
+				paymentCanceledPayload
+			);
+			outboxRepository.save(paymentCanceledOutbox);
+
+			// 2) order-delete-request (주문 취소 요청 이벤트)
+			UUID sagaId = UUID.randomUUID();
+
+			OrderDeleteRequestMessage orderDeleteMsg = new OrderDeleteRequestMessage(
+				sagaId,
+				payment.getOrderId(),
+				payment.getUserId()
 			);
 
-			outboxRepository.save(outbox);
-			log.info("[Outbox] 취소 이벤트 저장 완료.");
+			String orderDeletePayload = objectMapper.writeValueAsString(orderDeleteMsg);
+
+			PaymentOutbox orderDeleteOutbox = PaymentOutbox.create(
+				payment.getId(),
+				"order.delete.requested",
+				orderDeletePayload,
+				"order-delete-request",
+				payment.getOrderId().toString()
+			);
+
+			outboxRepository.save(orderDeleteOutbox);
+
+			log.info("[Outbox] 결제취소 이벤트 저장 완료. orderId={}, sagaId={}", payment.getOrderId(), sagaId);
 
 		} catch (JsonProcessingException e) {
 			throw new PaymentException(PaymentErrorCode.PAYMENT_BAD_REQUEST, "JSON 변환 실패");
