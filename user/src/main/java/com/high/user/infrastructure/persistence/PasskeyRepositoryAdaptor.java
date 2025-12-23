@@ -49,4 +49,19 @@ public class PasskeyRepositoryAdaptor implements PasskeyRepository {
     public void deleteById(UUID passkeyId) {
         jpaPasskeyRepository.deleteById(passkeyId);
     }
+
+    @Override
+    public void saveAll(Iterable<Passkey> passkeys) {
+        jpaPasskeyRepository.saveAll(passkeys);
+    }
+
+    @Override
+    public List<Passkey> findByDeletedAtBefore(java.time.LocalDateTime dateTime) {
+        return jpaPasskeyRepository.findByDeletedAtBefore(dateTime);
+    }
+
+    @Override
+    public void deleteAll(Iterable<Passkey> passkeys) {
+        jpaPasskeyRepository.deleteAll(passkeys);
+    }
 }

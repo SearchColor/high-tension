@@ -7,6 +7,8 @@ import com.high.user.application.dto.response.UserResponse;
 import com.high.user.domain.entity.User;
 import com.high.user.domain.exception.*;
 import com.high.user.domain.repository.UserRepository;
+import com.high.user.domain.repository.PasskeyRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +25,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final PasskeyRepository passkeyRepository;
 
     /**
      * 사용자 ID로 사용자 정보 조회 (읽기 전용)
@@ -60,13 +63,13 @@ public class UserService {
     public UserResponse updateUserInfo(UUID userId, UpdateUserRequest request) {
         // 최소 1개 필드 검증
         if (request.name() == null && request.phoneNumber() == null &&
-            request.deliveryAddress() == null && request.detailAddress() == null) {
+                request.deliveryAddress() == null && request.detailAddress() == null) {
             throw new IllegalArgumentException("수정할 필드가 없습니다");
         }
 
         // 사용자 조회 (deletedAt이 null인 사용자만)
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)
-            .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(UserNotFoundException::new);
 
         // 계정 활성화 상태 확인
         if (!user.getIsActive()) {
@@ -98,7 +101,7 @@ public class UserService {
     public void changePassword(UUID userId, ChangePasswordRequest request) {
         // 사용자 조회
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)
-            .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(UserNotFoundException::new);
 
         // 현재 비밀번호 검증
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
@@ -127,7 +130,7 @@ public class UserService {
     public void deleteUser(UUID userId, DeleteUserRequest request) {
         // 사용자 조회
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)
-            .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(UserNotFoundException::new);
 
         // 이미 탈퇴한 계정인지 확인
         if (user.getDeletedAt() != null) {
@@ -139,8 +142,16 @@ public class UserService {
             throw new InvalidCredentialsException();
         }
 
-        // Soft Delete
-        user.softDelete(userId);
+        // Soft Delete User
+        user.softDelete(userId.toString());
+
+        // Soft Delete Passkeys
+        var passkeys = passkeyRepository.findByUserIdAndDeletedAtIsNull(userId);
+        if (!passkeys.isEmpty()) {
+            passkeys.forEach(pk -> pk.softDelete(userId.toString()));
+            passkeyRepository.saveAll(passkeys);
+            log.info("사용자 패스키 삭제 처리 완료 (Soft Delete) - userId: {}, count: {}", userId, passkeys.size());
+        }
 
         // Refresh Token 삭제
         refreshTokenService.deleteByUserId(userId.toString());
