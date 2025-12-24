@@ -23,9 +23,12 @@ import com.high.product.application.service.StockService;
 import com.library.jpa.response.PageResponse;
 import com.library.module.response.ApiResponse;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+@Tag(name = "Stock", description = "상품재고 관리 API")
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
@@ -34,6 +37,7 @@ public class StockController {
 	private final StockService stockService;
 
 	// 재고 등록 (초기 수량 설정)
+	@Operation(summary = "일반상품 재고 생성", description = "일반상품 재고를 생성합니다.")
 	@PostMapping("/products/stocks")
 	@PreAuthorize("hasAnyRole('SELLER','MASTER')")
 	public ResponseEntity<ApiResponse<StockResponse>> createStock(
@@ -47,6 +51,7 @@ public class StockController {
 	}
 
 	// ID로 단건 조회
+	@Operation(summary = "일반상품 재고 단건조회", description = "일반상품 재고를 단건조회합니다.")
 	@GetMapping("/products/stocks/{productId}")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<StockResponse>> getStockById(@PathVariable UUID productId) {
@@ -55,6 +60,7 @@ public class StockController {
 	}
 
 	// 페이징 및 정렬 적용 전체 조회
+	@Operation(summary = "일반상품 재고 전체조회", description = "일반상품 재고를 전체조회합니다.")
 	@GetMapping("/products/stocks")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<PageResponse<StockResponse>>> getStocks(
@@ -75,6 +81,7 @@ public class StockController {
 	}
 
 	// 한정상품 재고 등록
+	@Operation(summary = "한정상품 재고 생성", description = "한정상품 재고를 생성합니다.")
 	@PostMapping("/limited-products/stocks")
 	@PreAuthorize("hasAnyRole('SELLER','MASTER')")
 	public ResponseEntity<ApiResponse<LimitedStockResponse>> createLimitedStock(
@@ -88,6 +95,7 @@ public class StockController {
 	}
 
 	// ID로 단건 조회
+	@Operation(summary = "한정상품 재고 단건조회", description = "한정상품 재고를 단건조회합니다.")
 	@GetMapping("/limited-products/stocks/{limitedProductId}")
 	@PreAuthorize("hasAnyRole('SELLER','MASTER')")
 	public ResponseEntity<ApiResponse<LimitedStockResponse>> getStockByLimitedProductById(
@@ -97,6 +105,7 @@ public class StockController {
 	}
 
 	// 페이징 및 정렬 적용 전체 조회
+	@Operation(summary = "한정상품 재고 전체조회", description = "한정상품 재고를 전체조회합니다.")
 	@GetMapping("/limited-products/stocks")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<PageResponse<LimitedStockResponse>>> getAllLimitedStocks(
@@ -117,6 +126,7 @@ public class StockController {
 	}
 
 	// 일반상품 재고 차감
+	@Operation(summary = "일반상품 재고 차감", description = "기존에 생성했던 일반상품의 재고에서 차감합니다.")
 	@PostMapping("/products/stocks/reduce")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<StockResponse>> stockReduce(

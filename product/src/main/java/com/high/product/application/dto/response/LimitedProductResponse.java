@@ -5,7 +5,10 @@ import java.util.UUID;
 
 import com.high.product.domain.model.Limited_Product;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 // 한정상품 조회에 사용되는 Dto
+@Schema(description = "한정상품 조회 응답 DTO")
 public record LimitedProductResponse(
 
 	UUID id,

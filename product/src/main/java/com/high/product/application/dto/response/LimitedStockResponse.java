@@ -5,6 +5,9 @@ import java.util.UUID;
 
 import com.high.product.domain.model.Limited_Product_Stock;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "한정상품 재고 조회 응답 DTO")
 public record LimitedStockResponse(
 	UUID id,
 

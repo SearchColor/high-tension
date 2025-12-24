@@ -25,9 +25,12 @@ import com.high.product.application.service.ProductService;
 import com.library.jpa.response.PageResponse;
 import com.library.module.response.ApiResponse;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+@Tag(name = "Product", description = "상품 관리 API")
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
@@ -36,6 +39,7 @@ public class ProductController {
 	private final ProductService productService;
 
 	// 일반상품 생성
+	@Operation(summary = "일반상품 생성", description = "일반상품을 생성합니다.")
 	@PostMapping("/products")
 	@PreAuthorize("hasAnyRole('SELLER','MASTER')")
 	public ResponseEntity<ApiResponse<ProductResponse>> createProduct(
@@ -49,6 +53,7 @@ public class ProductController {
 	}
 
 	// 일반상품 ID로 단건 조회
+	@Operation(summary = "일반상품 단건조회", description = "일반상품을 단건조회합니다.")
 	@GetMapping("/products/{productId}")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable UUID productId) {
@@ -57,6 +62,7 @@ public class ProductController {
 	}
 
 	// 일반상품 전체 조회(페이징 및 정렬 적용)
+	@Operation(summary = "일반상품 전체조회", description = "일반상품을 전체 조회합니다.(페이징 및 정렬)")
 	@GetMapping("/products")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> getProducts(
@@ -79,6 +85,7 @@ public class ProductController {
 	}
 
 	// 일반상품 카테고리별 조회
+	@Operation(summary = "일반상품 카테고리별 조회", description = "일반상품을 전체 조회합니다.(페이징 및 정렬)")
 	@GetMapping("/products/category")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<PageResponse<ProductResponse>>> getProductsByCategory(
@@ -101,6 +108,7 @@ public class ProductController {
 	}
 
 	// 일반상품 수정
+	@Operation(summary = "일반상품 수정", description = "일반상품을 수정합니다.")
 	@PutMapping("/products/{productId}")
 	@PreAuthorize("hasAnyRole('SELLER','MASTER')")
 	public ResponseEntity<ApiResponse<ProductResponse>> updateProduct(
@@ -112,6 +120,7 @@ public class ProductController {
 	}
 
 	// 일반상품 삭제
+	@Operation(summary = "일반상품 삭제", description = "일반상품을 삭제합니다.")
 	@DeleteMapping("/products/{productId}")
 	@PreAuthorize("hasAnyRole('SELLER','MASTER')")
 	public ResponseEntity<ApiResponse<?>> deleteProduct(@PathVariable UUID productId) {
@@ -120,6 +129,7 @@ public class ProductController {
 	}
 
 	// 한정상품 등록
+	@Operation(summary = "한정상품 삭제", description = "한정상품을 생성합니다.")
 	@PostMapping("/limited-products")
 	@PreAuthorize("hasAnyRole('SELLER','MASTER')")
 	public ResponseEntity<ApiResponse<LimitedProductResponse>> createLimitedProduct(
@@ -134,6 +144,7 @@ public class ProductController {
 	}
 
 	// 한정상품 단건 조회
+	@Operation(summary = "한정상품 단건조회", description = "한정상품을 단건조회합니다.")
 	@GetMapping("/limited-products/{limitedProductId}")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<LimitedProductResponse>> getLimitedProductById(
@@ -143,6 +154,7 @@ public class ProductController {
 	}
 
 	// 한정상품 전체 조회
+	@Operation(summary = "한정상품 전체조회", description = "한정상품을 전체조회합니다.(페이징 및 정렬)")
 	@GetMapping("/limited-products")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<PageResponse<LimitedProductResponse>>> getAllLimitedProducts(
@@ -164,6 +176,7 @@ public class ProductController {
 	}
 
 	// 한정상품 카테고리별 조회
+	@Operation(summary = "한정상품 카테고리별 조회", description = "한정상품을 카테고리별 조회합니다.(페이징 및 정렬)")
 	@GetMapping("/limited-products/category")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<PageResponse<LimitedProductResponse>>> getLimitedProductsByCategory(
