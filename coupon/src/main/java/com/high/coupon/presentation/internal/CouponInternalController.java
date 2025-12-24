@@ -6,6 +6,8 @@ import com.high.coupon.application.dto.response.CouponValidationResponse;
 import com.high.coupon.application.dto.response.UserCouponResponse;
 import com.library.module.response.ApiResponse;
 import com.library.security.util.SecurityContextUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Internal Coupon", description = "서비스 통신용 쿠폰 API")
 @RestController
 @RequestMapping("/api/v1/internal/coupons")
 @RequiredArgsConstructor
@@ -27,6 +30,7 @@ public class CouponInternalController {
      * 사용자 별 보유 쿠폰(사용 가능 상태) 조회
      * GET /api/v1/internal/coupons
      */
+    @Operation(summary = "보유 쿠폰 조회", description = "사용자 별 보유 쿠폰 조회")
     @GetMapping
     public ApiResponse<List<UserCouponResponse>> getUserCoupons() {
 
@@ -39,6 +43,7 @@ public class CouponInternalController {
      * 쿠폰 단건 유효성 검증 및 할인 정보
      * GET /api/v1/internal/coupons/{couponIssueId}/validate
      */
+    @Operation(summary = "쿠폰 유효성 검증", description = "사용 가능한 쿠폰인 지 확인")
     @GetMapping("/{couponIssueId}/validate")
     public ApiResponse<CouponValidationResponse> validateCoupon(@PathVariable UUID couponIssueId) {
 
@@ -51,6 +56,7 @@ public class CouponInternalController {
      * 쿠폰 사용 처리 (상태 변경)
      * PUT /api/v1/internal/coupons/{couponIssueId}/use
      */
+    @Operation(summary = "쿠폰 사용 처리", description = "주문 시 쿠폰 사용 처리")
     @PutMapping("/{couponIssueId}/use")
     public ApiResponse<CouponUseResponse> useCoupon(@PathVariable UUID couponIssueId) {
 
@@ -63,6 +69,7 @@ public class CouponInternalController {
      * 쿠폰 복원 처리 (주문/결제 취소 시 유효기간 이내 재발급)
      * POST /api/v1/internal/coupons/{couponIssuedId}/restore
      */
+    @Operation(summary = "쿠폰 복원 처리", description = "주문/결제 취소 시 유효기간 이내 재발급")
     @PostMapping("/{couponIssueId}/restore")
     public ApiResponse<CouponUseResponse> restoreCoupon(
             @PathVariable UUID couponIssueId) {

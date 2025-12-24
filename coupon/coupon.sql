@@ -64,10 +64,10 @@ INSERT INTO p_coupon (
 )
 VALUES (
            UNHEX(REPLACE(UUID(),'-','')), -- id
-           '테스트용 쿠폰',              -- name
+           '테스트용 쿠폰 50000장',              -- name
            '2025년 연말까지 사용 가능한 30% 할인 쿠폰 [전상품 적용]', -- description
            30.00,                         -- discount_rate
-           1,                           -- total_quantity
+           50000,                           -- total_quantity
            NOW(),                         -- created_at
            NULL,                          -- updated_at
            NULL,                          -- deleted_at

@@ -8,6 +8,8 @@ import com.high.coupon.application.dto.response.CouponListResponse;
 import com.library.jpa.response.PageResponse;
 import com.library.module.response.ApiResponse;
 import com.library.security.util.SecurityContextUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Coupon", description = "쿠폰 관리 API (MASTER 권한이 필요합니다.)")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/coupons")
@@ -31,6 +34,7 @@ public class CouponController {
 
 
     // 쿠폰 생성 (관리자)
+    @Operation(summary = "쿠폰 생성", description = "새로운 쿠폰 생성")
     @PreAuthorize("hasRole('MASTER')")
     @PostMapping
     public ResponseEntity<ApiResponse<CouponCreateResponse>> createCoupon(
@@ -42,6 +46,7 @@ public class CouponController {
     }
 
     // 발행 쿠폰 상세 조회 (관리자)
+    @Operation(summary = "쿠폰 상세 조회", description = "생성된 쿠폰 상세 조회")
     @PreAuthorize("hasRole('MASTER')")
     @GetMapping("/{couponId}")
     public ResponseEntity<ApiResponse<CouponDetailResponse>> getCouponById(
@@ -58,6 +63,7 @@ public class CouponController {
      * @param isAsc 오름차순/내림차순 default createdAt DESC
      * @return 페이징 된 리스트
      */
+    @Operation(summary = "쿠폰 리스트 조회", description = "생성 쿠폰 리스트 조회")
     @PreAuthorize("hasRole('MASTER')")
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CouponListResponse>>> getCouponPage(
