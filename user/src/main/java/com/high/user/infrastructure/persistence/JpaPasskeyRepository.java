@@ -18,4 +18,6 @@ public interface JpaPasskeyRepository extends JpaRepository<Passkey, UUID> {
     List<Passkey> findByUserIdAndDeletedAtIsNull(UUID userId);
 
     boolean existsByCredentialId(String credentialId);
+
+    List<Passkey> findByDeletedAtBefore(java.time.LocalDateTime deletedAt);
 }
