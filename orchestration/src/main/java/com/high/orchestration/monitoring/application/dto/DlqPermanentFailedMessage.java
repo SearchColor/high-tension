@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record DlqPermanentFailedMessage(
-    UUID dlqId,
+    UUID outboxId,
     String originalTopic,
     String payload,
     String exceptionType,
@@ -12,13 +12,13 @@ public record DlqPermanentFailedMessage(
     LocalDateTime failedAt
 ) {
     public static DlqPermanentFailedMessage of(
-        UUID dlqId,
+        UUID outboxId,
         String originalTopic,
         String payload,
         String exceptionType,
         String exceptionMessage) {
         return new DlqPermanentFailedMessage(
-            dlqId,
+            outboxId,
             originalTopic,
             payload,
             exceptionType,

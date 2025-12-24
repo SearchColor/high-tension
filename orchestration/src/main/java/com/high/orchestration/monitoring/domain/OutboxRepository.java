@@ -12,5 +12,5 @@ public interface OutboxRepository {
 
     void flush();
 
-    Optional<Outbox> findById(UUID dlqId);
+    Optional<Outbox> findById(UUID outboxId);
 }
