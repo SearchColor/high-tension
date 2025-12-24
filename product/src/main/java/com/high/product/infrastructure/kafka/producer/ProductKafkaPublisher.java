@@ -18,7 +18,13 @@ public class ProductKafkaPublisher {
 
 	public void send(String topic, String sagaId, Object message) {
 		try {
-			String json = objectMapper.writeValueAsString(message);
+			// 수정 부분: 이미 String(JSON)인 경우와 객체인 경우를 구분
+			String json;
+			if (message instanceof String) {
+				json = (String)message;
+			} else {
+				json = objectMapper.writeValueAsString(message);
+			}
 
 			kafkaTemplate.send(topic, sagaId, json);
 
