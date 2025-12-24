@@ -2,8 +2,8 @@
 //
 // import java.util.UUID;
 //
-// public record OrderResponse (
+// public record OrderDetailResponse (
 // 	UUID orderId,
-// 	UUID userId,
+// 	Integer totalAmount,
 // 	Integer paidAmount
 // ) {}
