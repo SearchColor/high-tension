@@ -3,12 +3,14 @@ package com.high.payment.application.service;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.high.payment.application.adapter.OrderServiceClient;
 import com.high.payment.application.adapter.UserServiceClient;
 import com.high.payment.application.dto.CreatePaymentRequest;
 import com.high.payment.application.dto.CreatePaymentResponse;
@@ -46,6 +48,7 @@ public class PaymentServiceImpl implements PaymentService {
 	private final UserServiceClient userServiceClient;
 	private final PaymentSagaEventPort paymentSagaEventPort;
 	private final PaymentSagaRepositoryPort paymentSagaRepositoryPort;
+	private final OrderServiceClient orderServiceClient;
 
 	@Override
 	@Transactional // DB 저장과 Outbox 저장을 하나의 트랜잭션으로 묶음
@@ -338,47 +341,58 @@ public class PaymentServiceImpl implements PaymentService {
 	@Transactional
 	public void processPaymentSaga(PaymentCreateCommandRequest command) {
 
-		// DTO가 Record이므로, command.필드명()이 올바른 접근 방식입니다.
 		UUID sagaId = command.sagaId();
 		UUID orderId = command.orderId();
 		UUID userId = command.userId();
-		Integer paymentPrice = command.paymentPrice();
 
-		log.info("[Saga] 결제 Intent 생성 요청 수신: SagaId={}, OrderId={}, UserId={}, Price={}",
-				 sagaId, orderId, userId, paymentPrice);
+		log.info("[Saga] 결제 Intent 생성 요청 수신: sagaId={}, orderId={}, userId={}", sagaId, orderId, userId);
 
-		// 0) paymentPrice 검증 (Intent 생성 단계에서도 최소 검증은 필요)
-		if (paymentPrice == null || paymentPrice <= 0) {
-			PaymentSagaResultMessage fail = new PaymentSagaResultMessage(
-				sagaId, orderId, userId, false,
-				"paymentPrice는 1 이상이어야 합니다.",
-				PaymentErrorCode.PAYMENT_BAD_REQUEST.getCode()
-			);
-			paymentSagaEventPort.publishPaymentResult(fail);
+		// 0) saga row 확보 (중복 insert 방어)
+		PaymentSaga saga = paymentSagaRepositoryPort.findBySagaId(sagaId)
+													.orElseGet(() -> {
+														try {
+															return paymentSagaRepositoryPort.save(
+																PaymentSaga.start(sagaId, orderId, userId));
+														} catch (DataIntegrityViolationException e) {
+															// 동시에 insert된 경우 재조회
+															return paymentSagaRepositoryPort.findBySagaId(sagaId)
+																							.orElseThrow(() -> e);
+														}
+													});
+
+		// 1) 이미 처리된 saga면 즉시 종료 (가장 중요)
+		if (saga.getStatus() != PaymentSagaStatus.PENDING) {
+			log.warn("[Saga] 이미 처리된 sagaId={}, status={} - skip", sagaId, saga.getStatus());
 			return;
 		}
 
-		// 1) 멱등 처리: sagaId로 먼저 조회해서 이미 SUCCESS/FAIL이면 즉시 종료
-		var existingSagaOpt = paymentSagaRepositoryPort.findBySagaId(sagaId);
-		if (existingSagaOpt.isPresent()) {
-			var existingSaga = existingSagaOpt.get();
+		try {
+			// 2) 결제 레코드 중복 생성 방지 (orderId 기준)
+			var existingPaymentOpt = paymentRepositoryPort.findByOrderId(orderId);
+			if (existingPaymentOpt.isPresent()) {
+				log.warn("[Saga] orderId={} 결제 레코드 이미 존재(paymentId={}) - 멱등 종료",
+						 orderId, existingPaymentOpt.get().getId());
 
-			if (existingSaga.getStatus() != PaymentSagaStatus.PENDING) {
-				log.warn("[Saga] 이미 처리된 SagaId={} status={} - skip", sagaId, existingSaga.getStatus());
+				saga.success("Payment intent already exists");
+				paymentSagaRepositoryPort.save(saga);
+
+				paymentSagaEventPort.publishPaymentResult(
+					new PaymentSagaResultMessage(sagaId, orderId, userId, true, "Payment intent already exists", null)
+				);
 				return;
 			}
-		}
 
-		// 2) saga row 없으면 생성(PENDING)
-		var saga = existingSagaOpt.orElseGet(() ->
-												 paymentSagaRepositoryPort.save(PaymentSaga.start(sagaId, orderId, userId)
-												 ));
+			// 3) 주문 금액 조회 (반드시 internal endpoint로 호출해야 403이 안 남)
+			var orderApiResponse = orderServiceClient.getOrderDetail(orderId);
+			var orderDetail = orderApiResponse.data();
 
-		try {
-			// 3) 유저 검증 (필요하면 유지)
-			userServiceClient.validateUser(userId);
+			if (orderDetail == null || orderDetail.totalAmount() == null || orderDetail.totalAmount() <= 0) {
+				throw new PaymentException(PaymentErrorCode.PAYMENT_VERIFICATION_FAILED, "주문 금액 조회 실패");
+			}
 
-			// 4) 결제 레코드(PENDING) 생성만 한다. (PG 승인 X, complete() X)
+			Integer paymentPrice = orderDetail.totalAmount();
+
+			// 4) 결제 레코드 생성 (PENDING)
 			Payment payment = Payment.builder()
 									 .orderId(orderId)
 									 .userId(userId)
@@ -389,30 +403,38 @@ public class PaymentServiceImpl implements PaymentService {
 
 			Payment saved = paymentRepositoryPort.save(payment);
 
-			// 5) 오케스트레이터에게 “결제 생성 성공” 알림 -> true: 결제 완료가 아닌 결제 생성
-			saga.success("Payment saga success");
+			// 5) saga 성공 처리 (PENDING -> SUCCESS)
+			saga.success("Payment intent created");
 			paymentSagaRepositoryPort.save(saga);
 
-			// 6) 오케스트레이터 결과 발행
-			PaymentSagaResultMessage successResult = new PaymentSagaResultMessage(
-				sagaId, orderId, userId, true, "Payment successful", null
+			// 6) 성공 결과 발행
+			paymentSagaEventPort.publishPaymentResult(
+				new PaymentSagaResultMessage(sagaId, orderId, userId, true, "Payment intent created", null)
 			);
-			paymentSagaEventPort.publishPaymentResult(successResult);
 
-			log.info("[Saga] 결제 Intent 생성 완료: paymentId={}", saved.getId());
+			log.info("[Saga] 결제 Intent 생성 완료: paymentId={}, orderId={}, price={}", saved.getId(), orderId,
+					 paymentPrice);
 
 		} catch (Exception e) {
 			log.error("[Saga] 결제 Intent 생성 실패: {}", e.getMessage(), e);
 
-			PaymentSagaResultMessage fail = new PaymentSagaResultMessage(
-				sagaId,
-				orderId,
-				userId,
-				false,
-				"Payment intent create failed: " + e.getMessage(),
-				5003
+			PaymentSaga latest = paymentSagaRepositoryPort.findBySagaId(sagaId).orElse(saga);
+			if (latest.getStatus() != PaymentSagaStatus.PENDING) {
+				log.warn("[Saga] 실패 처리 직전, 이미 saga가 {} 상태로 변경됨 - 실패 publish 생략", latest.getStatus());
+				return;
+			}
+
+			saga.fail(PaymentErrorCode.PAYMENT_VERIFICATION_FAILED.getCode(), e.getMessage());
+			paymentSagaRepositoryPort.save(saga);
+
+			// 실패 결과 발행
+			paymentSagaEventPort.publishPaymentResult(
+				new PaymentSagaResultMessage(
+					sagaId, orderId, userId, false,
+					"Payment intent create failed: " + e.getMessage(),
+					PaymentErrorCode.PAYMENT_VERIFICATION_FAILED.getCode()
+				)
 			);
-			paymentSagaEventPort.publishPaymentResult(fail);
 		}
 	}
 }

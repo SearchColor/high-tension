@@ -42,6 +42,7 @@ eureka:
 user-service:
   url: http://localhost:8081
 
+
 payment:
   intent:
     ttl-minutes: 15   # PENDING 유지 최대 시간

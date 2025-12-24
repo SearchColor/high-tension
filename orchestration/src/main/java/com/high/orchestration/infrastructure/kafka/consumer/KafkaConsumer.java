@@ -122,15 +122,29 @@ public class KafkaConsumer {
     )
     @KafkaListener(topics = "stock-deduction-success", groupId = "orchestration-consumer-group")
     public void stockDeductionSuccess(String stockDeductionSuccessMessage) throws JsonProcessingException {
-        log.info("[KafkaConsumer] stockDeductionSuccess :  stockDeductionSuccessMessage: {}", stockDeductionSuccessMessage);
+        log.info("[KafkaConsumer] stockDeductionSuccess payload(raw): {}", stockDeductionSuccessMessage);
 
-            StockDeductionSuccessMessage message = objectMapper.readValue(stockDeductionSuccessMessage, StockDeductionSuccessMessage.class);
-            PaymentCreateCommandRequest request = adapter.toPaymentCreateCommand(message);
-            orderCreateSagaService.handlerStockDeductionSuccess(request);
+        // 1) payload가 JSON 객체가 아니라 "JSON 문자열"로 감싸져 있으면 한 번 풀기
+        String normalized = stockDeductionSuccessMessage;
 
-            publisher.publishPaymentCreateCommand("payment-create-request", request);
-            log.info("[KafkaConsumer] stockDeductionSuccess : 결제 생성 명령 성공");
+        // 앞뒤가 따옴표로 감싸진 경우: "\"{...}\""
+        if (normalized != null && normalized.length() >= 2 && normalized.startsWith("\"") && normalized.endsWith("\"")) {
+            // JSON String으로 한 번 파싱해서 실제 JSON 객체 문자열을 얻는다
+            normalized = objectMapper.readValue(normalized, String.class);
+        }
 
+        log.info("[KafkaConsumer] stockDeductionSuccess payload(normalized): {}", normalized);
+
+        // 2) 정상적으로 객체로 파싱
+        StockDeductionSuccessMessage message =
+            objectMapper.readValue(normalized, StockDeductionSuccessMessage.class);
+
+        PaymentCreateCommandRequest request = adapter.toPaymentCreateCommand(message);
+        orderCreateSagaService.handlerStockDeductionSuccess(request);
+
+        publisher.publishPaymentCreateCommand("payment-create-request", request);
+        log.info("[KafkaConsumer] stockDeductionSuccess : 결제 생성 명령 발행 성공 sagaId={}, orderId={}",
+                 message.sagaId(), message.orderId());
     }
 
 
