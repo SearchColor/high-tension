@@ -14,7 +14,8 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class CircuitBreakerEventConfig {
+public class
+CircuitBreakerEventConfig {
 
     private final CircuitBreakerRegistry circuitBreakerRegistry;
 
