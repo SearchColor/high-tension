@@ -16,8 +16,8 @@ public class OutboxRepositoryAdapter implements OutboxRepository {
     private final OutboxJpaRepository outboxJpaRepository;
 
     @Override
-    public Optional<Outbox> findById(UUID dlqId) {
-        return outboxJpaRepository.findById(dlqId);
+    public Optional<Outbox> findById(UUID outboxId) {
+        return outboxJpaRepository.findById(outboxId);
     }
 
     @Override
