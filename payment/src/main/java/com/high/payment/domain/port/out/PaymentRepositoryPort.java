@@ -6,7 +6,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.high.payment.domain.model.Payment;
-import com.high.payment.domain.model.PaymentOutbox;
 import com.high.payment.domain.model.PaymentStatus;
 
 public interface PaymentRepositoryPort {

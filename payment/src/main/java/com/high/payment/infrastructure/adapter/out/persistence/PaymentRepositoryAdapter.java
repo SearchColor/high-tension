@@ -6,12 +6,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import com.high.payment.domain.model.Payment;
-import com.high.payment.domain.model.PaymentOutbox;
 import com.high.payment.domain.model.PaymentStatus;
 import com.high.payment.domain.port.out.PaymentRepositoryPort;
 
