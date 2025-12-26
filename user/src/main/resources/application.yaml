@@ -33,3 +33,18 @@ webauthn:
     origins: ${WEBAUTHN_ORIGINS:http://localhost:3000,http://localhost:8000}
   challenge:
     ttl-minutes: 5
+
+# SpringDoc OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    tags-sorter: alpha
+    operations-sorter: method
+    display-request-duration: true
+    try-it-out-enabled: true
+    filter: true
+    disable-swagger-default-url: true

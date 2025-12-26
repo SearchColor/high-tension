@@ -1,6 +1,5 @@
 package com.high.payment.application.dto;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import com.high.payment.domain.model.Payment;

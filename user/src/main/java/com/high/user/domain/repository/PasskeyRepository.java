@@ -21,4 +21,10 @@ public interface PasskeyRepository {
     boolean existsByCredentialId(String credentialId);
 
     void deleteById(UUID passkeyId);
+
+    void saveAll(Iterable<Passkey> passkeys);
+
+    List<Passkey> findByDeletedAtBefore(java.time.LocalDateTime dateTime);
+
+    void deleteAll(Iterable<Passkey> passkeys);
 }

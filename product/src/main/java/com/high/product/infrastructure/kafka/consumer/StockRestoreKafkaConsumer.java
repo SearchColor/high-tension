@@ -14,7 +14,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.high.product.application.dto.kafka.dlq.StockDeductionDlqMessage;
 import com.high.product.application.dto.kafka.dlq.StockRestoreDlqMessage;
+import com.high.product.application.dto.kafka.failure.StockDeductionFailMessage;
+import com.high.product.application.dto.kafka.request.StockDeductionCommandRequest;
 import com.high.product.application.dto.kafka.request.StockRestoreCommandRequest;
 import com.high.product.application.service.StockRestoreService;
 import com.high.product.domain.model.KafkaOutbox;
@@ -88,55 +91,70 @@ public class StockRestoreKafkaConsumer {
 	// 재시도 최종 실패 시, 해당 이벤트 DLQ로 이동
 	@DltHandler
 	@Transactional
-	public void handleDlt(String message,
+	public void handleDlt(
+		String message,
 		Exception e,
 		@Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
 		@Header(KafkaHeaders.OFFSET) long offset,
-		@Header(KafkaHeaders.GROUP_ID) String consumerGroup) {
-
+		@Header(KafkaHeaders.GROUP_ID) String consumerGroup
+	) {
 		try {
-
 			String stackTrace = getStackTraceAsString(e);
 
-			StockRestoreCommandRequest request = objectMapper.readValue(message, StockRestoreCommandRequest.class);
+			StockDeductionCommandRequest request =
+				objectMapper.readValue(message, StockDeductionCommandRequest.class);
 
-			StockRestoreDlqMessage dlqMessage = new StockRestoreDlqMessage(
+			// 이미 실패 처리된 saga면 중복 실패 이벤트 발행 방지
+			if (sagaDeduplicationPort.exists("fail:" + request.sagaId())) {
+				log.warn("이미 실패 처리된 sagaId={}, DLQ 처리 스킵", request.sagaId());
+				return;
+			}
+
+			// DLQ 메시지 로깅
+			StockDeductionDlqMessage dlqMessage = new StockDeductionDlqMessage(
 				request.sagaId(),
 				request.orderId(),
 				request.userId(),
 				topic,
-				0, // 재시도 횟수는 @RetryableTopic에 의해 수행됨
+				3, // attempts = 3 기준 최종 실패
 				e.getClass().getSimpleName(),
 				e.getMessage(),
 				stackTrace,
 				consumerGroup,
 				LocalDateTime.now()
 			);
-			// Todo: 운영팀 알림(Slack 등)
-			log.error("[DLQ] 재고 복구 최종 재시도 실패, DLQ로 이동: {}", dlqMessage);
 
-			// 멱등성 보관소에 최종 실패 기록 (30일 보관)
-			sagaDeduplicationPort.save("fail:" + request.sagaId(), 86400 * 30);
-
-			// 아웃박스 테이블에 최종 실패 상태 저장
+			log.error("[DLQ] 재고 차감 최종 재시도 실패: {}", dlqMessage);
 			try {
-				String payload = objectMapper.writeValueAsString(request);
+				// 여기서만 실패 이벤트 발행
+				StockDeductionFailMessage failMessage =
+					new StockDeductionFailMessage(
+						request.sagaId(),
+						request.orderId(),
+						e.getMessage(),
+						request.userId()
+					);
+
 				KafkaOutbox outbox = KafkaOutbox.builder()
-					.topic("stock-restore-dlq")
-					.payload(payload)
-					.status("FAILED")
+					.topic("stock-deduction-fail")
+					.payload(objectMapper.writeValueAsString(failMessage))
+					.status("PENDING")
 					.sagaId(request.sagaId())
 					.orderId(request.orderId())
 					.userId(request.userId())
 					.build();
+
 				kafkaOutboxRepository.save(outbox);
-				log.info("[DLQ][Outbox] 재고 복구 FAILED 메시지 저장 완료 sagaId={}", request.sagaId());
+
+				// 멱등성 보관소에 최종 실패 기록 추가 (재처리 방지)
+				sagaDeduplicationPort.save("fail:" + request.sagaId(), 600);
+
+				log.error("[DLQ] 실패 이벤트 Outbox 저장 완료 sagaId={}", request.sagaId());
 			} catch (Exception exOutbox) {
 				log.error("[DLQ][Outbox] FAILED 메시지 저장 실패 sagaId={}", request.sagaId(), exOutbox);
 			}
-
 		} catch (Exception ex) {
-			log.error("DLQ 메시지 생성 실패: {}", ex.getMessage(), ex);
+			log.error("DLQ 메시지 생성 실패", ex);
 		}
 	}
 

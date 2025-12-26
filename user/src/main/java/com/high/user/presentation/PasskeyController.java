@@ -9,6 +9,13 @@ import com.high.user.application.dto.response.*;
 import com.high.user.application.service.PasskeyService;
 import com.library.module.response.ApiResponse;
 import com.library.security.util.SecurityContextUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+@Tag(name = "Passkey", description = "WebAuthn (FIDO2) 패스키 인증 API")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/passkeys")
@@ -28,10 +36,12 @@ public class PasskeyController {
 
     private final PasskeyService passkeyService;
 
-    /**
-     * 패스키 등록 시작
-     * POST /api/v1/passkeys/register/start
-     */
+    @Operation(summary = "패스키 등록 시작", description = "WebAuthn 패스키 등록 프로세스를 시작하고 Challenge를 생성합니다.",
+        security = @SecurityRequirement(name = "bearer-jwt"))
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "등록 시작 성공 (Challenge 반환)"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패")
+    })
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @PostMapping("/register/start")
     public ResponseEntity<ApiResponse<PasskeyRegistrationStartResponse>> startRegistration(
@@ -43,13 +53,16 @@ public class PasskeyController {
         PasskeyRegistrationStartResponse response = passkeyService.startRegistration(
             userId, request != null ? request : new PasskeyRegistrationStartRequest(null));
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(com.library.module.response.ApiResponse.success(response));
     }
 
-    /**
-     * 패스키 등록 완료
-     * POST /api/v1/passkeys/register/finish
-     */
+    @Operation(summary = "패스키 등록 완료", description = "WebAuthn 패스키 등록을 완료하고 Credential을 저장합니다.",
+        security = @SecurityRequirement(name = "bearer-jwt"))
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "패스키 등록 완료"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "유효하지 않은 인증 응답"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패")
+    })
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @PostMapping("/register/finish")
     public ResponseEntity<ApiResponse<PasskeyRegistrationFinishResponse>> finishRegistration(
@@ -63,10 +76,10 @@ public class PasskeyController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
-    /**
-     * 패스키 인증 시작 (로그인)
-     * POST /api/v1/passkeys/authenticate/start
-     */
+    @Operation(summary = "패스키 인증 시작", description = "WebAuthn 패스키 로그인 프로세스를 시작하고 Challenge를 생성합니다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "인증 시작 성공 (Challenge 반환)")
+    })
     @PostMapping("/authenticate/start")
     public ResponseEntity<ApiResponse<PasskeyAuthenticationStartResponse>> startAuthentication(
             @Valid @RequestBody(required = false) PasskeyAuthenticationStartRequest request) {
@@ -76,13 +89,16 @@ public class PasskeyController {
         PasskeyAuthenticationStartResponse response = passkeyService.startAuthentication(
             request != null ? request : new PasskeyAuthenticationStartRequest(null));
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(com.library.module.response.ApiResponse.success(response));
     }
 
-    /**
-     * 패스키 인증 완료 (로그인 - JWT 발급)
-     * POST /api/v1/passkeys/authenticate/finish
-     */
+    @Operation(summary = "패스키 인증 완료", description = "WebAuthn 패스키 인증을 완료하고 JWT 토큰을 발급합니다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "인증 성공 (JWT 토큰 반환)",
+            content = @Content(schema = @Schema(implementation = TokenResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "유효하지 않은 인증 응답"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패")
+    })
     @PostMapping("/authenticate/finish")
     public ResponseEntity<ApiResponse<TokenResponse>> finishAuthentication(
             @Valid @RequestBody PasskeyAuthenticationFinishRequest request) {
@@ -91,13 +107,15 @@ public class PasskeyController {
 
         TokenResponse response = passkeyService.finishAuthentication(request);
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(com.library.module.response.ApiResponse.success(response));
     }
 
-    /**
-     * 내 패스키 목록 조회
-     * GET /api/v1/passkeys
-     */
+    @Operation(summary = "내 패스키 목록 조회", description = "현재 로그인한 사용자가 등록한 모든 패스키 목록을 조회합니다.",
+        security = @SecurityRequirement(name = "bearer-jwt"))
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패")
+    })
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @GetMapping
     public ResponseEntity<ApiResponse<List<PasskeyListResponse>>> getPasskeys() {
@@ -107,16 +125,21 @@ public class PasskeyController {
 
         List<PasskeyListResponse> response = passkeyService.getPasskeys(userId);
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(com.library.module.response.ApiResponse.success(response));
     }
 
-    /**
-     * 패스키 이름 수정
-     * PATCH /api/v1/passkeys/{passkeyId}
-     */
+    @Operation(summary = "패스키 이름 수정", description = "등록된 패스키의 이름을 변경합니다.",
+        security = @SecurityRequirement(name = "bearer-jwt"))
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "수정 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "입력값이 올바르지 않음"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "패스키를 찾을 수 없음")
+    })
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @PatchMapping("/{passkeyId}")
     public ResponseEntity<ApiResponse<PasskeyListResponse>> updateCredentialName(
+            @Parameter(description = "패스키 ID", required = true)
             @PathVariable UUID passkeyId,
             @Valid @RequestBody PasskeyUpdateRequest request) {
 
@@ -126,22 +149,27 @@ public class PasskeyController {
 
         PasskeyListResponse response = passkeyService.updateCredentialName(userId, passkeyId, request);
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(com.library.module.response.ApiResponse.success(response));
     }
 
-    /**
-     * 패스키 삭제
-     * DELETE /api/v1/passkeys/{passkeyId}
-     */
+    @Operation(summary = "패스키 삭제", description = "등록된 패스키를 삭제합니다.",
+        security = @SecurityRequirement(name = "bearer-jwt"))
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "삭제 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "패스키를 찾을 수 없음")
+    })
     @PreAuthorize("hasAnyRole('USER', 'SELLER', 'MASTER')")
     @DeleteMapping("/{passkeyId}")
-    public ResponseEntity<ApiResponse<Void>> deletePasskey(@PathVariable UUID passkeyId) {
+    public ResponseEntity<ApiResponse<Void>> deletePasskey(
+            @Parameter(description = "패스키 ID", required = true)
+            @PathVariable UUID passkeyId) {
 
         UUID userId = SecurityContextUtil.getCurrentUserId();
         log.info("[DELETE] Delete passkey: userId={}, passkeyId={}", userId, passkeyId);
 
         passkeyService.deletePasskey(userId, passkeyId);
 
-        return ResponseEntity.ok(ApiResponse.success("패스키가 삭제되었습니다."));
+        return ResponseEntity.ok(com.library.module.response.ApiResponse.success("패스키가 삭제되었습니다."));
     }
 }

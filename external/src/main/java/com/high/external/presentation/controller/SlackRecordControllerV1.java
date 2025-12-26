@@ -22,7 +22,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/externals/slacks")
 @RequiredArgsConstructor
-public class SlackRecordControllerV1 {
+public class SlackRecordControllerV1 implements SlackRecordControllerSwagger{
 
     private final SlackRecordServiceV1 serviceV1;
     private final SlackMessageServiceV1 messageServiceV1;
@@ -70,11 +70,11 @@ public class SlackRecordControllerV1 {
 
 
     @GetMapping("/test/error")
-    public String generateErrorLog() {
+    public ResponseEntity<String> generateErrorLog() {
         // 🚨 의도적으로 ERROR 레벨 로그를 발생시킵니다.
         logger.error("!!! TEST_ERROR_START_DUMP !!! - This is a manual test error log to verify Kibana pipeline. Time: {}", System.currentTimeMillis());
 
-        return "Test Error log sent.";
+        return ResponseEntity.ok("Test Error log sent.");
     }
 
 

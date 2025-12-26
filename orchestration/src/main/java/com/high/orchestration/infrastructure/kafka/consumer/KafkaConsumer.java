@@ -40,7 +40,7 @@ public class KafkaConsumer {
         private final OrderCreateAdapter adapter;
         private final KafkaEventPublisher publisher;
         private final DlqRetryFailureHandler dlqRetryFailureHandler;
-
+        
     @RetryableTopic(
         attempts = "3",
         backoff = @Backoff(
@@ -52,7 +52,7 @@ public class KafkaConsumer {
     @KafkaListener(topics = "order-create-success", groupId = "orchestration-consumer-group")
     public void orderCreateSuccess(String orderCreateSuccessMessage,
         @Header(name = "from-dlq", required = false) Boolean fromDlq,
-        @Header(name = "dlq-id", required = false) String dlqId
+        @Header(name = "outboxId", required = false) String outboxId
     ) throws JsonProcessingException {
         OrderCreateSuccessMessage message = null;
         log.info(
@@ -64,30 +64,16 @@ public class KafkaConsumer {
 
             message = objectMapper.readValue(orderCreateSuccessMessage,
                 OrderCreateSuccessMessage.class);
-//메시지 파싱실패는 재시도의미가 없을 것 같은데 이 경우에는 재시도 루트를 타지 않게 해야할지?
-//        } catch (Exception e) {
-//            log.error("[KafkaConsumer] 메시지 파싱 실패", e);
-//
-//            return;
-//        }
+
         StockDeductionCommandRequest stockRequest = null;
         CouponUseCommandRequest couponRequest = null;
 
-//        try {
+
             stockRequest = adapter.toStockDeductionCommand(message);
             couponRequest = adapter.toCouponUseCommandRequest(message);
 
             orderCreateSagaService.handlerOrderCreateSuccess(stockRequest);
-//service 로직도 service에서 에러처리를 따로 잡고있는데 이 경우에도 재시도 루트를 타지 않게 해야할지?
 
-//        } catch (Exception e) {
-//            log.warn(
-//                "[KafkaConsumer] 비즈니스 실패 - Kafka 재시도 안함",
-//                e
-//            );
-//            return;
-//        }
-//        try {
             publisher.publishCouponUseCommand("coupon-use-request", couponRequest);
             publisher.publishStockDeductionCommand("stock-deduction-request", stockRequest);
             log.info("[KafkaConsumer] orderCreateSuccess : 재고차감 명령 발행 성공 ");
@@ -98,12 +84,12 @@ public class KafkaConsumer {
             log.error("[KafkaConsumer] orderCreateSuccess 실패", e);
 
             //DLQ에서 온 메시지가 실패하면 즉시 영구 실패 처리
-            if (Boolean.TRUE.equals(fromDlq) && dlqId != null) {
+            if (Boolean.TRUE.equals(fromDlq) && outboxId != null) {
                 log.error(
-                    "[KafkaConsumer] DLQ에서 유입된 재시도 메시지 실패 - 영구 실패 처리 - dlqId={}",
-                    dlqId
+                    "[KafkaConsumer] DLQ에서 유입된 재시도 메시지 실패 - 영구 실패 처리 - Id={}",
+                    outboxId
                 );
-                dlqRetryFailureHandler.handleRetryFailure(dlqId, e);
+                dlqRetryFailureHandler.handleRetryFailure(outboxId, e);
                 return;
             }
 
@@ -136,15 +122,29 @@ public class KafkaConsumer {
     )
     @KafkaListener(topics = "stock-deduction-success", groupId = "orchestration-consumer-group")
     public void stockDeductionSuccess(String stockDeductionSuccessMessage) throws JsonProcessingException {
-        log.info("[KafkaConsumer] stockDeductionSuccess :  stockDeductionSuccessMessage: {}", stockDeductionSuccessMessage);
+        log.info("[KafkaConsumer] stockDeductionSuccess payload(raw): {}", stockDeductionSuccessMessage);
 
-            StockDeductionSuccessMessage message = objectMapper.readValue(stockDeductionSuccessMessage, StockDeductionSuccessMessage.class);
-            PaymentCreateCommandRequest request = adapter.toPaymentCreateCommand(message);
-            orderCreateSagaService.handlerStockDeductionSuccess(request);
+        // 1) payload가 JSON 객체가 아니라 "JSON 문자열"로 감싸져 있으면 한 번 풀기
+        String normalized = stockDeductionSuccessMessage;
 
-            publisher.publishPaymentCreateCommand("payment-create-request", request);
-            log.info("[KafkaConsumer] stockDeductionSuccess : 결제 생성 명령 성공");
+        // 앞뒤가 따옴표로 감싸진 경우: "\"{...}\""
+        if (normalized != null && normalized.length() >= 2 && normalized.startsWith("\"") && normalized.endsWith("\"")) {
+            // JSON String으로 한 번 파싱해서 실제 JSON 객체 문자열을 얻는다
+            normalized = objectMapper.readValue(normalized, String.class);
+        }
 
+        log.info("[KafkaConsumer] stockDeductionSuccess payload(normalized): {}", normalized);
+
+        // 2) 정상적으로 객체로 파싱
+        StockDeductionSuccessMessage message =
+            objectMapper.readValue(normalized, StockDeductionSuccessMessage.class);
+
+        PaymentCreateCommandRequest request = adapter.toPaymentCreateCommand(message);
+        orderCreateSagaService.handlerStockDeductionSuccess(request);
+
+        publisher.publishPaymentCreateCommand("payment-create-request", request);
+        log.info("[KafkaConsumer] stockDeductionSuccess : 결제 생성 명령 발행 성공 sagaId={}, orderId={}",
+                 message.sagaId(), message.orderId());
     }
 
 
