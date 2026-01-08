@@ -6,7 +6,8 @@
 <br>
 <br>
 
-## 🏆 Award: 우수 프로젝트 선정
+## 🏆 Award
+![Award](https://img.shields.io/badge/Award-Excellent_Project-gold)
 
  **내일배움캠프 심화과정 최종 프로젝트**에서 **우수 프로젝트**로 선정되었습니다.
 
