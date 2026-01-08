@@ -6,6 +6,23 @@
 <br>
 <br>
 
+## 🏆 Award: 우수 프로젝트 선정
+
+ **내일배움캠프 심화과정 최종 프로젝트**에서 **우수 프로젝트**로 선정되었습니다.
+
+| 항목        | 내용                                      |
+|:----------|:----------------------------------------|
+| **훈련명**   | 심화_AI를 활용한 백엔드 아키텍처 심화 과정 4회차           |
+| **결과**    | **우수 프로젝트 선정** 🥇                       |
+| **증빙 자료** | [상장 원본 확인하기 (PDF)](https://github.com/SearchColor/high-tension/releases/tag/v1.0.0-award) |
+
+<details>
+  <summary><b>📜 우수 프로젝트 상장 확인하기 </b></summary>
+  <br />
+  <img src="./images/High-Tension.jpg" alt="우수 프로젝트 상장" width="600px" />
+  
+</details>
+
 ## 목차
 - [프로젝트 개요](#project-overview-프로젝트-개요)
 - [팀 소개](#team-members-팀원)
